@@ -344,15 +344,17 @@ const CreateTicket = () => {
         imagePayload.append(`file${index + 1}`, file);
       });
 
-      const imageResponse = await fetchData(
-        `https://V1servicedeskapi.wello.solutions/api/dbfile/add?db_table_id=448260E5-7A17-4381-A254-0B1D8FE53947&id_in_table=${ticketId}&description=Uploaded%20by%20Service%20Desk%20-%20${ticketId2}`,
-        'POST', imagePayload
-      );
+      if(imagePayload){
+        await fetchData(
+          `https://V1servicedeskapi.wello.solutions/api/dbfile/add?db_table_id=448260E5-7A17-4381-A254-0B1D8FE53947&id_in_table=${ticketId}&description=Uploaded%20by%20Service%20Desk%20-%20${ticketId2}`,
+          'POST', imagePayload
+        );
+      }
 
-      console.log(imageResponse);
+      //console.log(imageResponse);
     } catch (err) {
       console.error("Error uploading image:", err);
-      alert("Failed to upload image.");
+      //alert("Failed to upload image.");
     }
   };
 
