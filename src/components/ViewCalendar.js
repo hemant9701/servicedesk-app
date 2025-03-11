@@ -4,6 +4,7 @@ import { fetchData } from '../services/apiService.js';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import { useNavigate } from 'react-router-dom';
+import { ArrowLeft } from "lucide-react";
 
 const ViewCalendars = () => {
   const navigate = useNavigate(); 
@@ -151,7 +152,7 @@ const ViewCalendars = () => {
           onClick={() => navigate('/')} // Navigate back one step in history
           className="mb-6 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-gray-600"
         >
-          {'<'}
+          <ArrowLeft className="w-4 h-4" />
         </button>
         <h1 className="text-2xl font-semibold text-gray-800 mb-6 ml-4">Calendar</h1>
       </div>

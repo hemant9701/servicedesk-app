@@ -4,7 +4,7 @@ import { fetchData } from '../services/apiService.js';
 import Calendar from 'react-calendar'
 import 'react-calendar/dist/Calendar.css'
 import { useNavigate } from 'react-router-dom';
-import { XCircle, File, FileText } from "lucide-react";
+import { XCircle, File, FileText, ArrowLeft, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 
 const CreateTicket = () => {
   const navigate = useNavigate();
@@ -361,22 +361,22 @@ const CreateTicket = () => {
 
 
   return (
-    <div className="p-8 bg-gray-50 min-h-screen">
+    <div className="p-1 md:p-8 bg-gray-50 min-h-screen">
       <div className='flex'>
         {/* Back Button */}
         <button
           onClick={() => navigate(-1)} // Navigate back one step in history
           className="mb-6 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-gray-600"
         >
-          {'<'}
+          <ArrowLeft className="w-4 h-4" />
         </button>
         <h1 className="text-2xl font-semibold text-gray-800 mb-6 ml-4">Create New Ticket</h1>
       </div>
 
       {/* Step Indicator Bar */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="items-center justify-between mb-8 grid grid-cols-2 md:grid-cols-4">
         {steps.map((item) => (
-          <div key={item.id} className="flex-1 text-center">
+          <div key={item.id} className="text-center mt-5">
             <div className={`flex items-center justify-center w-10 h-10 mx-auto rounded-full ${step >= item.id ? "bg-indigo-500 text-white" : "bg-gray-300 text-gray-600"
               }`}>
               {item.id}
@@ -497,6 +497,7 @@ const CreateTicket = () => {
                 })}
               </tbody>
             </table>
+            </div>
 
             {/* Pagination Controls - Only show if filteredTickets exceed pageSize (10) */}
             {filteredContacts.length > 10 && (
@@ -505,20 +506,20 @@ const CreateTicket = () => {
                   Page {pageIndex + 1} of {pageOptions.length}
                 </span>
                 <div>
-                  <button onClick={() => gotoPage(0)} disabled={!canPreviousPage} className="py-2 px-4 mr-2 bg-indigo-600 text-white rounded-md disabled:bg-gray-300">
-                    {'<<'}
+                  <button onClick={() => gotoPage(0)} disabled={!canPreviousPage} className="py-1 px-2 md:py-2 md:px-4 mr-1 bg-indigo-600 text-white rounded-md disabled:bg-gray-300">
+                    <ChevronsLeft className="w-4" />
                   </button>
-                  <button onClick={() => previousPage()} disabled={!canPreviousPage} className="py-2 px-4 mr-2 bg-indigo-600 text-white rounded-md disabled:bg-gray-300">
-                    {'<'}
+                  <button onClick={() => previousPage()} disabled={!canPreviousPage} className="py-1 px-2 md:py-2 md:px-4 mr-1 bg-indigo-600 text-white rounded-md disabled:bg-gray-300">
+                    <ChevronLeft className="w-4" />
                   </button>
-                  <button onClick={() => nextPage()} disabled={!canNextPage} className="py-2 px-4 mr-2 bg-indigo-600 text-white rounded-md disabled:bg-gray-300">
-                    {'>'}
+                  <button onClick={() => nextPage()} disabled={!canNextPage} className="py-1 px-2 md:py-2 md:px-4 mr-1 bg-indigo-600 text-white rounded-md disabled:bg-gray-300">
+                    <ChevronRight className="w-4" />
                   </button>
-                  <button onClick={() => gotoPage(pageOptions.length - 1)} disabled={!canNextPage} className="py-2 px-4 bg-indigo-600 text-white rounded-md disabled:bg-gray-300">
-                    {'>>'}
+                  <button onClick={() => gotoPage(pageOptions.length - 1)} disabled={!canNextPage} className="py-1 px-2 md:py-2 md:px-4 bg-indigo-600 text-white rounded-md disabled:bg-gray-300">
+                    <ChevronsRight className="w-4" />
                   </button>
                 </div>
-                <select value={pageSize} onChange={e => setPageSize(Number(e.target.value))} className="ml-2 p-2 border border-gray-300 rounded-md max-w-32">
+                <select value={pageSize} onChange={e => setPageSize(Number(e.target.value))} className="ml-1 p-1 md:p-2 border border-gray-300 rounded-md max-w-32">
                   {[10, 20, 30, 50].map(size => (
                     <option key={size} value={size}>
                       Show {size}
@@ -527,7 +528,7 @@ const CreateTicket = () => {
                 </select>
               </div>
             )}
-          </div>
+          
         </>
       )}
 
@@ -595,7 +596,7 @@ const CreateTicket = () => {
               />
               {/* File Thumbnails Grid */}
               {files.length > 0 && (
-                <div className="mt-2 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                <div className="mt-2 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3">
                   {files.map((file, index) => {
                     const fileURL = URL.createObjectURL(file);
                     const isImage = file.type.startsWith("image/");
@@ -610,8 +611,8 @@ const CreateTicket = () => {
                             <p className="mt-2 text-sm text-gray-800">{file.name}</p>
                           </div>
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gray-200 rounded-md">
-                            {isPDF ? <FileText className="w-8 h-8 text-gray-600" /> : <File className="w-8 h-8 text-gray-600" />}
+                          <div className="">
+                            {isPDF ? <FileText className="w-32 h-32 text-gray-600 object-cover rounded-md overflow-hidden" /> : <File className="w-32 h-32 text-gray-600 object-cover rounded-md overflow-hidden" />}
                             <p className="mt-2 text-sm text-gray-800">{file.name}</p>
                           </div>
                         )}
@@ -646,7 +647,6 @@ const CreateTicket = () => {
       {step === 3 && (
         <div className="p-6 bg-white rounded-lg shadow">
           <h2 className="text-xl font-semibold mb-4">3. Select Preferred Intervention Date & Time</h2>
-          <span className="text-sm font-medium text-gray-700 mr-4">Date and Time</span>
           <form onSubmit={(e) => { e.preventDefault(); setStep(4); }}>
             {/* Yes/No Toggle for Preferred Date & Time */}
             <div className="mb-4 flex items-center">
@@ -672,6 +672,8 @@ const CreateTicket = () => {
 
             {/* Calendar Picker */}
             {prefersDate && (
+              <>
+              <span className="text-sm font-medium text-gray-700 mr-4">Date and time</span>
               <div className="flex flex-col lg:flex-row gap-6">
                 <div className="react-calendar-wrapper">
                   <h4 className='font-semibold mb-4'>{date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })} {hours.toString().padStart(2, '0')}:{minutes.toString().padStart(2, '0')}</h4>
@@ -735,6 +737,7 @@ const CreateTicket = () => {
                   </div>
                 </div>
               </div>
+              </>
             )}
 
             {/* Navigation Buttons */}
@@ -785,9 +788,9 @@ const CreateTicket = () => {
               </ul>
             </div>
             <div>
-              <h4 className='font-semibold my-2'>Select preferred intervention data & time</h4>
               {prefersDate && (
                 <>
+                  <h4 className='font-semibold my-2'>Selected preferred intervention data & time</h4>
                   <ul className="list-none list-inside text-gray-700">
                     <li>{date.toLocaleDateString('nl-BE')} {hours.toString().padStart(2, '0')}:{minutes.toString().padStart(2, '0')}</li>
                   </ul>
@@ -795,27 +798,27 @@ const CreateTicket = () => {
               )}
             </div>
 
-            <div className='col-span-2'>
+            <div className='md:col-span-2'>
               <h4 className="font-semibold my-2">File</h4>
 
               {/* File Thumbnails Grid */}
-                <div className="mt-2 grid grid-cols-6 sm:grid-cols-3 md:grid-cols-6 gap-3">
+                <div className="mt-2 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3">
                   {ticketDetails?.file && ticketDetails.file.map((file, index) => {
                     const fileURL = URL.createObjectURL(file);
                     const isImage = file.type.startsWith("image/");
                     const isPDF = file.type === "application/pdf";
 
                     return (
-                      <div key={index} className="relative group w-40 h-auto">
+                      <div key={index} className="relative group w-32 h-auto">
                         {/* Thumbnail */}
                         {isImage ? (
                           <div>
-                            <img src={fileURL} alt="Preview" className="w-40 h-40 object-cover rounded-md overflow-hidden" />
+                            <img src={fileURL} alt="Preview" className="w-32 h-32 object-cover rounded-md overflow-hidden" />
                             <p className="mt-2 text-sm text-gray-800">{file.name}</p>
                           </div>
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gray-200 rounded-md">
-                            {isPDF ? <FileText className="w-8 h-8 text-gray-600" /> : <File className="w-8 h-8 text-gray-600" />}
+                          <div className="">
+                            {isPDF ? <FileText className="w-32 h-32 text-gray-600 object-cover rounded-md overflow-hidden" /> : <File className="w-32 h-32 text-gray-600 object-cover rounded-md overflow-hidden" />}
                             <p className="mt-2 text-sm text-gray-800">{file.name}</p>
                           </div>
                         )}

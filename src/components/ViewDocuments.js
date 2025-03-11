@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { useTable, useSortBy, usePagination } from 'react-table';
 import { fetchData } from '../services/apiService.js';
 import { useNavigate } from 'react-router-dom';
-import { ArrowUp, ArrowDown } from 'lucide-react';
+import { ArrowUp, ArrowDown, ArrowLeft, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 
@@ -137,7 +137,7 @@ const ViewDocuments = () => {
             "jobs",
             "project",
             "you"
-        ],
+          ],
           file_extentions: fileType.reduce((acc, type) => acc.concat(type.extentions), []),
           file_extentions_not_in: [],
           date_add_min: `${date.length ? date.map((d) => d.value) : date.value}-01-01T00:00:00.000`,
@@ -161,7 +161,7 @@ const ViewDocuments = () => {
               "jobs",
               "project",
               "you"
-          ],
+            ],
             filterModel: {},
             sortModel: []
           }
@@ -225,7 +225,7 @@ const ViewDocuments = () => {
     {
       Header: 'File Type',
       accessor: 'file_extention',
-      Cell: ({ row }) => 
+      Cell: ({ row }) =>
         row.original.file_name ? (  // ✅ Check if file_name exists
           <span className={`text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm ${fileExtn[row.original.file_extention] || "bg-gray-300"}`}>
             {row.original.file_extention}
@@ -250,16 +250,16 @@ const ViewDocuments = () => {
     },
     {
       Header: 'Upload When', accessor: 'date_add',
-      Cell: ({ row, value }) => 
+      Cell: ({ row, value }) =>
         row.original.file_name ? (
           new Date(value).getFullYear() !== 1980 ?? new Date(value).toLocaleString('nl-BE', {
-          hour: '2-digit',
-          minute: '2-digit',
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit'
-        })
-      ) : null
+            hour: '2-digit',
+            minute: '2-digit',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+          })
+        ) : null
     },
   ], [authKey, selectedFiles, fileExtn, navigate]);
 
@@ -403,30 +403,30 @@ const ViewDocuments = () => {
 
   if (downloadMsg) {
     return <div id="toast-success" class="flex items-center w-full max-w-xs p-4 mb-4 text-gray-500 bg-white rounded-lg shadow-sm" role="alert">
-        <div class="inline-flex items-center justify-center shrink-0 w-8 h-8 text-green-500 bg-green-100 rounded-lg dark:bg-green-800 dark:text-green-200">
-            <svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z"/>
-            </svg>
-            <span class="sr-only">Check icon</span>
-        </div>
-        <div class="ms-3 text-sm font-normal">{downloadMsg} Downloading.</div>
-        <button type="button" class="ms-auto -mx-1.5 -my-1.5 bg-white text-gray-400 hover:text-gray-900 rounded-lg focus:ring-2 focus:ring-gray-300 p-1.5 hover:bg-gray-100 inline-flex items-center justify-center h-8 w-8 dark:text-gray-500 dark:hover:text-white dark:bg-gray-800 dark:hover:bg-gray-700" data-dismiss-target="#toast-success" aria-label="Close">
-            <span class="sr-only">Close</span>
-            <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
-                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
-            </svg>
-        </button>
+      <div class="inline-flex items-center justify-center shrink-0 w-8 h-8 text-green-500 bg-green-100 rounded-lg dark:bg-green-800 dark:text-green-200">
+        <svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
+        </svg>
+        <span class="sr-only">Check icon</span>
+      </div>
+      <div class="ms-3 text-sm font-normal">{downloadMsg} Downloading.</div>
+      <button type="button" class="ms-auto -mx-1.5 -my-1.5 bg-white text-gray-400 hover:text-gray-900 rounded-lg focus:ring-2 focus:ring-gray-300 p-1.5 hover:bg-gray-100 inline-flex items-center justify-center h-8 w-8 dark:text-gray-500 dark:hover:text-white dark:bg-gray-800 dark:hover:bg-gray-700" data-dismiss-target="#toast-success" aria-label="Close">
+        <span class="sr-only">Close</span>
+        <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+          <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
+        </svg>
+      </button>
     </div>;
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
+    <div className="max-w-7xl mx-auto p-1 md:p-8">
       <div className='flex'>
         <button
           onClick={() => navigate('/')}
           className="mb-6 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-gray-600"
         >
-          {'<'}
+          <ArrowLeft className="w-4 h-4" />
         </button>
         <h1 className="text-2xl font-semibold text-gray-800 mb-6 ml-4">Documents</h1>
       </div>
@@ -572,34 +572,28 @@ const ViewDocuments = () => {
 
       {/* Pagination Controls */}
       {contacts.length > 10 && (
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mt-4">
+          <span className="text-sm text-gray-700">
+            Page {pageIndex + 1} of {pageOptions.length}
+          </span>
           <div>
-            <span className="text-sm text-gray-600">Page {pageIndex + 1} of {pageOptions.length}</span>
-          </div>
-          <div>
-            <button onClick={() => gotoPage(0)} disabled={!canPreviousPage} className="py-2 px-4 mr-2 bg-indigo-600 text-white rounded-md disabled:bg-gray-300">
-              {'<<'}
+            <button onClick={() => gotoPage(0)} disabled={!canPreviousPage} className="py-1 px-2 md:py-2 md:px-4 mr-1 bg-indigo-600 text-white rounded-md disabled:bg-gray-300">
+              <ChevronsLeft className="w-4" />
             </button>
-            <button onClick={previousPage} disabled={!canPreviousPage} className="py-2 px-4 mr-2 bg-indigo-600 text-white rounded-md disabled:bg-gray-300">
-              {'<'}
+            <button onClick={() => previousPage()} disabled={!canPreviousPage} className="py-1 px-2 md:py-2 md:px-4 mr-1 bg-indigo-600 text-white rounded-md disabled:bg-gray-300">
+              <ChevronLeft className="w-4" />
             </button>
-            <button onClick={nextPage} disabled={!canNextPage} className="py-2 px-4 mr-2 bg-indigo-600 text-white rounded-md disabled:bg-gray-300">
-              {'>'}
+            <button onClick={() => nextPage()} disabled={!canNextPage} className="py-1 px-2 md:py-2 md:px-4 mr-1 bg-indigo-600 text-white rounded-md disabled:bg-gray-300">
+              <ChevronRight className="w-4" />
             </button>
-            <button onClick={() => gotoPage(pageOptions.length - 1)} disabled={!canNextPage} className="py-2 px-4 bg-indigo-600 text-white rounded-md disabled:bg-gray-300">
-              {'>>'}
+            <button onClick={() => gotoPage(pageOptions.length - 1)} disabled={!canNextPage} className="py-1 px-2 md:py-2 md:px-4 bg-indigo-600 text-white rounded-md disabled:bg-gray-300">
+              <ChevronsRight className="w-4" />
             </button>
           </div>
-          <select
-            value={pageSize}
-            onChange={e => {
-              setPageSize(Number(e.target.value));
-            }}
-            className="border border-gray-300 rounded-md p-2 max-w-32"
-          >
-            {[10, 20, 30, 50].map(pageSizeOption => (
-              <option key={pageSizeOption} value={pageSizeOption}>
-                Show {pageSizeOption}
+          <select value={pageSize} onChange={e => setPageSize(Number(e.target.value))} className="ml-1 p-1 md:p-2 border border-gray-300 rounded-md max-w-32">
+            {[10, 20, 30, 50].map(size => (
+              <option key={size} value={size}>
+                Show {size}
               </option>
             ))}
           </select>

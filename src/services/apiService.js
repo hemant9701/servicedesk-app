@@ -2,10 +2,8 @@ import axios from 'axios';
 const auth = JSON.parse(sessionStorage.getItem('auth'));
 
 export const fetchData = async (endpoint, method = 'GET', data = null) => {
-  
+  const authKey = auth.authKey;
   try {
-    const authKey = auth.authKey;
-
     const config = {
       url: endpoint,
       method,

@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { useTable, usePagination } from 'react-table';
 import { fetchData } from '../services/apiService.js';
 import { Link, useNavigate } from 'react-router-dom';
+import { ArrowLeft, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 
 const ViewUserList = () => {
   const navigate = useNavigate();
@@ -28,7 +29,8 @@ const ViewUserList = () => {
     () => [
       { Header: 'First Name', accessor: 'firstname' },
       { Header: 'Last Name', accessor: 'lastname' },
-      { Header: 'Email', accessor: 'email',
+      {
+        Header: 'Email', accessor: 'email',
         Cell: ({ row }) => (
           <a
             href={`mailto:${row.original.email}`}
@@ -70,11 +72,11 @@ const ViewUserList = () => {
 
   if (loading) {
     return <div className="flex items-center justify-center h-screen bg-gray-100">
-    <div className="relative">
-      <div className="w-20 h-20 border-purple-200 border-2 rounded-full"></div>
-      <div className="w-20 h-20 border-purple-700 border-t-2 animate-spin rounded-full absolute left-0 top-0"></div>
-    </div>
-  </div>;
+      <div className="relative">
+        <div className="w-20 h-20 border-purple-200 border-2 rounded-full"></div>
+        <div className="w-20 h-20 border-purple-700 border-t-2 animate-spin rounded-full absolute left-0 top-0"></div>
+      </div>
+    </div>;
   }
 
   if (error) {
@@ -89,7 +91,7 @@ const ViewUserList = () => {
           onClick={() => navigate('/')} // Navigate back one step in history
           className="mb-6 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-gray-600"
         >
-          {'<'}
+          <ArrowLeft className="w-4 h-4" />
         </button>
         <h1 className="text-2xl font-semibold text-gray-800 mb-6 ml-4">Users List</h1>
       </div>
@@ -138,21 +140,21 @@ const ViewUserList = () => {
             Page {pageIndex + 1} of {pageOptions.length}
           </span>
           <div>
-            <button onClick={() => gotoPage(0)} disabled={!canPreviousPage} className="py-2 px-4 mr-2 bg-indigo-600 text-white rounded-md disabled:bg-gray-300">
-              {'<<'}
+            <button onClick={() => gotoPage(0)} disabled={!canPreviousPage} className="py-1 px-2 md:py-2 md:px-4 mr-1 bg-indigo-600 text-white rounded-md disabled:bg-gray-300">
+              <ChevronsLeft className="w-4" />
             </button>
-            <button onClick={() => previousPage()} disabled={!canPreviousPage} className="py-2 px-4 mr-2 bg-indigo-600 text-white rounded-md disabled:bg-gray-300">
-              {'<'}
+            <button onClick={() => previousPage()} disabled={!canPreviousPage} className="py-1 px-2 md:py-2 md:px-4 mr-1 bg-indigo-600 text-white rounded-md disabled:bg-gray-300">
+              <ChevronLeft className="w-4" />
             </button>
-            <button onClick={() => nextPage()} disabled={!canNextPage} className="py-2 px-4 mr-2 bg-indigo-600 text-white rounded-md disabled:bg-gray-300">
-              {'>'}
+            <button onClick={() => nextPage()} disabled={!canNextPage} className="py-1 px-2 md:py-2 md:px-4 mr-1 bg-indigo-600 text-white rounded-md disabled:bg-gray-300">
+              <ChevronRight className="w-4" />
             </button>
-            <button onClick={() => gotoPage(pageOptions.length - 1)} disabled={!canNextPage} className="py-2 px-4 bg-indigo-600 text-white rounded-md disabled:bg-gray-300">
-              {'>>'}
+            <button onClick={() => gotoPage(pageOptions.length - 1)} disabled={!canNextPage} className="py-1 px-2 md:py-2 md:px-4 bg-indigo-600 text-white rounded-md disabled:bg-gray-300">
+              <ChevronsRight className="w-4" />
             </button>
           </div>
-          <select value={pageSize} onChange={e => setPageSize(Number(e.target.value))} className="ml-2 p-2 border border-gray-300 rounded-md">
-            {[5, 10, 20, 30, 50].map(size => (
+          <select value={pageSize} onChange={e => setPageSize(Number(e.target.value))} className="ml-1 p-1 md:p-2 border border-gray-300 rounded-md max-w-32">
+            {[10, 20, 30, 50].map(size => (
               <option key={size} value={size}>
                 Show {size}
               </option>

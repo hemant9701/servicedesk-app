@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { fetchData } from '../services/apiService';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { File, FileText, Eye } from "lucide-react";
+import { File, FileText, Eye, Phone, ArrowLeft } from "lucide-react";
 
 const SingleWordOrder = () => {
   const navigate = useNavigate();
@@ -134,7 +134,7 @@ const SingleWordOrder = () => {
           onClick={() => navigate(-1)} // Navigate back one step in history
           className="mb-6 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-gray-600"
         >
-          {'<'}
+          <ArrowLeft className="w-4 h-4" />
         </button>
         <h2 className="capitalize text-xl font-bold mb-2 ml-4">{workOrder?.name} | Reference: {workOrder?.id2}</h2>
       </div>
@@ -172,7 +172,7 @@ const SingleWordOrder = () => {
               <li>{workOrder?.db_address_street}</li>
               <li>{workOrder?.db_address_zip} {workOrder?.db_address_city}</li>
               {workOrder?.contact_mobile && (
-                <li>📞 <a href={`tel:${workOrder.contact_mobile}`}>{workOrder.contact_mobile}</a></li>
+                <li><Phone className="w-4 h-4" /> <a href={`tel:${workOrder.contact_mobile}`}>{workOrder.contact_mobile}</a></li>
               )}
             </ul>
           </div>
@@ -182,7 +182,7 @@ const SingleWordOrder = () => {
             <ul className="list-none list-inside text-gray-700">
               <li>{workOrder?.contact_fullname}</li>
               {workOrder?.contact_phone && (
-                <li>📞 <a href={`tel:${workOrder.contact_phone}`}>{workOrder.contact_phone}</a></li>
+                <li><Phone className="w-4 h-4" /> <a href={`tel:${workOrder.contact_phone}`}>{workOrder.contact_phone}</a></li>
               )}
             </ul>
           </div>

@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { useTable, useSortBy, usePagination } from 'react-table';
 import { fetchData } from '../services/apiService.js';
 import { useNavigate } from 'react-router-dom';
-import { ArrowUp, ArrowDown } from 'lucide-react';
+import { ArrowUp, ArrowDown, ArrowLeft, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 
 const ViewInstallations = () => {
   const navigate = useNavigate();
@@ -141,14 +141,14 @@ const ViewInstallations = () => {
   const uniqueStatuses = [...new Set(contacts.map(contact => contact.project_status_name))];
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
+    <div className="max-w-7xl mx-auto p-1 md:p-8">
       <div className='flex'>
         {/* Back Button */}
         <button
           onClick={() => navigate('/')} // Navigate back one step in history
           className="mb-6 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-gray-600"
         >
-          {'<'}
+          <ArrowLeft className="w-4 h-4" />
         </button>
         <h1 className="text-2xl font-semibold text-gray-800 mb-6 ml-4">Installations</h1>
       </div>
@@ -256,39 +256,35 @@ const ViewInstallations = () => {
         </table>
       </div>
 
-      {/* Pagination Controls */}
-      <div className="flex items-center justify-between mt-4">
-        <span className="text-sm text-gray-700">
-          Page {pageIndex + 1} of {pageOptions.length}
-        </span>
-        <div>
-          <button onClick={() => gotoPage(0)} disabled={!canPreviousPage} className="py-2 px-4 mr-2 bg-indigo-600 text-white rounded-md disabled:bg-gray-300">
-            {'<<'}
-          </button>
-          <button onClick={previousPage} disabled={!canPreviousPage} className="py-2 px-4 mr-2 bg-indigo-600 text-white rounded-md disabled:bg-gray-300">
-            {'<'}
-          </button>
-          <button onClick={nextPage} disabled={!canNextPage} className="py-2 px-4 mr-2 bg-indigo-600 text-white rounded-md disabled:bg-gray-300">
-            {'>'}
-          </button>
-          <button onClick={() => gotoPage(pageOptions.length - 1)} disabled={!canNextPage} className="py-2 px-4 bg-indigo-600 text-white rounded-md disabled:bg-gray-300">
-            {'>>'}
-          </button>
-        </div>
-        <select
-          value={pageSize}
-          onChange={e => {
-            setPageSize(Number(e.target.value));
-          }}
-          className="border border-gray-300 rounded-md p-2 max-w-32"
-        >
-          {[10, 20, 30, 50].map(pageSizeOption => (
-            <option key={pageSizeOption} value={pageSizeOption}>
-              Show {pageSizeOption}
-            </option>
-          ))}
-        </select>
-      </div>
+      {/* Pagination Controls - Only show if filteredTickets exceed pageSize (10) */}
+      {filteredContacts.length > 10 && (
+              <div className="flex items-center justify-between mt-4">
+                <span className="text-sm text-gray-700">
+                  Page {pageIndex + 1} of {pageOptions.length}
+                </span>
+                <div>
+                  <button onClick={() => gotoPage(0)} disabled={!canPreviousPage} className="py-1 px-2 md:py-2 md:px-4 mr-1 bg-indigo-600 text-white rounded-md disabled:bg-gray-300">
+                    <ChevronsLeft className="w-4" />
+                  </button>
+                  <button onClick={() => previousPage()} disabled={!canPreviousPage} className="py-1 px-2 md:py-2 md:px-4 mr-1 bg-indigo-600 text-white rounded-md disabled:bg-gray-300">
+                    <ChevronLeft className="w-4" />
+                  </button>
+                  <button onClick={() => nextPage()} disabled={!canNextPage} className="py-1 px-2 md:py-2 md:px-4 mr-1 bg-indigo-600 text-white rounded-md disabled:bg-gray-300">
+                    <ChevronRight className="w-4" />
+                  </button>
+                  <button onClick={() => gotoPage(pageOptions.length - 1)} disabled={!canNextPage} className="py-1 px-2 md:py-2 md:px-4 bg-indigo-600 text-white rounded-md disabled:bg-gray-300">
+                    <ChevronsRight className="w-4" />
+                  </button>
+                </div>
+                <select value={pageSize} onChange={e => setPageSize(Number(e.target.value))} className="ml-1 p-1 md:p-2 border border-gray-300 rounded-md max-w-32">
+                  {[10, 20, 30, 50].map(size => (
+                    <option key={size} value={size}>
+                      Show {size}
+                    </option>
+                  ))}
+                </select>
+              </div>
+      )}
     </div>
   );
 };

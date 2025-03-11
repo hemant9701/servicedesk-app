@@ -4,9 +4,7 @@ import { fetchData } from '../services/apiService';
 import axios from 'axios';
 import JSZip from 'jszip';
 import { useNavigate } from 'react-router-dom';
-import { 
-  FileText, File, FileSpreadsheet, FileImage, FileArchive, FileVideo, FileAudio, FileSignature, Eye 
-} from "lucide-react";
+import { File, Eye, ArrowLeft } from "lucide-react";
 
 const SingleInstallation = () => {
   const navigate = useNavigate();
@@ -18,6 +16,7 @@ const SingleInstallation = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('details'); // State to manage active tab
+  const [fileThumbnails, setFileThumbnails] = useState({});
 
   const statusColors = useMemo(() => ({
     "In Progress": "bg-yellow-500 text-white",
@@ -80,45 +79,48 @@ const SingleInstallation = () => {
   }, [InstallationId]);
 
   useEffect(() => {
-    const GetFileThumbnail = async () => {
+    const GetFileThumbnails = async () => {
       try {
         if (doc.length === 0) return; // Ensure there is data before fetching
 
-        const docId = doc[0]?.id; // Use the first document ID (or adjust as needed)
-        if (!docId) return;
+        const auth = JSON.parse(sessionStorage.getItem("auth"));
+        const authKey = auth?.authKey;
+        if (!authKey) return;
 
-        const auth = JSON.parse(sessionStorage.getItem('auth'));
+        // Create a copy of the thumbnails object
+        const updatedThumbnails = {};
 
-        if (!auth || !auth.email || !auth.password || !auth.domain) {
-          throw new Error('Invalid or missing authentication data');
-        }
+        // Fetch thumbnails for all documents in the array
+        await Promise.all(
+          doc.map(async (item) => {
+            if (!item.id) return;
 
-        const authString = `${auth.email.trim()}:${auth.password.trim()}@${auth.domain.trim()}`;
-        const authKey = btoa(authString);
+            const config = {
+              url: `https://V1servicedeskapi.wello.solutions/api/DbFileView/GetFileThumbnail/?id=${item.id}&maxWidth=500&maxHeight=500`,
+              method: "GET",
+              headers: {
+                Authorization: `Basic ${authKey}`,
+                Accept: "image/png",
+              },
+              responseType: "blob",
+            };
 
-        const config = {
-          url: `https://V1servicedeskapi.wello.solutions/api/DbFileView/GetFileThumbnail/?id=${docId}&maxWidth=256&maxHeight=256`,
-          method: 'GET',
-          headers: {
-            'Authorization': `Basic ${authKey}`,
-            'Accept': 'image/png',
-          },
-          responseType: 'blob',
-        };
+            const response = await axios(config);
+            setFile(response);
+            updatedThumbnails[item.id] = URL.createObjectURL(response.data); // Store URL in object
+          })
+        );
 
-        const response = await axios(config);
-        const imageObjectURL = URL.createObjectURL(response.data);
-        setFile(imageObjectURL);
-        //console.log(imageObjectURL);
+        setFileThumbnails(updatedThumbnails); // Update state with all fetched thumbnails
       } catch (err) {
-        console.error("Error fetching thumbnail:", err);
-        setError('Failed to fetch thumbnail.');
+        console.error("Error fetching thumbnails:", err);
+        setError("Failed to fetch thumbnails.");
       } finally {
-        setLoading(false); // Set loading to false once done
+        setLoading(false);
       }
     };
 
-    GetFileThumbnail();
+    GetFileThumbnails();
   }, [doc]); // Run when `doc` changes
 
   const handleDownloadAll = async () => {
@@ -190,30 +192,19 @@ const SingleInstallation = () => {
   }
   if (error) return <div className="text-center text-red-600">{error}</div>;
 
-  const isImage = (fileName) => {
-    const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp'];
-    const ext = fileName?.split('.').pop().toLowerCase();
-    return imageExtensions.includes(ext);
-  };
-  
-  const fileIcons = {
-    pdf: <FileText className="w-32 h-32 text-red-500" />,
-    doc: <FileText className="w-32 h-32 text-blue-500" />,
-    docx: <FileText className="w-32 h-32 text-blue-500" />,
-    xls: <FileSpreadsheet className="w-32 h-32 text-green-500" />,
-    xlsx: <FileSpreadsheet className="w-32 h-32 text-green-500" />,
-    txt: <FileSignature className="w-32 h-32 text-gray-500" />,
-    ppt: <FileText className="w-32 h-32 text-orange-500" />,
-    pptx: <FileText className="w-32 h-32 text-orange-500" />,
-    jpg: <FileImage className="w-32 h-32 text-purple-500" />,
-    jpeg: <FileImage className="w-32 h-32 text-purple-500" />,
-    png: <FileImage className="w-32 h-32 text-purple-500" />,
-    gif: <FileImage className="w-32 h-32 text-purple-500" />,
-    zip: <FileArchive className="w-32 h-32 text-yellow-500" />,
-    rar: <FileArchive className="w-32 h-32 text-yellow-500" />,
-    mp4: <FileVideo className="w-32 h-32 text-blue-500" />,
-    mp3: <FileAudio className="w-32 h-32 text-indigo-500" />,
-  };
+
+  // const fileIcons = {
+  //   pdf: <FileText className="w-32 h-32 text-red-500" />,
+  //   doc: <FileText className="w-32 h-32 text-blue-500" />,
+  //   docx: <FileText className="w-32 h-32 text-blue-500" />,
+  //   xls: <FileSpreadsheet className="w-32 h-32 text-green-500" />,
+  //   xlsx: <FileSpreadsheet className="w-32 h-32 text-green-500" />,
+  //   txt: <FileSignature className="w-32 h-32 text-gray-500" />,
+  //   ppt: <FileText className="w-32 h-32 text-orange-500" />,
+  //   pptx: <FileText className="w-32 h-32 text-orange-500" />,
+  //   zip: <FileArchive className="w-32 h-32 text-yellow-500" />,
+  //   rar: <FileArchive className="w-32 h-32 text-yellow-500" />,
+  // };
 
   return (
     <div className="mx-auto p-6 bg-white">
@@ -223,7 +214,7 @@ const SingleInstallation = () => {
           onClick={() => navigate(-1)} // Navigate back one step in history
           className="mb-6 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-gray-600"
         >
-          {'<'}
+          <ArrowLeft className="w-4 h-4" />
         </button>
         <h2 className="capitalize text-xl font-bold mb-2 ml-4">{Installation?.name} | Reference: {Installation?.id2}</h2>
       </div>
@@ -327,7 +318,7 @@ const SingleInstallation = () => {
             </ul>
           </div>
 
-          <div className='col-span-3 shadow-md rounded-lg p-4 '>
+          <div className='md:col-span-3 shadow-md rounded-lg p-4 '>
             <h4 className="text-lg font-semibold">Shutdown consequence</h4>
             <ul className="list-none list-inside text-gray-700">
               <li>{Installation?.shutdown_consequence}</li>
@@ -364,16 +355,43 @@ const SingleInstallation = () => {
         </div>
       ) : activeTab === 'documents' ? (
         <div>
-        {doc.length > 0 &&
-        <button
-            onClick={handleDownloadAll}
-            className="bg-green-500 text-white px-2 py-1 rounded-md hover:bg-green-600 mb-4"
-          >
-            Download All
-          </button>}
-        <div className='grid grid-cols-1 md:grid-cols-5 gap-4'>
-          <div className="border border-gray-300 rounded-md bg-gray-50">
-            {file && isImage(file) ? (
+          {doc.length > 0 &&
+            <button
+              onClick={handleDownloadAll}
+              className="bg-green-500 text-white px-2 py-1 rounded-md hover:bg-green-600 mb-4"
+            >
+              Download All
+            </button>}
+          <div className='grid grid-cols-1 md:grid-cols-5 gap-4'>
+            <div className="border border-gray-300 rounded-md bg-gray-50">
+              {doc?.length > 0 ? (
+                doc.map(item => (
+                  <div key={item.id} className="p-4 flex flex-col items-center border rounded-lg shadow-md">
+                    {/* Show image thumbnail if it's an image, otherwise show file icon */}
+                    {item.mime_type?.startsWith("image/") ? (
+                      <img src={fileThumbnails[item.id] || ""} alt={item.name} className="w-32 h-32 object-cover rounded-md" />
+                    ) : (
+                      <File className="w-32 h-32 text-gray-600" />
+                    )}
+                    <h3 className="font-bold">{item.name}</h3>
+
+                    <p className="text-gray-500">{new Date(item.date_add).toLocaleString()}</p>
+
+                    {/* Show "View Document" only if it's an image */}
+                    {item.mime_type?.startsWith("image/") && (
+                      <a href={fileThumbnails[item.id] || ""} target="_blank" rel="noopener noreferrer" className="flex items-center mt-2 text-blue-600 hover:underline">
+                        <Eye className="w-6 h-6 mr-2 text-gray-600" /> View Document
+                      </a>
+                    )
+                    }
+                  </div>
+                ))
+              ) : null}
+
+              {!fileThumbnails && (!doc || doc.length === 0) && (
+                <p className="text-gray-600 p-4 text-center">No document or image available.</p>
+              )}
+              {/* {file && isImage(file) ? (
                 <img src={file} alt="Thumbnail" className="w-full h-auto" />
             ) : doc.length > 0 ? (
               doc.map(({ id, name, date_add, file }) => {
@@ -401,9 +419,9 @@ const SingleInstallation = () => {
               })
             )  : (
               <p className="text-gray-500 text-center p-4">No files available.</p>
-            )}
+            )} */}
+            </div>
           </div>
-        </div>
         </div>
       ) : (
         <div>

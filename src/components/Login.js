@@ -37,6 +37,7 @@ const Login = () => {
       //console.log("Login successful:", userData);
       if(userData) {
         navigate("/");
+        window.location.reload();
       }
       //navigate("/"); // Redirect after successful login
     } catch (err) {
