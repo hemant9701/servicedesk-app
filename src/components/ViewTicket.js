@@ -216,7 +216,7 @@ const SingleTicket = () => {
                 ) : (
                   <File className="w-32 h-32 text-gray-600" />
                 )}
-                <h3 className="font-bold">{item.name}</h3>
+                <h6 className="font-bold">{item.name}</h6>
                 
                 <p className="text-gray-500">{new Date(item.date_add).toLocaleString()}</p>
 
@@ -229,10 +229,10 @@ const SingleTicket = () => {
                 }
               </div>
             ))
-          ) : null}
+          ) : (<p className="text-gray-600 p-4 text-center">No document available.</p>)}
 
           {!fileThumbnails && (!doc || doc.length === 0) && (
-            <p className="text-gray-600 p-4 text-center">No document or image available.</p>
+            <p className="text-gray-600 p-4 text-center">No document available.</p>
           )}
 
         </div>

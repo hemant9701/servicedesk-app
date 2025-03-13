@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { fetchData } from '../services/apiService';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { File, FileText, Eye, Phone, ArrowLeft } from "lucide-react";
+import { File, Eye, Phone, ArrowLeft } from "lucide-react";
 
 const SingleWordOrder = () => {
   const navigate = useNavigate();
@@ -11,10 +11,10 @@ const SingleWordOrder = () => {
   const [workOrder, setWorkOrder] = useState(null);
   const [doc, setDoc] = useState([]);
   const [sub, setSub] = useState([]);
-  const [file, setFile] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('details'); // State to manage active tab
+  const [fileThumbnails, setFileThumbnails] = useState({});
 
   const statusColors = useMemo(() => ({
     "In Progress": "bg-yellow-500 text-white",
@@ -81,40 +81,84 @@ const SingleWordOrder = () => {
   }, [workOrderId]);
 
   useEffect(() => {
-    const GetFileThumbnail = async () => {
+    const GetFileThumbnails = async () => {
       try {
         if (doc.length === 0) return; // Ensure there is data before fetching
 
-        const docId = doc[0]?.id; // Use the first document ID (or adjust as needed)
-        if (!docId) return;
+        const auth = JSON.parse(sessionStorage.getItem("auth"));
+        const authKey = auth?.authKey;
+        if (!authKey) return;
 
-        const auth = JSON.parse(sessionStorage.getItem('auth'));
+        // Create a copy of the thumbnails object
+        const updatedThumbnails = {};
 
-        const authKey = auth.authKey;
+        // Fetch thumbnails for all documents in the array
+        await Promise.all(
+          doc.map(async (item) => {
+            if (!item.id) return;
 
-        const config = {
-          url: `https://V1servicedeskapi.wello.solutions/api/DbFileView/GetFileThumbnail/?id=${docId}&maxWidth=256&maxHeight=256`,
-          method: 'GET',
-          headers: {
-            'Authorization': `Basic ${authKey}`,
-            'Accept': 'image/png',
-          },
-          responseType: 'blob',
-        };
+            const config = {
+              url: `https://V1servicedeskapi.wello.solutions/api/DbFileView/GetFileThumbnail/?id=${item.id}&maxWidth=500&maxHeight=500`,
+              method: "GET",
+              headers: {
+                Authorization: `Basic ${authKey}`,
+                Accept: "image/png",
+              },
+              responseType: "blob",
+            };
 
-        const response = await axios(config);
-        //const imageObjectURL = URL.createObjectURL(response.data);
-        setFile(response.data);
+            const response = await axios(config);
+            updatedThumbnails[item.id] = URL.createObjectURL(response.data); // Store URL in object
+          })
+        );
+
+        setFileThumbnails(updatedThumbnails); // Update state with all fetched thumbnails
       } catch (err) {
-        console.error("Error fetching thumbnail:", err);
-        setError('Failed to fetch thumbnail.');
+        console.error("Error fetching thumbnails:", err);
+        setError("Failed to fetch thumbnails.");
       } finally {
-        setLoading(false); // Set loading to false once done
+        setLoading(false);
       }
     };
 
-    GetFileThumbnail();
+    GetFileThumbnails();
   }, [doc]); // Run when `doc` changes
+  
+  // useEffect(() => {
+  //   const GetFileThumbnail = async () => {
+  //     try {
+  //       if (doc.length === 0) return; // Ensure there is data before fetching
+
+  //       const docId = doc[0]?.id; // Use the first document ID (or adjust as needed)
+  //       if (!docId) return;
+
+  //       const auth = JSON.parse(sessionStorage.getItem('auth'));
+
+  //       const authKey = auth.authKey;
+
+  //       const config = {
+  //         url: `https://V1servicedeskapi.wello.solutions/api/DbFileView/GetFileThumbnail/?id=${docId}&maxWidth=256&maxHeight=256`,
+  //         method: 'GET',
+  //         headers: {
+  //           'Authorization': `Basic ${authKey}`,
+  //           'Accept': 'image/png',
+  //         },
+  //         responseType: 'blob',
+  //       };
+
+  //       const response = await axios(config);
+  //       //const imageObjectURL = URL.createObjectURL(response.data);
+  //       setFile(response.data);
+  //     } catch (err) {
+  //       console.error("Error fetching thumbnail:", err);
+  //       setError('Failed to fetch thumbnail.');
+  //     } finally {
+  //       setLoading(false); // Set loading to false once done
+  //     }
+  //   };
+
+  //   GetFileThumbnail();
+  // }, [doc]); // Run when `doc` changes
 
   if (loading) {
     return <div className="flex items-center justify-center h-screen bg-gray-100">
@@ -172,7 +216,9 @@ const SingleWordOrder = () => {
               <li>{workOrder?.db_address_street}</li>
               <li>{workOrder?.db_address_zip} {workOrder?.db_address_city}</li>
               {workOrder?.contact_mobile && (
-                <li><Phone className="w-4 h-4" /> <a href={`tel:${workOrder.contact_mobile}`}>{workOrder.contact_mobile}</a></li>
+                <li><span className='flex items-center'>
+                  <Phone className="w-4 h-4 mr-1" /> <a href={`tel:${workOrder.contact_mobile}`}>{workOrder.contact_mobile}</a>
+                </span></li>
               )}
             </ul>
           </div>
@@ -182,7 +228,9 @@ const SingleWordOrder = () => {
             <ul className="list-none list-inside text-gray-700">
               <li>{workOrder?.contact_fullname}</li>
               {workOrder?.contact_phone && (
-                <li><Phone className="w-4 h-4" /> <a href={`tel:${workOrder.contact_phone}`}>{workOrder.contact_phone}</a></li>
+                <li><span className='flex items-center'>
+                  <Phone className="w-4 h-4 mr-1" /> <a href={`tel:${workOrder.contact_phone}`}>{workOrder.contact_phone}</a>
+                </span></li>
               )}
             </ul>
           </div>
@@ -261,34 +309,33 @@ const SingleWordOrder = () => {
         </div>
       ) : activeTab === 'documents' ? (
         <div className='grid grid-cols-1 md:grid-cols-4 gap-4'>
-          <div className="border border-gray-300 rounded-md bg-gray-50">
-            {file ? (
-              file && file.type && file.type.startsWith('image/') ? (
-                <img src={URL.createObjectURL(file)} alt="Thumbnail" className="w-full h-auto" />
-              ) : file && file.type && file.type === 'application/pdf' ? (
-                <div className="flex items-center justify-center h-40 bg-gray-100 text-gray-600 p-4">
-                  <FileText className="w-32 h-32 text-gray-600" />
-                </div>
-              ) : (
-                <div className="flex items-center justify-center h-40 bg-gray-100 text-gray-600 p-4">
+          {doc?.length > 0 ? (
+            doc.map(item => (
+              <div key={item.id} className="p-4 flex flex-col items-center border rounded-lg shadow-md">
+                {/* Show image thumbnail if it's an image, otherwise show file icon */}
+                {item.mime_type?.startsWith("image/") ? (
+                  <img src={fileThumbnails[item.id] || ""} alt={item.name} className="w-32 h-32 object-cover rounded-md" />
+                ) : (
                   <File className="w-32 h-32 text-gray-600" />
-                </div>
-              )
-            ) : (
-              <p className="text-gray-600 p-4">No document available.</p>
-            )}
-            {doc.length > 0 && (
-              doc.map(item => (
-                <div key={item.id} className="p-4">
-                  <a href={file} target="_blank" rel="noopener noreferrer"><h3 className="font-bold">{item.name}</h3></a>
-                  <p className="text-gray-500">{new Date(item.date_add).toLocaleString()}</p>
-                  <a href={file} target="_blank" rel="noopener noreferrer" className='flex items-center'>
-                    <Eye className="w-8 h-8 text-gray-600" /> View Document
+                )}
+                <h6 className="font-bold">{item.name}</h6>
+
+                <p className="text-gray-500">{new Date(item.date_add).toLocaleString()}</p>
+
+                {/* Show "View Document" only if it's an image */}
+                {item.mime_type?.startsWith("image/") && (
+                  <a href={fileThumbnails[item.id] || ""} target="_blank" rel="noopener noreferrer" className="flex items-center mt-2 text-blue-600 hover:underline">
+                    <Eye className="w-6 h-6 mr-2 text-gray-600" /> View Document
                   </a>
-                </div>
-              ))
-            )}
-          </div>
+                )
+                }
+              </div>
+            ))
+          ) : (<p className="text-gray-600 p-4 text-center">No document available.</p>)}
+
+          {!fileThumbnails && (!doc || doc.length === 0) && (
+            <p className="text-gray-600 p-4 text-center">No document available.</p>
+          )}
         </div>
       ) : (
         <div className=''>
