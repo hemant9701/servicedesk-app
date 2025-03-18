@@ -3,9 +3,11 @@ import { useTable, useSortBy, usePagination } from 'react-table';
 import { fetchData } from '../services/apiService.js';
 import { useNavigate } from 'react-router-dom';
 import { ArrowUp, ArrowDown, ArrowLeft, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { useAuth } from '../AuthContext';
 
 const ViewWorkOrderList = () => {
   const navigate = useNavigate();
+  const { auth } = useAuth();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -48,7 +50,7 @@ const ViewWorkOrderList = () => {
             "sortModel": []
           }
         };
-        const response = await fetchData(endpoint, 'POST', payload);
+        const response = await fetchData(endpoint, 'POST', auth.authKey, payload);
         setJobs(response); // Adjusted for your API's response structure
         setLoading(false);
       } catch (err) {
@@ -58,7 +60,7 @@ const ViewWorkOrderList = () => {
     };
 
     fetchWorkOrder(isCompleted);
-  }, [isCompleted]);
+  }, [isCompleted, auth]);
 
 
   const columns = useMemo(

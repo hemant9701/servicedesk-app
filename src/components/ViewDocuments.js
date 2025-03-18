@@ -6,6 +6,7 @@ import { ArrowUp, ArrowDown, ArrowLeft, ChevronLeft, ChevronRight, ChevronsLeft,
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { ToastContainer, toast } from 'react-toastify';
+import { useAuth } from '../AuthContext';
 
 import Select from 'react-select';
 import makeAnimated from 'react-select/animated';
@@ -13,6 +14,7 @@ const animatedComponents = makeAnimated();
 
 const ViewDocuments = () => {
   const navigate = useNavigate();
+  const { auth } = useAuth();
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -65,10 +67,6 @@ const ViewDocuments = () => {
   const [debouncedLocation, setDebouncedLocation] = useState(location);
   const [debouncedStreet, setDebouncedStreet] = useState(street);
   const [debouncedCity, setDebouncedCity] = useState(city);
-
-  const auth = JSON.parse(sessionStorage.getItem('auth'));
-  //const authString = `${auth.email.trim()}:${auth.password.trim()}@${auth.domain.trim()}`;
-  const authKey = auth.authKey;
 
   const fileExtn = useMemo(() => ({
     "PDF": "bg-yellow-500 text-white",
@@ -163,7 +161,7 @@ const ViewDocuments = () => {
             sortModel: []
           }
         };
-        const response = await fetchData('https://V1servicedeskapi.wello.solutions/api/DbFileView/Search', 'POST', payload);
+        const response = await fetchData('https://V1servicedeskapi.wello.solutions/api/DbFileView/Search', 'POST', auth.authKey, payload);
         setContacts(response || []);
         setLoading(false);
       } catch (err) {
@@ -173,7 +171,7 @@ const ViewDocuments = () => {
     };
 
     fetchInstallations();
-  }, [debouncedKeyword, debouncedLocation, debouncedStreet, debouncedCity, date, fileType, object, includeArchived]);
+  }, [auth, debouncedKeyword, debouncedLocation, debouncedStreet, debouncedCity, date, fileType, object, includeArchived]);
 
   const columns = useMemo(() => [
     {
@@ -237,7 +235,7 @@ const ViewDocuments = () => {
           href={`https://V1servicedeskapi.wello.solutions/api/DbFileView/View/${row.original.file_name.replace(
             /[^a-zA-Z ]/g,
             ''
-          )}?id=${row.original.id}&token=${authKey}`}
+          )}?id=${row.original.id}&token=${auth.authKey}`}
           className="text-blue-800 font-medium me-2 text-left"
           target="_blank"
           rel="noreferrer"
@@ -259,7 +257,7 @@ const ViewDocuments = () => {
           })
         ) : null
     },
-  ], [authKey, selectedFiles, fileExtn, navigate]);
+  ], [auth, selectedFiles, fileExtn, navigate]);
 
   const toggleFileSelection = (file) => {
     setSelectedFiles((prev) =>
@@ -277,7 +275,7 @@ const ViewDocuments = () => {
         const url = `https://V1servicedeskapi.wello.solutions/api/DbFileView/View/${file.file_name.replace(
           /[^a-zA-Z ]/g,
           ''
-        )}?id=${file.id}&token=${authKey}`;
+        )}?id=${file.id}&token=${auth.authKey}`;
 
         // Fetch the file content
         const response = await fetch(url, { method: 'GET' });
@@ -326,7 +324,7 @@ const ViewDocuments = () => {
         selectedFiles.map(async (file) => {
           const response = await fetch(
             `https://V1servicedeskapi.wello.solutions/api/DbFileView/View/${file.file_name.replace(
-              /[^a-zA-Z ]/g,)}?id=${file.id}&token=${authKey}`
+              /[^a-zA-Z ]/g,)}?id=${file.id}&token=${auth.authKey}`
           );
 
           if (!response.ok) {

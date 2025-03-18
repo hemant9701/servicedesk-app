@@ -4,6 +4,7 @@ import { fetchData } from '../services/apiService';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { File, Eye, Phone, ArrowLeft } from "lucide-react";
+import { useAuth } from '../AuthContext';
 
 const SingleWordOrder = () => {
   const navigate = useNavigate();
@@ -15,6 +16,7 @@ const SingleWordOrder = () => {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('details'); // State to manage active tab
   const [fileThumbnails, setFileThumbnails] = useState({});
+  const { auth } = useAuth();
 
   const statusColors = useMemo(() => ({
     "In Progress": "bg-yellow-500 text-white",
@@ -43,7 +45,7 @@ const SingleWordOrder = () => {
         }
 
         const endpoint = `https://v1servicedeskapi.wello.solutions/api/JobsView(${workOrderId})`;
-        const data = await fetchData(endpoint, 'GET');
+        const data = await fetchData(endpoint, 'GET', auth.authKey);
         setWorkOrder(data);
         setLoading(false);
       } catch (err) {
@@ -56,7 +58,7 @@ const SingleWordOrder = () => {
     const getworkOrderDoc = async () => {
       try {
         const endpoint_1 = `https://v1servicedeskapi.wello.solutions/api/DbFileView?$filter=db_table_name+eq+%27jobs%27+and+id_in_table+eq+${workOrderId}`;
-        const data_1 = await fetchData(endpoint_1, 'GET');
+        const data_1 = await fetchData(endpoint_1, 'GET', auth.authKey);
         setDoc(data_1.value);
       } catch (err) {
         console.error("Error fetching documents:", err);
@@ -67,7 +69,7 @@ const SingleWordOrder = () => {
     const getworkOrderSub = async () => {
       try {
         const endpoint_2 = `https://v1servicedeskapi.wello.solutions/api/JobsView?$filter=root_parent_id+eq+${workOrderId}+and+has_child+eq+false&$orderby=id2%20desc`;
-        const data_2 = await fetchData(endpoint_2, 'GET');
+        const data_2 = await fetchData(endpoint_2, 'GET', auth.authKey);
         setSub(data_2.value);
       } catch (err) {
         console.error("Error fetching documents:", err);
@@ -78,15 +80,14 @@ const SingleWordOrder = () => {
     getworkOrderDetails();
     getworkOrderDoc();
     getworkOrderSub();
-  }, [workOrderId]);
+  }, [workOrderId, auth]);
 
   useEffect(() => {
     const GetFileThumbnails = async () => {
       try {
         if (doc.length === 0) return; // Ensure there is data before fetching
 
-        const auth = JSON.parse(sessionStorage.getItem("auth"));
-        const authKey = auth?.authKey;
+        const authKey = auth.authKey;
         if (!authKey) return;
 
         // Create a copy of the thumbnails object
@@ -122,7 +123,7 @@ const SingleWordOrder = () => {
     };
 
     GetFileThumbnails();
-  }, [doc]); // Run when `doc` changes
+  }, [doc, auth]); // Run when `doc` changes
   
   // useEffect(() => {
   //   const GetFileThumbnail = async () => {

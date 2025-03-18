@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchData } from '../services/apiService.js';
+import { useAuth } from '../AuthContext';
 
 const Home = () => {
   const [contactCount, setContactCount] = useState(null); 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { auth } = useAuth();
 
   useEffect(() => {
     const fetchContactCount = async () => {
       try {
-        const response = await fetchData('https://v1servicedeskapi.wello.solutions/api/TaskView/CountOpen', 'GET');
+        const response = await fetchData('https://v1servicedeskapi.wello.solutions/api/TaskView/CountOpen', 'GET', auth.authKey);
         setContactCount(response); // Sets the count from the API response
         setLoading(false);
       } catch (err) {
@@ -20,7 +22,7 @@ const Home = () => {
     };
 
     fetchContactCount();
-  }, []);
+  }, [auth]);
 
   if (loading) {
     return <div className="flex items-center justify-center h-screen bg-gray-100">
