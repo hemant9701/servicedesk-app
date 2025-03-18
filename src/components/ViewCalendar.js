@@ -52,7 +52,11 @@ const ViewCalendars = () => {
       {
         Header: 'Hour',
         accessor: 'date_from',
-        Cell: ({ value }) => new Date(value).toLocaleString('en-US', { hour: 'numeric', minute: 'numeric', hour12: false })
+        // Cell: ({ value }) => {
+        //   const date = new Date(value);
+        //   return `${date.getUTCHours().toString().padStart(2, '0')}:${date.getUTCMinutes().toString().padStart(2, '0')}`;
+        // }
+        Cell: ({ value }) => new Date(value).toLocaleString('nl-BE', { hour: 'numeric', minute: 'numeric', hour12: false })
       },
       {
         Header: 'Ref',
@@ -212,7 +216,7 @@ const ViewCalendars = () => {
         <div className="bg-white p-6 rounded-lg shadow-lg w-full lg:w-2/3">
           <h2 className="text-xl font-semibold text-gray-700 mb-4">Select a Date</h2>
           <Calendar 
-            onChange={onDateChange} 
+            onChange={onDateChange}
             value={date}
             tileContent={({ date }) => 
               datesWithData.includes(date.toDateString()) 

@@ -5,6 +5,7 @@ import Calendar from 'react-calendar'
 import 'react-calendar/dist/Calendar.css'
 import { useNavigate } from 'react-router-dom';
 import { XCircle, File, FileText, ArrowLeft, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
+import { ToastContainer, toast } from 'react-toastify';
 
 const CreateTicket = () => {
   const navigate = useNavigate();
@@ -96,7 +97,7 @@ const CreateTicket = () => {
 
     const validFiles = newFiles.filter((file) => {
       if (file.size > maxFileSize) {
-        alert(`${file.name} is larger than 5MB and will not be added.`);
+        toast.warn(`${file.name} is larger than 5MB and will not be added.`);
         return false;
       }
       return true;
@@ -315,7 +316,7 @@ const CreateTicket = () => {
       const response = await fetchData('https://V1servicedeskapi.wello.solutions/api/Task', 'POST', payloadData);
 
       setLoading(false);
-      alert('Ticket created successfully!');
+      toast.success('Ticket created successfully!');
 
       if (response) {
         // Post an image using the response id from the ticket creation
@@ -353,7 +354,7 @@ const CreateTicket = () => {
 
       //console.log(imageResponse);
     } catch (err) {
-      console.error("Error uploading image:", err);
+      toast.error("Failed to upload image.");
       //alert("Failed to upload image.");
     }
   };
@@ -362,6 +363,18 @@ const CreateTicket = () => {
 
   return (
     <div className="p-1 md:p-8 bg-gray-50 min-h-screen">
+      <ToastContainer 
+        position="bottom-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored" 
+      />
       <div className='flex'>
         {/* Back Button */}
         <button

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { Link } from 'react-router-dom';
+import { ToastContainer, toast } from 'react-toastify';
 
 const Login = () => {
   const [email, setEmail] = useState('')
@@ -10,7 +11,6 @@ const Login = () => {
   const [rememberMe, setRememberMe] = useState(false)
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [error, setError] = useState('')
 
   useEffect(() => {
     if (window.welloServiceDesk && window.welloServiceDesk.domain) {
@@ -30,7 +30,6 @@ const Login = () => {
     }
 
     e.preventDefault();
-    setError(""); // Clear previous errors
 
     try {
       const userData = await login(domain, email, password);
@@ -41,16 +40,29 @@ const Login = () => {
       }
       //navigate("/"); // Redirect after successful login
     } catch (err) {
-      setError(err.message || "Login failed!");
+      toast.error(err.message || "Login failed!");
+      setEmail('');
+      setPassword('');
     }
   }
 
   return (
       <div className="min-h-screen bg-gray-100 flex flex-col justify-center px-4 sm:px-6 lg:px-8">
+        <ToastContainer 
+                position="bottom-center"
+                autoClose={5000}
+                hideProgressBar={false}
+                newestOnTop={false}
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme="colored" 
+              />
         <div className="w-full max-w-md mx-auto">
           <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
             <h2 className="text-center text-3xl font-extrabold text-gray-900 mb-8">Sign in to your account</h2>
-            {error}
             <form className="space-y-6" onSubmit={handleSubmit}>
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700">

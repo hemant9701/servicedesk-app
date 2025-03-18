@@ -386,40 +386,7 @@ const SingleInstallation = () => {
                     }
                   </div>
                 ))
-              ) : null}
-
-              {!fileThumbnails && (!doc || doc.length === 0) && (
-                <p className="text-gray-600 p-4 text-center">No document or image available.</p>
-              )}
-              {/* {file && isImage(file) ? (
-                <img src={file} alt="Thumbnail" className="w-full h-auto" />
-            ) : doc.length > 0 ? (
-              doc.map(({ id, name, date_add, file }) => {
-                const fileExtension = name?.split('.').pop().toLowerCase();
-                const fileIcon = fileIcons[fileExtension] || <File className="w-32 h-32 text-gray-500" />;
-
-                return (
-                  <div key={id} className="p-2 items-center space-x-3">
-                    <div className=''>{fileIcon}</div>
-                    <div>
-                      <h3 className="font-bold">{name}</h3>
-                      <p className="text-gray-500">{new Date(date_add).toLocaleString()}</p>
-                      <a
-                        href={file}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center text-blue-600 hover:underline"
-                      >
-                        <Eye className="w-5 h-5 mr-2" />
-                        View Document
-                      </a>
-                    </div>
-                  </div>
-                );
-              })
-            )  : (
-              <p className="text-gray-500 text-center p-4">No files available.</p>
-            )} */}
+              ) : <p className="text-gray-600 p-4 text-center">No document available.</p>}
             </div>
           </div>
         </div>

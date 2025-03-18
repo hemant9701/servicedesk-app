@@ -173,7 +173,13 @@ const SingleTicket = () => {
             <h4 className="text-lg font-semibold pb-2">Created By</h4>
             <ul className="list-none list-inside text-gray-700">
               <li>{ticket?.contact_fullname}</li>
-              <li>{new Date(ticket?.date_update).toLocaleString('nl-BE')}</li>
+              <li>{(new Date(ticket?.date_update).getFullYear() !== 1980) ? new Date(ticket?.date_update).toLocaleString('nl-BE', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+              }) : ''}</li>
             </ul>
           </div>
 
@@ -218,7 +224,13 @@ const SingleTicket = () => {
                 )}
                 <h6 className="font-bold">{item.name}</h6>
                 
-                <p className="text-gray-500">{new Date(item.date_add).toLocaleString()}</p>
+                <p className="text-gray-500">{(new Date(ticket?.date_update).getFullYear() !== 1980) ? new Date(ticket?.date_update).toLocaleString('nl-BE', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+              }) : ''}</p>
 
                 {/* Show "View Document" only if it's an image */}
                 {item.mime_type?.startsWith("image/") && (
