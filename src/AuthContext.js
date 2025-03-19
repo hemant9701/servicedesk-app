@@ -22,6 +22,7 @@ export const AuthProvider = ({ children }) => {
 
       const authString = `${email.trim()}:${password.trim()}@${domain.trim()}`;
       const authKey = btoa(authString);
+      const authEmail = email.trim();
 
       const url = `https://V1servicedeskapi.wello.solutions/api/Contact?$filter=e_login+eq+'${encodeURIComponent(email)}'`;
 
@@ -34,7 +35,7 @@ export const AuthProvider = ({ children }) => {
 
       if (response.data) {
         const userName = response.data.value[0].firstname+' '+response.data.value[0].lastname;
-        const authData = { authKey, userName };
+        const authData = { authKey, userName, authEmail };
         setAuth(authData);
         sessionStorage.setItem("auth", JSON.stringify(authData));
       }

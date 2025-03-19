@@ -3,11 +3,13 @@ import { useTable } from 'react-table';
 import { fetchData } from '../services/apiService.js';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
+import { useAuth } from '../AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from "lucide-react";
 
 const ViewCalendars = () => {
   const navigate = useNavigate(); 
+  const { auth } = useAuth();
   const [contents, setContents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -28,13 +30,13 @@ const ViewCalendars = () => {
   useEffect(() => {
     const fetchJobs = async () => {
       try {
-        const response = await fetchData('https://v1servicedeskapi.wello.solutions/api/JobPlanningView', 'GET');
+        const response = await fetchData('https://v1servicedeskapi.wello.solutions/api/JobPlanningView', 'GET', auth.authKey);
         setContents(response.value);
 
-        const restype = await fetchData('https://v1servicedeskapi.wello.solutions/api/EquipmentFamily', 'GET');
+        const restype = await fetchData('https://v1servicedeskapi.wello.solutions/api/EquipmentFamily', 'GET', auth.authKey);
         setEquipmentTypes(restype.value);
 
-        const resname = await fetchData('https://v1servicedeskapi.wello.solutions/api/ProjectView?$filter=root_parent_id+ne+00000000-0000-0000-0000-000000000000', 'GET');
+        const resname = await fetchData('https://v1servicedeskapi.wello.solutions/api/ProjectView?$filter=root_parent_id+ne+00000000-0000-0000-0000-000000000000', 'GET', auth.authKey);
         setEquipmentNames(resname.value);
 
         setLoading(false);
@@ -45,7 +47,7 @@ const ViewCalendars = () => {
     };
 
     fetchJobs();
-  }, []);
+  }, [auth]);
 
   const columns = useMemo(
     () => [

@@ -190,7 +190,8 @@ const ViewDocuments = () => {
     { Header: 'Object', accessor: 'object_type' },
     {
       Header: 'Object Name', accessor: 'object_name',
-      Cell: ({ row }) => (
+      Cell: ({ row }) => 
+        row.original.object_name ? (
         <button
           onClick={() => {
             let path;
@@ -216,7 +217,7 @@ const ViewDocuments = () => {
         >
           {row.original.object_name}
         </button>
-      ),
+      ) : null
     },
     {
       Header: 'File Type',
@@ -230,7 +231,8 @@ const ViewDocuments = () => {
     },
     {
       Header: 'File Name', accessor: 'file_name',
-      Cell: ({ row }) => (
+      Cell: ({ row }) => 
+        row.original.file_name ? (
         <a
           href={`https://V1servicedeskapi.wello.solutions/api/DbFileView/View/${row.original.file_name.replace(
             /[^a-zA-Z ]/g,
@@ -242,7 +244,7 @@ const ViewDocuments = () => {
         >
           {row.original.file_name}
         </a>
-      ),
+      ) : null
     },
     {
       Header: 'Upload When', accessor: 'date_add',

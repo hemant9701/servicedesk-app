@@ -2,10 +2,12 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { useTable, useSortBy, usePagination } from 'react-table';
 import { fetchData } from '../services/apiService.js';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../AuthContext';
 import { ArrowUp, ArrowDown, ArrowLeft, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 
 const ViewTicketList = () => {
   const navigate = useNavigate(); 
+  const { auth } = useAuth();
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -31,7 +33,7 @@ const ViewTicketList = () => {
   useEffect(() => {
     const fetchTickets = async () => {
       try {
-        const response = await fetchData('https://v1servicedeskapi.wello.solutions/api/TaskView/', 'GET');
+        const response = await fetchData('https://v1servicedeskapi.wello.solutions/api/TaskView/', 'GET', auth.authKey);
         setTickets(response.value); // Adjusted for your API's response structure
         setLoading(false);
       } catch (err) {
@@ -41,7 +43,7 @@ const ViewTicketList = () => {
     };
 
     fetchTickets();
-  }, []);
+  }, [auth]);
 
   const columns = useMemo(
     () => [
@@ -76,7 +78,7 @@ const ViewTicketList = () => {
       },
       { Header: 'Type', accessor: 'task_type_name',
         Cell: ({ row }) => (
-          <span className={`text-xs font-medium me-2 px-2.5 pb-1 rounded-sm block text-center ${taskType[row.original.task_type_name] || "bg-gray-300"}`}>
+          <span className={`text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm block text-center ${taskType[row.original.task_type_name] || "bg-gray-300"}`}>
                 {row.original.task_type_name}
           </span>
         ),

@@ -3,12 +3,14 @@ import { useTable, usePagination } from 'react-table';
 import { fetchData } from '../services/apiService.js';
 import Calendar from 'react-calendar'
 import 'react-calendar/dist/Calendar.css'
+import { useAuth } from '../AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { XCircle, File, FileText, ArrowLeft, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { ToastContainer, toast } from 'react-toastify';
 
 const CreateTicket = () => {
   const navigate = useNavigate();
+  const { auth } = useAuth();
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -122,7 +124,7 @@ const CreateTicket = () => {
   useEffect(() => {
     const fetchInstallations = async () => {
       try {
-        const response = await fetchData('https://v1servicedeskapi.wello.solutions/api/ProjectView', 'GET');
+        const response = await fetchData('https://v1servicedeskapi.wello.solutions/api/ProjectView', 'GET', auth.authKey);
         setContacts(response.value || []); // Adjusted for your API's response structure
         setLoading(false);
       } catch (err) {
@@ -131,36 +133,7 @@ const CreateTicket = () => {
       }
     };
     fetchInstallations();
-  }, []);
-
-  const taskType = async () => {
-    try {
-      const data = await fetchData('https://V1servicedeskapi.wello.solutions/api/TaskType?$orderby=is_default,sequence', 'GET');
-      setTicketTypes(data.value);
-    } catch (err) {
-      setError(err);
-    }
-  }
-
-  const taskSeverity = async () => {
-    try {
-      const data = await fetchData('https://V1servicedeskapi.wello.solutions/api/TaskPriority?$orderby=is_default,sequence', 'GET');
-      setSeverities(data.value);
-    } catch (err) {
-      setError(err);
-    }
-  }
-
-
-  const fetchUserID = async () => {
-    try {
-      const auth = JSON.parse(sessionStorage.getItem('auth'));
-      const responseUser = await fetchData(`https://V1servicedeskapi.wello.solutions/api/Contact?$filter=e_login+eq+'${encodeURIComponent(auth.email)}'`, 'GET');
-      setUserID(responseUser.value[0]);
-    } catch (err) {
-      setError(err);
-    }
-  }
+  }, [auth]);
 
 
 
@@ -194,11 +167,40 @@ const CreateTicket = () => {
   useEffect(() => {
     if (selectedRow && selectedRow.name && selectedRow.db_address_street) {
       setTicketName(`${selectedRow.name} - ${selectedRow.db_address_street}`);
+
+      const taskType = async () => {
+        try {
+          const data = await fetchData('https://V1servicedeskapi.wello.solutions/api/TaskType?$orderby=is_default,sequence', 'GET', auth.authKey);
+          setTicketTypes(data.value);
+        } catch (err) {
+          setError(err);
+        }
+      }
+      
+      const taskSeverity = async () => {
+        try {
+          const data = await fetchData('https://V1servicedeskapi.wello.solutions/api/TaskPriority?$orderby=is_default,sequence', 'GET', auth.authKey);
+          setSeverities(data.value);
+        } catch (err) {
+          setError(err);
+        }
+      }
+      
+      const fetchUserID = async () => {
+        try {
+          const responseUser = await fetchData(`https://V1servicedeskapi.wello.solutions/api/Contact?$filter=e_login+eq+'${encodeURIComponent(auth.authEmail)}'`, 'GET', auth.authKey);
+          setUserID(responseUser.value[0]);
+        } catch (err) {
+          setError(err);
+        }
+      }
+
+
       taskType();
       taskSeverity();
       fetchUserID();
     }
-  }, [selectedRow]);
+  }, [auth, selectedRow]);
 
   const handleNameChange = (e) => {
     setTicketName(e.target.value);
@@ -313,7 +315,7 @@ const CreateTicket = () => {
     try {
       console.log('Payload Data:', payloadData);
       // Uncomment when ready to call the API
-      const response = await fetchData('https://V1servicedeskapi.wello.solutions/api/Task', 'POST', payloadData);
+      const response = await fetchData('https://V1servicedeskapi.wello.solutions/api/Task', 'POST', auth.authKey, payloadData);
 
       setLoading(false);
       toast.success('Ticket created successfully!');
@@ -348,7 +350,7 @@ const CreateTicket = () => {
       if(imagePayload){
         await fetchData(
           `https://V1servicedeskapi.wello.solutions/api/dbfile/add?db_table_id=448260E5-7A17-4381-A254-0B1D8FE53947&id_in_table=${ticketId}&description=Uploaded%20by%20Service%20Desk%20-%20${ticketId2}`,
-          'POST', imagePayload
+          'POST', auth.authKey, imagePayload
         );
       }
 

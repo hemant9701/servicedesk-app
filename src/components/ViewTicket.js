@@ -3,10 +3,12 @@ import { useParams } from 'react-router-dom';
 import { fetchData } from '../services/apiService';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../AuthContext';
 import { File, Eye, ArrowLeft } from "lucide-react";
 
 const SingleTicket = () => {
   const navigate = useNavigate();
+  const { auth } = useAuth();
   const { ticketId } = useParams();
   const [ticket, setTicket] = useState(null);
   const [doc, setDoc] = useState([]);
@@ -49,7 +51,7 @@ const SingleTicket = () => {
         }
 
         const endpoint = `https://v1servicedeskapi.wello.solutions/api/TaskView(${ticketId})`;
-        const data = await fetchData(endpoint, 'GET');
+        const data = await fetchData(endpoint, 'GET', auth.authKey);
         setTicket(data);
         setLoading(false);
       } catch (err) {
@@ -62,7 +64,7 @@ const SingleTicket = () => {
     const getTicketDoc = async () => {
       try {
         const endpoint_1 = `https://V1servicedeskapi.wello.solutions/api/DbFileView?$filter=db_table_name+eq+%27task%27+and+id_in_table+eq+${ticketId}`;
-        const data_1 = await fetchData(endpoint_1, 'GET');
+        const data_1 = await fetchData(endpoint_1, 'GET', auth.authKey);
         setDoc(data_1.value);
       } catch (err) {
         console.error("Error fetching documents:", err);
@@ -72,14 +74,13 @@ const SingleTicket = () => {
 
     getTicketDetails();
     getTicketDoc();
-  }, [ticketId]);
+  }, [auth, ticketId]);
 
   useEffect(() => {
     const GetFileThumbnails = async () => {
       try {
         if (doc.length === 0) return; // Ensure there is data before fetching
 
-        const auth = JSON.parse(sessionStorage.getItem("auth"));
         const authKey = auth?.authKey;
         if (!authKey) return;
 
@@ -116,7 +117,7 @@ const SingleTicket = () => {
     };
 
     GetFileThumbnails();
-  }, [doc]); // Run when `doc` changes
+  }, [auth, doc]); // Run when `doc` changes
 
 
   if (loading) {

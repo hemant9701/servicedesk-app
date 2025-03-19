@@ -1,3 +1,7 @@
+[type=button], [type=reset], [type=submit], button{
+  border: none;
+}
+
 /* Tab styling */
 .tabs {
   display: flex;

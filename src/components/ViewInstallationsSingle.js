@@ -4,10 +4,12 @@ import { fetchData } from '../services/apiService';
 import axios from 'axios';
 import JSZip from 'jszip';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../AuthContext';
 import { File, Eye, ArrowLeft } from "lucide-react";
 
 const SingleInstallation = () => {
   const navigate = useNavigate();
+  const { auth } = useAuth();
   const { InstallationId } = useParams();
   const [Installation, setInstallation] = useState(null);
   const [doc, setDoc] = useState([]);
@@ -39,7 +41,7 @@ const SingleInstallation = () => {
         }
 
         const endpoint = `https://v1servicedeskapi.wello.solutions/api/ProjectView(${InstallationId})`;
-        const data = await fetchData(endpoint, 'GET');
+        const data = await fetchData(endpoint, 'GET', auth.authKey);
         setInstallation(data);
         setLoading(false);
       } catch (err) {
@@ -52,7 +54,7 @@ const SingleInstallation = () => {
     const getInstallationDoc = async () => {
       try {
         const endpoint_1 = `https://v1servicedeskapi.wello.solutions/api/DbFileView?$filter=db_table_name+eq+%27project%27+and+id_in_table+eq+${InstallationId}`;
-        const data_1 = await fetchData(endpoint_1, 'GET');
+        const data_1 = await fetchData(endpoint_1, 'GET', auth.authKey);
         setDoc(data_1.value);
       } catch (err) {
         console.error("Error fetching documents:", err);
@@ -64,7 +66,7 @@ const SingleInstallation = () => {
       try {
         const endpoint_2 = `https://v1servicedeskapi.wello.solutions/api/JobsView/SearchAllJobsLinkToProject`;
         const payload = { "project_id": `${InstallationId}`, "year": null, "query_object": { "startRow": 0, "endRow": 500, "rowGroupCols": [], "valueCols": [], "pivotCols": [], "pivotMode": false, "groupKeys": [], "filterModel": {}, "sortModel": [] } }
-        const data_2 = await fetchData(endpoint_2, 'POST', payload);
+        const data_2 = await fetchData(endpoint_2, 'POST', auth.authKey, payload);
         setWordOrder(data_2);
         //console.log(data_2);
       } catch (err) {
@@ -76,14 +78,13 @@ const SingleInstallation = () => {
     getInstallationDetails();
     getInstallationDoc();
     getInstallationSub();
-  }, [InstallationId]);
+  }, [auth, InstallationId]);
 
   useEffect(() => {
     const GetFileThumbnails = async () => {
       try {
         if (doc.length === 0) return; // Ensure there is data before fetching
 
-        const auth = JSON.parse(sessionStorage.getItem("auth"));
         const authKey = auth?.authKey;
         if (!authKey) return;
 
@@ -121,7 +122,7 @@ const SingleInstallation = () => {
     };
 
     GetFileThumbnails();
-  }, [doc]); // Run when `doc` changes
+  }, [auth, doc]); // Run when `doc` changes
 
   const handleDownloadAll = async () => {
     const zip = new JSZip(); // Create a new ZIP instance
@@ -130,14 +131,8 @@ const SingleInstallation = () => {
     const docId = doc[0]?.id; // Use the first document ID (or adjust as needed)
     if (!docId) return;
 
-    const auth = JSON.parse(sessionStorage.getItem('auth'));
-
-    if (!auth || !auth.email || !auth.password || !auth.domain) {
-      throw new Error('Invalid or missing authentication data');
-    }
-
-    const authString = `${auth.email.trim()}:${auth.password.trim()}@${auth.domain.trim()}`;
-    const authKey = btoa(authString);
+    const authKey = auth?.authKey;
+    if (!authKey) return;
 
     try {
       const url = {

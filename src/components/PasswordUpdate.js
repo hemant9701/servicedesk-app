@@ -30,10 +30,10 @@ const PasswordUpdate = () => {
 
     try {
       // Build the endpoint dynamically
-      const endpoint = `https://v1servicedeskapi.wello.solutions/api/Contact/UpdateAccount?e_login=${auth.email}&new_e_password=${newPassword}`;
+      const endpoint = `https://v1servicedeskapi.wello.solutions/api/Contact/UpdateAccount?e_login=${auth.authEmail}&new_e_password=${newPassword}`;
 
       // Call fetchData with the endpoint, using 'PUT' as the method
-      await fetchData(endpoint, 'PUT', { currentPassword, newPassword });
+      await fetchData(endpoint, 'PUT', auth.authKey, { currentPassword, newPassword });
 
       // On success, display a success message and clear the form
       setSuccessMessage('Password updated successfully!');

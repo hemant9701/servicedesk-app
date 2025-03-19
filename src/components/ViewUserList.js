@@ -2,10 +2,12 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { useTable, usePagination } from 'react-table';
 import { fetchData } from '../services/apiService.js';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../AuthContext';
 import { ArrowLeft, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 
 const ViewUserList = () => {
   const navigate = useNavigate();
+  const { auth } = useAuth();
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -13,7 +15,7 @@ const ViewUserList = () => {
   useEffect(() => {
     const fetchContact = async () => {
       try {
-        const response = await fetchData('https://v1servicedeskapi.wello.solutions/api/Contact?$filter=e_login+ne+%27%27', 'GET');
+        const response = await fetchData('https://v1servicedeskapi.wello.solutions/api/Contact?$filter=e_login+ne+%27%27', 'GET', auth.authKey);
         setContacts(response.value); // Adjusted for your API's response structure
         setLoading(false);
       } catch (err) {
@@ -23,7 +25,7 @@ const ViewUserList = () => {
     };
 
     fetchContact();
-  }, []);
+  }, [auth]);
 
   const columns = useMemo(
     () => [

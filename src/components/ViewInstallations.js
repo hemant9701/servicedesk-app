@@ -2,10 +2,12 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { useTable, useSortBy, usePagination } from 'react-table';
 import { fetchData } from '../services/apiService.js';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../AuthContext';
 import { ArrowUp, ArrowDown, ArrowLeft, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 
 const ViewInstallations = () => {
   const navigate = useNavigate();
+  const { auth } = useAuth();
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -32,7 +34,7 @@ const ViewInstallations = () => {
   useEffect(() => {
     const fetchInstallations = async () => {
       try {
-        const response = await fetchData('https://v1servicedeskapi.wello.solutions/api/ProjectView', 'GET');
+        const response = await fetchData('https://v1servicedeskapi.wello.solutions/api/ProjectView', 'GET', auth.authKey);
         setContacts(response.value); // Adjusted for your API's response structure
         setLoading(false);
       } catch (err) {
@@ -42,7 +44,7 @@ const ViewInstallations = () => {
     };
 
     fetchInstallations();
-  }, []);
+  }, [auth]);
 
   const columns = useMemo(
     () => [

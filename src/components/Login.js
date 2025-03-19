@@ -16,8 +16,6 @@ const Login = () => {
     if (window.welloServiceDesk && window.welloServiceDesk.domain) {
         //console.log("Domain:", window.welloServiceDesk.domain);
         setDomain(window.welloServiceDesk.domain);
-    } else {
-      setDomain('testnative2');
     }
   }, []);
 
