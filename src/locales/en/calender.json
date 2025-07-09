@@ -1,0 +1,14 @@
+{
+  "calender_page_title": "Ticket Lists",
+  "calender_toggle_open_tickets_text": "Pending Tickets",
+  "calender_toggle_completed_tickets_text": "Closed Tickets",
+  "calender_table_heading_reference_text": "Reference",
+  "calender_table_heading_created_date_text": "Created On",
+  "calender_table_heading_status_text": "Status",
+  "calender_table_heading_assigned_name_text": "Assigned To",
+  "calender_table_heading_name_text": "Name",
+  "calender_table_heading_type_text": "Type",
+  "calender_hint_text": "Click on the view the ticket deatil.",
+  "calender_not_assigned_label": "Not Assigned",
+  "calender_status_label_open": "Open"
+}

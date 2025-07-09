@@ -32,10 +32,12 @@ export const AuthProvider = ({ children }) => {
           Accept: "application/json",
         },
       });
-
+      
       if (response.data) {
         const userName = response.data.value[0].firstname+' '+response.data.value[0].lastname;
-        const authData = { authKey, userName, authEmail };
+        const userId = response.data.value[0].id;
+        const userLang = response.data.value[0].db_language_iso_code;
+        const authData = { authKey, userId, userName, authEmail, userLang };
         setAuth(authData);
         sessionStorage.setItem("auth", JSON.stringify(authData));
       }

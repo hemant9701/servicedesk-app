@@ -5,7 +5,7 @@ import { ArrowLeft } from 'lucide-react';
 const About = () => {
     const navigate = useNavigate();
   return (
-    <div className="max-w-7xl mx-auto px-6 py-12">
+    <div className="w-full mx-auto px-6 py-12">
         <div className='flex'>
         <button
           onClick={() => navigate('/')}

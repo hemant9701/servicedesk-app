@@ -48,7 +48,7 @@ const PasswordUpdate = () => {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-md">
+    <div className="max-w-md w-full mx-auto mt-10 p-6 bg-white rounded-lg shadow-md">
       <h2 className="text-2xl font-semibold text-gray-800 mb-6 text-center">Update Password</h2>
       
       <form onSubmit={handleSubmit} className="space-y-4">

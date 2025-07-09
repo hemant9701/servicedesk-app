@@ -8,17 +8,19 @@ const ForgotPassword = () => {
   const [domain, setDomain] = useState(''); // New state for domain
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [logo, setLogo] = useState('https://fsm.wello.net/wp-content/uploads/2024/01/WELLO_LOGO_Purple.png');
 
   useEffect(() => {
-    if (window.welloServiceDesk && window.welloServiceDesk.domain) {
-        //console.log("Domain:", window.welloServiceDesk.domain);
-        setDomain(window.welloServiceDesk.domain);
+    if (window.welloServiceDesk) {
+      const { logo_primary, domain } = window.welloServiceDesk;
+      setLogo(logo_primary);
+      setDomain(domain);
     }
   }, []);
 
   const handleForgotPassword = async (e) => {
     e.preventDefault();
-    
+
     try {
       // API request to send password reset email
       await axios.get(
@@ -41,8 +43,11 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen bg-gray-100">
+    <div className="flex w-full flex-col items-center justify-center h-screen bg-gray-100">
       <div className="w-full max-w-md bg-white p-8 rounded-lg shadow-lg">
+        <div className="flex justify-center mb-2">
+          <img src={logo} alt="Logo" className="w-40" />
+        </div>
         <h2 className="text-2xl font-semibold mb-6 text-gray-700">Forgot Password</h2>
         {message && <p className="text-green-600 mb-4">{message}</p>}
         {error && <p className="text-red-600 mb-4">{error}</p>}

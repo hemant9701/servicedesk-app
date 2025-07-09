@@ -4,7 +4,7 @@ import { AuthProvider } from './AuthContext';
 import Login from './components/Login';
 import ForgetPassword from './components/ForgetPassword';
 import ProtectedRoute from './ProtectedRoute';
-import Navigation from './components/Navigation';
+//import Navigation from './components/Navigation';
 import ViewHome from './components/ViewHome';
 import About from './components/About';
 import CreateTicket from './components/CreateTicket';
@@ -13,13 +13,16 @@ import ViewTicket from './components/ViewTicket';
 import ViewWorkOrder from './components/ViewWorkOrder';
 import ViewWorkOrderList from './components/ViewWorkOrderList';
 import ViewUserList from './components/ViewUserList';
-import ViewInstallations from './components/ViewInstallations';
-import ViewInstallationsSingle from './components/ViewInstallationsSingle';
+import ViewEquipmentsList from './components/ViewEquipmentsList';
+import ViewEquipment from './components/ViewEquipment';
 import ViewDocuments from './components/ViewDocuments';
 import ViewCalendars from './components/ViewCalendar';
 import PasswordUpdate from './components/PasswordUpdate';
 import NotFound from './components/NotFound';
+
+import DashboardSidebar from './components/DashboardSidebar';
 import './App.css';
+import './i18n';
 
 function AppContent() {
   const location = useLocation();
@@ -31,8 +34,8 @@ function AppContent() {
 
   
   return (
-    <>
-      {shouldRenderNavigation() && <Navigation />}
+    <div className="flex items-start">
+      {shouldRenderNavigation() && <DashboardSidebar />}
       
       <Routes>
         <Route path="/login" element={<Login />} />
@@ -94,18 +97,18 @@ function AppContent() {
           }
         />
         <Route
-          path="/installations"
+          path="/equipments"
           element={
             <ProtectedRoute>
-              <ViewInstallations />
+              <ViewEquipmentsList />
             </ProtectedRoute>
           }
         />
         <Route
-          path="/installation/:InstallationId"
+          path="/equipment/:InstallationId"
           element={
             <ProtectedRoute>
-              <ViewInstallationsSingle />
+              <ViewEquipment />
             </ProtectedRoute>
           }
         />
@@ -143,7 +146,7 @@ function AppContent() {
         />
         <Route path="/*" element={<NotFound />} />
       </Routes>
-    </>
+    </div>
   );
 }
 

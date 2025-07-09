@@ -1,0 +1,11 @@
+{
+  "work_order_list_page_title": "Work Order List",
+  "work_order_list_toggle_pending_text": "Open work orders",
+  "work_order_list_toggle_completed_text": "Closed work orders",
+  "work_order_list_table_heading_reference_text": "Reference",
+  "work_order_list_table_heading_planned_date_text": "Planned date",
+  "work_order_list_table_heading_status_text": "Status",
+  "work_order_list_table_heading_address_text": "Address",
+  "work_order_list_table_heading_name_text": "Name",
+  "work_order_list_table_heading_type_text": "Type"
+}
