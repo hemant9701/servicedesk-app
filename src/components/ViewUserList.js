@@ -17,7 +17,7 @@ const ViewUserList = () => {
   useEffect(() => {
     const fetchContact = async () => {
       try {
-        const response = await fetchData('https://v1servicedeskapi.wello.solutions/api/Contact?$filter=e_login+ne+%27%27', 'GET', auth.authKey);
+        const response = await fetchData('api/Contact?$filter=e_login+ne+%27%27', 'GET', auth.authKey);
         setContacts(response.value); // Adjusted for your API's response structure
         setLoading(false);
       } catch (err) {
@@ -75,7 +75,7 @@ const ViewUserList = () => {
   );
 
   if (loading) {
-    return <div className="flex w-full items-center justify-center h-screen bg-gray-100">
+    return <div className="flex w-full items-center justify-center h-screen">
       <div className="relative">
         <div className="w-20 h-20 border-purple-200 border-2 rounded-full"></div>
         <div className="w-20 h-20 border-purple-700 border-t-2 animate-spin rounded-full absolute left-0 top-0"></div>
@@ -95,7 +95,7 @@ const ViewUserList = () => {
         onClick={() => navigate('/')} // Navigate back one step in history
         className="flex items-center mb-4 font-semibold text-gray-800"
       >
-        <ArrowLeft className="mr-2 w-5 h-5" /> {t("Go Back")}
+        <ArrowLeft className="mr-2 w-5 h-5" /> {t("user_list_page_go_back")}
       </button>
 
 
@@ -126,7 +126,7 @@ const ViewUserList = () => {
                 return (
                   <tr {...row.getRowProps()} className="hover:bg-gray-50">
                     {row.cells.map(cell => (
-                      <td {...cell.getCellProps()} className="px-4 py-2 text-sm text-gray-800">
+                      <td {...cell.getCellProps()} className="px-2 py-4 text-sm text-gray-800">
                         {cell.render('Cell')}
                       </td>
                     ))}
@@ -141,7 +141,7 @@ const ViewUserList = () => {
         {contacts.length > 10 && (
           <div className="flex items-center justify-between mt-4">
             <span className="text-sm text-gray-700">
-              Page {pageIndex + 1} of {pageOptions.length}
+              {t('user_list_table_pagination_page')} {pageIndex + 1} {t('user_list_table_pagination_of')} {pageOptions.length}
             </span>
             <div>
               <button onClick={() => gotoPage(0)} disabled={!canPreviousPage} className="py-1 px-2 md:py-2 md:px-4 mr-1 bg-indigo-600 text-white rounded-md disabled:bg-gray-300">
@@ -160,7 +160,7 @@ const ViewUserList = () => {
             <select value={pageSize} onChange={e => setPageSize(Number(e.target.value))} className="ml-1 p-1 md:p-2 border border-gray-300 rounded-md max-w-32">
               {[10, 20, 30, 50].map(size => (
                 <option key={size} value={size}>
-                  Show {size}
+                  {t('user_list_table_pagination_show')} {size}
                 </option>
               ))}
             </select>

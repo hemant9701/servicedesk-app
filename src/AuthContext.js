@@ -1,5 +1,6 @@
 import axios from "axios";
 import React, { createContext, useState, useContext } from "react";
+//import { fetchData } from './services/apiService';
 
 const AuthContext = createContext();
 
@@ -14,35 +15,38 @@ export const AuthProvider = ({ children }) => {
     }
   });
 
-  const login = async (domain, email, password) => {
+  const login = async (token, email, password) => {
     try {
-      if (!domain || !email || !password) {
+      if (!token || !email || !password) {
         throw new Error("All fields must be filled out.");
       }
 
-      const authString = `${email.trim()}:${password.trim()}@${domain.trim()}`;
-      const authKey = btoa(authString);
       const authEmail = email.trim();
+      const url = `https://testservicedeskapi.odysseemobile.com/api/Authentication/contact-authtoken/`;
 
-      const url = `https://V1servicedeskapi.wello.solutions/api/Contact?$filter=e_login+eq+'${encodeURIComponent(email)}'`;
+      const data = {
+        "useremail": email,
+        "password": password,
+        "access_token": token
+      }
 
-      const response = await axios.get(url, {
-        headers: {
-          Authorization: `Basic ${authKey}`,
-          Accept: "application/json",
-        },
-      });
-      
-      if (response.data) {
-        const userName = response.data.value[0].firstname+' '+response.data.value[0].lastname;
-        const userId = response.data.value[0].id;
-        const userLang = response.data.value[0].db_language_iso_code;
+      const response = await axios.post(url, data);
+      //const response = await fetchData(url, 'POST', data)
+
+      //console.log(response.data);
+
+
+      if (response) {
+        const userName = response.data.firstname + ' ' + response.data.lastname;
+        const userId = response.data.id;
+        const userLang = response.data.db_language_iso_code;
+        const authKey = response.data.auth_token;
         const authData = { authKey, userId, userName, authEmail, userLang };
         setAuth(authData);
         sessionStorage.setItem("auth", JSON.stringify(authData));
       }
 
-      return response.data;
+      return response;
     } catch (error) {
       console.error("Error fetching data:", error);
       throw new Error("Login failed. Please check your credentials.");
@@ -54,8 +58,15 @@ export const AuthProvider = ({ children }) => {
     sessionStorage.removeItem("auth");
   };
 
+  const updateAuthToken = (newToken) => {
+    setAuth(prev => ({
+      ...prev,
+      auth_token: newToken
+    }));
+  };
+
   return (
-    <AuthContext.Provider value={{ auth, login, logout }}>
+    <AuthContext.Provider value={{ auth, login, logout, updateAuthToken }}>
       {children}
     </AuthContext.Provider>
   );

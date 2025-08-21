@@ -1,22 +1,27 @@
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
-import { useTable, useSortBy, useExpanded, usePagination } from 'react-table';
+import { useTable, useSortBy, useExpanded } from 'react-table';
 import { fetchData } from '../services/apiService.js';
 import Calendar from 'react-calendar'
 import 'react-calendar/dist/Calendar.css'
 import { useAuth } from '../AuthContext';
 import { useNavigate } from 'react-router-dom';
 import {
-  XCircle, X, CornerDownRight, CircleCheckBig, ArrowLeft, Filter, ArrowRight, ArrowLeftToLine, FileText, Clock, File, Circle, Wrench,
-  MapPin, Text, BadgeDollarSign, BarChart, Hash, ArrowRightToLine, UploadCloud, ChevronDown, ChevronUp, Check, BadgeInfo
+  XCircle, X, CornerDownRight, CircleCheckBig, ArrowLeft, Filter, FileText, Clock, File, Circle, Wrench, ArrowUp, ArrowDown,
+  MapPin, Text, Bold, BarChart, Hash, Loader, UploadCloud, ChevronDown, ChevronUp, Check, BadgeInfo, TicketX, Thermometer
 } from 'lucide-react';
 import { ToastContainer, toast } from 'react-toastify';
 import { useTranslation } from "react-i18next";
+
+import Select from 'react-select';
+import makeAnimated from 'react-select/animated';
+const animatedComponents = makeAnimated();
 
 const CreateTicket = () => {
   const navigate = useNavigate();
   const { auth } = useAuth();
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [subRowsMap, setSubRowsMap] = useState({});
   const [error, setError] = useState(null);
   const [selectedRow, setSelectedRow] = useState(null);
@@ -35,9 +40,24 @@ const CreateTicket = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [location, setLocation] = useState('');
   const [keyword, setKeyword] = useState('');
-  const [brand, setBrand] = useState('All');
-  const [model, setModel] = useState('All');
-  const [status, setStatus] = useState('All');
+
+  const EmptyGuid = "00000000-0000-0000-0000-000000000000";
+
+  const [filters, setFilters] = useState({
+    location: "",
+    keyword: "",
+    brand: EmptyGuid,
+    model: EmptyGuid,
+    status: EmptyGuid,
+    includeArchived: false
+  });
+
+  const [tempFilters, setTempFilters] = useState(filters);
+
+  const [fetchBrands, setFetchBrands] = useState();
+  const [fetchModels, setFetchModels] = useState();
+  const [fetchStatuses, setFetchStatuses] = useState();
+
   const [includeArchived, setIncludeArchived] = useState(false);
 
   const [ticketName, setTicketName] = useState('');
@@ -53,8 +73,9 @@ const CreateTicket = () => {
   const [selectedTime, setSelectedTime] = useState(null);
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
+  const [responseId, setResponseId] = useState();
   const dropdownRef = useRef(null);
-  const { t } = useTranslation('equipmentList');
+  const { t } = useTranslation('createTicket');
 
   const timeSlots = [
     '08:00', '08:30', '09:00', '09:30',
@@ -76,16 +97,79 @@ const CreateTicket = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    const fetchBrands = async () => {
+      try {
+        const resbrands = await fetchData('api/EquipmentBrand', 'GET', auth.authKey);
+        setFetchBrands(resbrands.value);
+      } catch (err) {
+        setError(err);
+      }
+    };
 
-  const uniqueBrands = [...new Set(contacts.map(contact => contact.equipment_brand_name))];
-  const uniqueModels = [...new Set(contacts.map(contact => contact.equipment_model_name))];
-  const uniqueStatuses = [...new Set(contacts.map(contact => contact.project_status_name))];
+    const fetchModels = async () => {
+      try {
+        const resmodels = await fetchData('api/EquipmentModel', 'GET', auth.authKey);
+        setFetchModels(resmodels.value);
+      } catch (err) {
+        setError(err);
+      }
+    };
+
+    const fetchStatuses = async () => {
+      try {
+        const restatuses = await fetchData('api/ProjectStatus', 'GET', auth.authKey);
+        setFetchStatuses(restatuses.value);
+      } catch (err) {
+        setError(err);
+      }
+    };
+    fetchBrands();
+    fetchStatuses();
+    fetchModels();
+  }, [auth]);
+
+  // Prepare options with default "All Brands"
+  const brandOptions = [
+    ...(Array.isArray(fetchBrands)
+      ? fetchBrands
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((brand) => ({
+          value: brand.id,
+          label: brand.name,
+        }))
+      : []),
+  ];
+
+  // Prepare options with default "All Brands"
+  const modelOptions = [
+    ...(Array.isArray(fetchModels)
+      ? fetchModels
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((model) => ({
+          value: model.id,
+          label: model.name,
+        }))
+      : []),
+  ];
+
+  // Prepare options with default "All Brands"
+  const statusOptions = [
+    ...(Array.isArray(fetchStatuses)
+      ? fetchStatuses
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((status) => ({
+          value: status.id,
+          label: status.name,
+        }))
+      : []),
+  ];
 
   const steps = [
-    { id: 1, label: "Select the Equipment" },
-    { id: 2, label: "Ticket Description" },
-    { id: 3, label: "Schedule Repair" },
-    { id: 4, label: "Send details" },
+    { id: 1, label: t("create_ticket_page_step_1") },
+    { id: 2, label: t("create_ticket_page_step_2") },
+    { id: 3, label: t("create_ticket_page_step_3") },
+    { id: 4, label: t("create_ticket_page_step_4") },
   ];
 
   const statusColors = useMemo(() => ({
@@ -98,6 +182,18 @@ const CreateTicket = () => {
     "Proactive": "bg-indigo-200 text-indigo-800",
     "Cancelled": "bg-red-200 text-red-800",
     "Completed": "bg-pink-200 text-pink-800",
+  }), []);
+
+  const statusDotColors = useMemo(() => ({
+    "In progress": "bg-yellow-800 text-yellow-800",
+    "Planned": "bg-blue-800 text-blue-800",
+    "To be Planned": "bg-purple-800 text-purple-800",
+    "Out of production": "bg-orange-800 text-orange-800",
+    "Active": "bg-green-800 text-green-800",
+    "Ready for Review": "bg-indigo-800 text-indigo-800",
+    "Proactive": "bg-indigo-800 text-indigo-800",
+    "Cancelled": "bg-red-800 text-red-800",
+    "Completed": "bg-pink-800 text-pink-800",
   }), []);
 
   const severityType = useMemo(() => ({
@@ -134,9 +230,10 @@ const CreateTicket = () => {
     setFiles(files.filter((_, i) => i !== index));
   };
 
-  useEffect(() => {
-    const fetchInstallations = async () => {
-      const url = `https://V1servicedeskapi.wello.solutions/api/ProjectView/Search?keyword=&projectReference=&projectReferenceBackOffice=&companyID=00000000-0000-0000-0000-000000000000&equipmentModelID=00000000-0000-0000-0000-000000000000&equipmentBrandID=00000000-0000-0000-0000-000000000000&equipmentFamilyID=00000000-0000-0000-0000-000000000000&projectStatusID=00000000-0000-0000-0000-000000000000&createdFrom=1980-01-01T00:00:00.000&createdTo=1980-01-01T00:00:00.000&includesClosed=false&parentOnly=true&contactId=${auth.userId}&rootParentId=00000000-0000-0000-0000-000000000000&includeLocation=true`;
+  const fetchProjects = useCallback(
+    async ({ parentOnly, groupKeys = [], parentId = null }) => {
+      const url = `api/ProjectView/Search?keyword=&projectReference=&projectReferenceBackOffice=&companyID=00000000-0000-0000-0000-000000000000&equipmentModelID=${filters.model}&equipmentBrandID=${filters.brand}&equipmentFamilyID=00000000-0000-0000-0000-000000000000&projectStatusID=${filters.status}&createdFrom=1980-01-01T00:00:00.000&createdTo=1980-01-01T00:00:00.000&includesClosed=false&parentOnly=${parentOnly}&contactId=${auth.userId}&rootParentId=00000000-0000-0000-0000-000000000000&includeLocation=true`;
+
       const payload = {
         startRow: 0,
         endRow: 500,
@@ -144,55 +241,47 @@ const CreateTicket = () => {
         valueCols: [],
         pivotCols: [],
         pivotMode: false,
-        groupKeys: [],
+        groupKeys,
         filterModel: {},
         sortModel: []
       };
 
       try {
         const response = await fetchData(url, 'POST', auth.authKey, payload);
-        const initialData = response.map(item => ({
+        const mapped = response.map(item => ({
           ...item,
           subRows: item.has_child ? [] : []
         }));
-        setContacts(initialData);
-        setLoading(false);
+
+        if (parentOnly || (!parentOnly && !parentId)) {
+          setContacts(mapped);
+        }
+        if (!parentOnly && parentId) {
+          setSubRowsMap(prev => ({ ...prev, [parentId]: mapped }));
+        }
+
       } catch (err) {
+        console.error(err);
         setError(err);
+      } finally {
         setLoading(false);
       }
-    };
-    fetchInstallations();
-  }, [auth]);
+    },
+    [auth, filters]
+  );
 
-  const handleFetchChildren = useCallback(async (parentId) => {
-    if (subRowsMap[parentId]) return;
+  useEffect(() => {
+    fetchProjects({ parentOnly: true });
+  }, [fetchProjects]);
 
-    const url = `https://V1servicedeskapi.wello.solutions/api/ProjectView/Search?keyword=&projectReference=&projectReferenceBackOffice=&companyID=00000000-0000-0000-0000-000000000000&equipmentModelID=00000000-0000-0000-0000-000000000000&equipmentBrandID=00000000-0000-0000-0000-000000000000&equipmentFamilyID=00000000-0000-0000-0000-000000000000&projectStatusID=00000000-0000-0000-0000-000000000000&createdFrom=1980-01-01T00:00:00.000&createdTo=1980-01-01T00:00:00.000&includesClosed=false&parentOnly=false&contactId=${auth.userId}&rootParentId=00000000-0000-0000-0000-000000000000&includeLocation=true`;
-    const payload = {
-      startRow: 0,
-      endRow: 500,
-      rowGroupCols: [],
-      valueCols: [],
-      pivotCols: [],
-      pivotMode: false,
-      groupKeys: [parentId],
-      filterModel: {},
-      sortModel: []
-    };
+  const handleFetchChildren = useCallback(
+    async (parentId) => {
+      if (subRowsMap[parentId]) return;
+      fetchProjects({ parentOnly: false, groupKeys: [parentId], parentId });
+    },
+    [fetchProjects, subRowsMap]
+  );
 
-    try {
-      const response = await fetchData(url, 'POST', auth.authKey, payload);
-      const children = response.map(item => ({
-        ...item,
-        subRows: item.has_child ? [] : []
-      }));
-
-      setSubRowsMap(prev => ({ ...prev, [parentId]: children }));
-    } catch (err) {
-      console.error(err);
-    }
-  }, [auth, subRowsMap]);
 
   const toggleExpand = useCallback(async (id) => {
     if (!expanded[id]) {
@@ -200,6 +289,80 @@ const CreateTicket = () => {
     }
     setExpanded(prev => ({ ...prev, [id]: !prev[id] }));
   }, [expanded, handleFetchChildren]);
+
+  const flattenData = (contacts, subRowsMap) => {
+    const flat = [];
+    const addRows = rows => {
+      rows.forEach(row => {
+        flat.push(row);
+        if (subRowsMap[row.id] && subRowsMap[row.id].length > 0) {
+          addRows(subRowsMap[row.id]);
+        }
+      });
+    };
+    addRows(contacts);
+    return flat;
+  };
+
+  const clearedFilters = {
+    location: "",
+    keyword: "",
+    brand: EmptyGuid,
+    model: EmptyGuid,
+    status: EmptyGuid,
+    includeArchived: false,
+  };
+
+  // Apply filters when Confirm is clicked
+  const applyFilters = async () => {
+    const { brand, status, model, location, keyword } = tempFilters;
+
+    const isValid =
+      brand !== clearedFilters.brand ||
+      status !== clearedFilters.status ||
+      model !== clearedFilters.model ||
+      location.trim() !== "" ||
+      keyword.trim() !== "";
+
+    if (!isValid) return;
+
+    setIsLoading(true);
+
+    try {
+      flattenData(contacts, subRowsMap); // Ensure it's awaited if async
+      setFilters(tempFilters); // Sync UI state
+
+      await fetchProjects({
+        parentOnly: false,
+        brand,
+        status,
+        model,
+      });
+    } catch (error) {
+      console.error("Failed to apply filters:", error);
+      // Optionally show a toast
+    } finally {
+      setIsModalOpen(false);
+      setIsLoading(false);
+    }
+  };
+
+  // Reset filters and reload default data
+  const handleReset = async () => {
+    setIsLoading(true);
+
+    try {
+      setTempFilters(clearedFilters);
+      setFilters(clearedFilters);
+
+      await fetchProjects({ parentOnly: true }); // Reload default view
+    } catch (error) {
+      console.error("Reset failed:", error);
+    } finally {
+      setIsModalOpen(false);
+      setIsLoading(false);
+    }
+  };
 
 
   // Set the first ticketType when ticketTypes array changes
@@ -236,7 +399,7 @@ const CreateTicket = () => {
   useEffect(() => {
     const taskType = async () => {
       try {
-        const data = await fetchData('https://V1servicedeskapi.wello.solutions/api/TaskType?$orderby=is_default,sequence', 'GET', auth.authKey);
+        const data = await fetchData('api/TaskType?$orderby=is_default,sequence', 'GET', auth.authKey);
         setTicketTypes(data.value);
       } catch (err) {
         setError(err);
@@ -245,7 +408,7 @@ const CreateTicket = () => {
 
     const taskSeverity = async () => {
       try {
-        const data = await fetchData('https://V1servicedeskapi.wello.solutions/api/TaskPriority?$orderby=is_default,sequence', 'GET', auth.authKey);
+        const data = await fetchData('api/TaskPriority?$orderby=is_default,sequence', 'GET', auth.authKey);
         setSeverities(data.value);
       } catch (err) {
         setError(err);
@@ -254,7 +417,7 @@ const CreateTicket = () => {
 
     const fetchUserID = async () => {
       try {
-        const responseUser = await fetchData(`https://V1servicedeskapi.wello.solutions/api/Contact?$filter=e_login+eq+'${encodeURIComponent(auth.authEmail)}'`, 'GET', auth.authKey);
+        const responseUser = await fetchData(`api/Contact?$filter=e_login+eq+'${encodeURIComponent(auth.authEmail)}'`, 'GET', auth.authKey);
         setUserID(responseUser.value[0]);
       } catch (err) {
         setError(err);
@@ -276,7 +439,7 @@ const CreateTicket = () => {
 
   const columns = useMemo(() => [
     {
-      Header: t('equipments_list_table_heading_name_text'),
+      Header: t('create_ticket_table_heading_name_text'),
       accessor: 'name'
     },
     {
@@ -293,58 +456,83 @@ const CreateTicket = () => {
         ) : null
       )
     },
-    { Header: t('equipments_list_table_heading_address_text'), accessor: 'db_address_street' },
-    { Header: t('equipments_list_table_heading_type_text'), accessor: 'equipment_family_name' },
-    { Header: t('equipments_list_table_heading_reference_text'), accessor: 'customer_reference' },
-    { Header: t('equipments_list_table_heading_brand_text'), accessor: 'equipment_brand_name' },
-    { Header: t('equipments_list_table_heading_modal_text'), accessor: 'equipment_model_name' },
-    { Header: t('equipments_list_table_heading_serial_number_text'), accessor: 'serial_number' },
-    { Header: t('equipments_list_table_heading_bar_code_text'), accessor: 'barcode' },
     {
-      Header: t('equipments_list_table_heading_status_text'),
+      Header: t('create_ticket_table_heading_address_text'),
+      accessor: 'db_address_street',
+      Cell: ({ row }) =>
+        row.original.db_address_street + ' - ' + row.original.db_address_street_number
+    },
+    { Header: t('create_ticket_table_heading_type_text'), accessor: 'equipment_family_name' },
+    { Header: t('create_ticket_table_heading_reference_text'), accessor: 'customer_reference' },
+    { Header: t('create_ticket_table_heading_brand_text'), accessor: 'equipment_brand_name' },
+    { Header: t('create_ticket_table_heading_modal_text'), accessor: 'equipment_model_name' },
+    { Header: t('create_ticket_table_heading_serial_number_text'), accessor: 'serial_number' },
+    { Header: t('create_ticket_table_heading_bar_code_text'), accessor: 'barcode' },
+    {
+      Header: t('create_ticket_table_heading_status_text'),
       accessor: 'project_status_name',
       Cell: ({ row }) => (
-        <span className={`text-xs flex items-center font-medium pe-2 px-1 pb-0.5 rounded-full ${statusColors[row.original.project_status_name] || "bg-gray-200 text-gray-800"}`}>
-          <Circle className='inline w-2 h-2 mr-1 rounded-full' /> {row.original.project_status_name}
+        <span className={`text-xs min-w-max inline-flex items-center font-medium pe-3 px-2 pb-1 pt-0.5 rounded-full ${statusColors[row.original.project_status_name] || "bg-gray-200 text-gray-800"}`}>
+          <Circle className={`inline w-2 h-2 mr-1 rounded-full ${statusDotColors[row.original.project_status_name] || "bg-gray-800 text-gray-800"}`} />
+          {row.original.project_status_name}
         </span>
       ),
     },
-  ], [statusColors, expanded, toggleExpand, t]);
+  ], [statusColors, statusDotColors, expanded, toggleExpand, t]);
 
 
+  // Filtered data based on search criteria
   const filteredContacts = useMemo(() => {
     return contacts.filter(contact => {
-      const matchesLocation = location ? contact.db_address_street.toLowerCase().includes(location.toLowerCase()) : true;
-      const matchesKeyword = keyword ? contact.name.toLowerCase().includes(keyword.toLowerCase()) : true;
-      const matchesBrand = brand !== 'All' ? contact.equipment_brand_name === brand : true;
-      const matchesModel = model !== 'All' ? contact.equipment_model_name === model : true;
-      const matchesStatus = status !== 'All' ? contact.project_status_name === status : true;
-      const matchesArchived = includeArchived ? true : contact.project_status_is_closed !== true;
+      const matchesLocation = filters.location
+        ? contact.db_address_street?.toLowerCase().includes(filters.location.toLowerCase())
+        : true;
 
-      return matchesLocation && matchesKeyword && matchesBrand && matchesModel && matchesStatus && matchesArchived;
+      const matchesKeyword = filters.keyword
+        ? contact.name?.toLowerCase().includes(filters.keyword.toLowerCase())
+        : true;
+
+      const matchesBrand =
+        filters.brand !== EmptyGuid
+          ? contact.equipment_brand_id === filters.brand
+          : true;
+
+      const matchesModel =
+        filters.model !== EmptyGuid
+          ? contact.equipment_model_id === filters.model
+          : true;
+
+      const matchesStatus =
+        filters.status !== EmptyGuid
+          ? contact.project_status_id === filters.status
+          : true;
+
+      const matchesArchived = filters.includeArchived
+        ? true
+        : contact.project_status_is_closed !== true;
+
+      return (
+        matchesLocation &&
+        matchesKeyword &&
+        matchesBrand &&
+        matchesModel &&
+        matchesStatus &&
+        matchesArchived
+      );
     });
-  }, [contacts, location, keyword, brand, model, status, includeArchived]);
+  }, [contacts, filters]);
 
+  // Create table instance with pagination
   const {
     getTableProps,
     headerGroups,
-    canPreviousPage,
-    canNextPage,
-    pageOptions,
-    gotoPage,
-    nextPage,
-    previousPage,
-    setPageSize,
-    state: { pageIndex, pageSize },
   } = useTable(
     {
       columns,
-      data: filteredContacts,
-      initialState: { pageIndex: 0, pageSize: 10 },
+      data: filteredContacts
     },
     useSortBy,
-    useExpanded,
-    usePagination
+    useExpanded
   );
 
   const renderRows = (data, depth = 0) => {
@@ -363,12 +551,12 @@ const CreateTicket = () => {
             return (
               <td
                 key={column.id || column.accessor}
-                className={`p-2 text-sm text-gray-800 ${index === 0 ? 'flex' : ''}`}
-                style={index === 0 ? { paddingLeft: `${depth * 5 + 10}px` } : {}}
+                className={`px-2 py-4 min-w-max text-sm text-gray-800 ${index === 0 ? 'flex' : ''}`}
+                style={index === 0 ? { paddingLeft: `${depth * 2 + 2}em` } : {}}
                 onClick={isSecondColumn ? (e) => e.stopPropagation() : undefined}
               >
                 {index === 0 && depth > 0 && (
-                  <CornerDownRight className="mr-1 text-gray-400" size={16} />
+                  <CornerDownRight className="mr-1 text-gray-400" size={20} />
                 )}
                 {cellContent}
               </td>
@@ -381,7 +569,7 @@ const CreateTicket = () => {
   };
 
   if (loading) {
-    return <div className="flex w-full items-center justify-center h-screen bg-gray-100">
+    return <div className="flex w-full items-center justify-center h-screen">
       <div className="relative">
         <div className="w-20 h-20 border-purple-200 border-2 rounded-full"></div>
         <div className="w-20 h-20 border-purple-700 border-t-2 animate-spin rounded-full absolute left-0 top-0"></div>
@@ -393,14 +581,6 @@ const CreateTicket = () => {
     return <div className="text-center text-red-600">Error fetching data: {error.message}</div>;
   }
 
-  const handleReset = () => {
-    setLocation('');
-    setKeyword('');
-    setBrand('All');
-    setModel('All');
-    setStatus('All');
-    setIncludeArchived(false);
-  };
 
   const handleSubmitTicket = async () => {
     const selectedTaskType = ticketTypes.find(type => type.name === ticketDetails.ticketType); // Assuming you're choosing from a list
@@ -424,25 +604,22 @@ const CreateTicket = () => {
     };
 
     try {
-      // console.log('Payload Data:', payloadData);
-      // Uncomment when ready to call the API
-      const response = await fetchData('https://V1servicedeskapi.wello.solutions/api/Task', 'POST', auth.authKey, payloadData);
-
-      setLoading(false);
-      toast.success('Ticket created successfully!');
+      const response = await fetchData('api/Task', 'POST', auth.authKey, payloadData);
 
       if (response) {
-        // Post an image using the response id from the ticket creation
         await postImage(response.id, response.id2);
+        setLoading(false);
+        toast.success('Ticket created successfully!');
         setIsSubmitModalOpen(true);
+        setResponseId(response.id);
         //navigate(`/ticket/${response.id}`)
       }
 
       // Reset state after submission
-      setStep(0); // Reset to the first step
-      setSelectedRow(null);
-      setTicketDetails({});
-      setTicketName(''); // Make sure ticketName is cleared
+      setStep(4);
+      //setSelectedRow(null);
+      //setTicketDetails({});
+      //setTicketName(''); // Make sure ticketName is cleared
     } catch (err) {
       console.error('Error creating ticket:', err);
       setError(err);
@@ -461,15 +638,15 @@ const CreateTicket = () => {
 
       if (imagePayload) {
         await fetchData(
-          `https://V1servicedeskapi.wello.solutions/api/dbfile/add?db_table_id=448260E5-7A17-4381-A254-0B1D8FE53947&id_in_table=${ticketId}&description=Uploaded by Service Desk - ${ticketId2}`,
+          `api/dbfile/add?db_table_id=448260E5-7A17-4381-A254-0B1D8FE53947&id_in_table=${ticketId}&description=Uploaded by Service Desk - ${ticketId2}`,
           'POST', auth.authKey, imagePayload
         );
       }
 
       //console.log(imageResponse);
     } catch (err) {
-      toast.error("Failed to upload image.");
-      //alert("Failed to upload image.");
+      // toast.error("Failed to upload image.");
+      // alert("Failed to upload image.");
     }
   };
 
@@ -477,7 +654,7 @@ const CreateTicket = () => {
 
 
   return (
-    <div className="w-full p-1 md:p-8 bg-gray-50 h-screen">
+    <div className="min-w-[80%] p-1 md:p-8">
       <ToastContainer
         position="bottom-right"
         autoClose={5000}
@@ -493,8 +670,8 @@ const CreateTicket = () => {
       {/* <h1 className="text-2xl font-semibold text-gray-800 mb-6">{t("Create New Ticket")}</h1> */}
 
       {/* Step Indicator Bar */}
-      <div className='flex justify-center w-full border-b-2 border-gray-200'>
-        <div className="flex justify-start w-9/12 relative mb-8 mx-4">
+      <div className='w-full border-b-2 border-gray-200'>
+        <div className="mx-auto w-9/12 relative mb-20 mx-4">
           {/* Progress Line Background */}
           <div className="absolute w-full top-5 h-1 bg-gray-300 z-0" />
 
@@ -508,7 +685,7 @@ const CreateTicket = () => {
 
           {/* Steps */}
           <div className="flex justify-between w-full gap-0 relative z-20">
-            {steps.map((item, index) => (
+            {steps.map((item) => (
               <div key={item.id} className="text-center">
                 {/* Step Circle */}
                 <div
@@ -523,13 +700,10 @@ const CreateTicket = () => {
                     ? <Check className='w-6 h-6' />
                     : <Circle className='w-4 h-4 bg-white rounded-full text-white' />
                   }
-
+                  <p className='text-sm font-medium mt-2 text-gray-800 absolute top-12 w-max'>
+                    {item.label}
+                  </p>
                 </div>
-
-                {/* Label */}
-                <p className='text-sm font-medium mt-2 text-gray-800'>
-                  {step.id}
-                </p>
               </div>
             ))}
           </div>
@@ -539,7 +713,7 @@ const CreateTicket = () => {
         onClick={() => navigate('/')} // Navigate back one step in history
         className="flex items-center my-4 font-semibold text-gray-800"
       >
-        <ArrowLeft className="mr-2 w-5 h-5" /> {t("Go Back")}
+        <ArrowLeft className="mr-2 w-5 h-5" /> {t("create_ticket_page_go_back")}
       </button>
 
       {step === 1 && (
@@ -551,12 +725,12 @@ const CreateTicket = () => {
               onChange={() => setIncludeArchived(!includeArchived)}
               className="mr-2"
             />
-            <label className="text-sm">{t('equipments_list_page_checkbox_label')}</label>
+            <label className="text-sm">{t('create_ticket_page_checkbox_label')}</label>
           </div>
           {/* Search Filter UI */}
           <div className="mb-6">
             <button onClick={() => setIsModalOpen(true)} className="flex items-center bg-white font-semibold text-gray-800 border border-gray-800 px-4 py-1 rounded-md mb-4">
-              Filter <Filter className="w-4 h-4 ml-4" />
+              {t('create_ticket_page_filter_button')} <Filter className="w-4 h-4 ml-4" />
             </button>
 
             {isModalOpen && (
@@ -565,7 +739,7 @@ const CreateTicket = () => {
                   {/* Header */}
                   <div className="flex items-center justify-between border-b pb-2">
                     <div className="flex items-center gap-2">
-                      <h2 className="text-sm font-semibold text-gray-700">Filters</h2>
+                      <h2 className="text-sm font-semibold text-gray-700">{t('create_ticket_page_filter_label')}</h2>
                       <Filter className="w-4 h-4 text-gray-700" />
                     </div>
                   </div>
@@ -577,10 +751,20 @@ const CreateTicket = () => {
                       type="text"
                       value={location}
                       onChange={(e) => setLocation(e.target.value)}
-                      placeholder="Search by Location"
+                      placeholder={t("create_ticket_page_filter_location")}
                       className="w-full pl-10 pr-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
                     />
                   </div>
+
+                  {/* Sub-Location */}
+                  {/* <div className="relative">
+              <MapPin className="absolute left-3 top-3.5 w-4 h-4 text-gray-500" />
+              <input
+                type="text"
+                placeholder="Search by Sub-Location"
+                className="w-full pl-10 pr-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
+              />
+            </div> */}
 
                   {/* Keyword */}
                   <div className="relative">
@@ -589,51 +773,93 @@ const CreateTicket = () => {
                       type="text"
                       value={keyword}
                       onChange={(e) => setKeyword(e.target.value)}
-                      placeholder="Search by Keyword"
+                      placeholder={t("create_ticket_page_filter_keyword")}
                       className="w-full pl-10 pr-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
                     />
                   </div>
 
                   {/* Brands */}
                   <div className="relative">
-                    <BadgeDollarSign className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
-                    <select value={brand} onChange={(e) => setBrand(e.target.value)} className="w-full pl-10 pr-3 py-2 border rounded-md text-sm text-gray-700">
-                      <option>Select by Brands</option>
-                      {uniqueBrands.map((brand, index) => (
-                        brand && <option key={index} value={brand}>{brand}</option>
-                      ))}
-                    </select>
+                    <Bold className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
+                    <Select
+                      components={animatedComponents}
+                      options={brandOptions}
+                      value={brandOptions.find(option => option.value === tempFilters.brand) || null} // match by ID
+                      onChange={(selected) => setTempFilters((prev) => ({ ...prev, brand: selected.value, }))}
+                      placeholder={t("create_ticket_page_filter_brands")}
+                      className="w-full pl-10 border rounded-md text-sm text-gray-500"
+                      classNamePrefix="react-select"
+                      styles={{
+                        control: (base) => ({
+                          ...base,
+                          border: 'none',
+                          boxShadow: 'none',
+                        }),
+                        placeholder: (base) => ({
+                          ...base,
+                          color: '#6b7280',
+                        }),
+                      }}
+                    />
                   </div>
 
                   {/* Status */}
                   <div className="relative">
                     <BarChart className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
-                    <select value={model} onChange={(e) => setModel(e.target.value)} className="w-full pl-10 pr-3 py-2 border rounded-md text-sm text-gray-700">
-                      <option>Select by Status</option>
-                      {uniqueStatuses.map((status, index) => (
-                        status && <option key={index} value={status}>{status}</option>
-                      ))}
-                    </select>
+                    <Select
+                      components={animatedComponents}
+                      options={statusOptions}
+                      value={statusOptions.find(option => option.value === tempFilters.status) || null} // match by ID
+                      onChange={(selected) => setTempFilters((prev) => ({ ...prev, status: selected.value, }))}
+                      placeholder={t("create_ticket_page_filter_status")}
+                      className="w-full pl-10 border rounded-md text-sm text-gray-500"
+                      classNamePrefix="react-select"
+                      styles={{
+                        control: (base) => ({
+                          ...base,
+                          border: 'none',
+                          boxShadow: 'none',
+                        }),
+                        placeholder: (base) => ({
+                          ...base,
+                          color: '#6b7280',
+                        }),
+                      }}
+                    />
                   </div>
 
                   {/* Models */}
                   <div className="relative">
                     <Hash className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
-                    <select value={model} onChange={(e) => setModel(e.target.value)} className="w-full pl-10 pr-3 py-2 border rounded-md text-sm text-gray-700">
-                      <option>Select by Models</option>
-                      {uniqueModels.map((model, index) => (
-                        model && <option key={index} value={model}>{model}</option>
-                      ))}
-                    </select>
+                    <Select
+                      components={animatedComponents}
+                      options={modelOptions}
+                      value={modelOptions.find(option => option.value === tempFilters.model) || null} // match by ID
+                      onChange={(selected) => setTempFilters((prev) => ({ ...prev, model: selected.value, }))}
+                      placeholder={t("create_ticket_page_filter_models")}
+                      className="w-full pl-10 border rounded-md text-sm text-gray-500"
+                      classNamePrefix="react-select"
+                      styles={{
+                        control: (base) => ({
+                          ...base,
+                          border: 'none',
+                          boxShadow: 'none',
+                        }),
+                        placeholder: (base) => ({
+                          ...base,
+                          color: '#6b7280',
+                        }),
+                      }}
+                    />
                   </div>
 
                   {/* Footer buttons */}
                   <div className="flex justify-between pt-2">
-                    <button onClick={handleReset} className="px-4 py-2 border rounded-md text-sm text-gray-700 hover:bg-gray-100">
-                      Reset Filters
+                    <button onClick={handleReset} disabled={isLoading} className="px-4 w-[45%] py-2 border rounded-md text-sm text-gray-700 hover:bg-gray-100">
+                      {t('create_ticket_page_filter_reset')}
                     </button>
-                    <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 bg-gray-900 text-white rounded-md text-sm hover:bg-gray-800">
-                      Close Filters
+                    <button onClick={applyFilters} disabled={isLoading} className="px-4 w-[45%] py-2 bg-gray-900 text-white rounded-md text-sm hover:bg-gray-800">
+                      {t('create_ticket_page_filter_confirm')}
                     </button>
                   </div>
                 </div>
@@ -642,81 +868,60 @@ const CreateTicket = () => {
           </div>
 
           <div className="bg-white rounded-lg shadow-md">
-            <h2 className="text-xl font-semibold mb-2 px-4 pt-4">{t("Equipments")}</h2>
+            <h2 className="text-xl font-semibold mb-2 px-4 pt-4">{t("create_ticket_step-1_title")}</h2>
             <div className="flex items-center mb-1 text-gray-900 px-4 pb-4">
-              <BadgeInfo className='mr-2 w-5 h-5 text-gray-400' /> {t("Please click on an equipment or location to proceed with the ticket creation.")}
+              <BadgeInfo className='mr-2 w-5 h-5 text-gray-400' /> {t("create_ticket_step-1_helping_text")}
             </div>
             {/* Contacts Table */}
             <div className="overflow-x-auto">
               <table {...getTableProps()} className="min-w-full divide-y divide-gray-200 border border-gray-300">
                 <thead className="bg-white">
                   {headerGroups.map((headerGroup, headerIndex) => (
-                    <tr {...headerGroup.getHeaderGroupProps()} key={headerIndex} className="bg-white divide-x divide-gray-300">
-                      {headerGroup.headers.map((column, columnIndex) => (
-                        <th {...column.getHeaderProps()} key={columnIndex} className="px-2 py-2 text-left text-sm font-semibold text-gray-600">
+                    <tr {...headerGroup.getHeaderGroupProps()} key={headerIndex} className="bg-white">
+                      {headerGroup.headers.map((column, index) => (
+                        <th {...column.getHeaderProps(column.getSortByToggleProps())}
+                          className={`px-2 py-2 text-left min-w-max text-sm font-semibold text-gray-600 ${index !== 0 ? 'border-r border-gray-300' : ''}`}>
                           {column.render('Header')}
+                          {column.isSorted ? (
+                            column.isSortedDesc ? (
+                              <ArrowUp className="inline w-4 h-4 ml-1" />
+                            ) : (
+                              <ArrowDown className="inline w-4 h-4 ml-1" />
+                            )
+                          ) : null}
                         </th>
                       ))}
                     </tr>
                   ))}
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {renderRows(filteredContacts)}
+                  {!isLoading && renderRows(filteredContacts)}
+                  {isLoading && <Loader className="ml-2 text-blue-600 animate-spin" />}
                 </tbody>
               </table>
             </div>
-
-            {/* Pagination Controls - Only show if filteredTickets exceed pageSize (10) */}
-            {filteredContacts.length > 10 && (
-              <div className="flex items-center justify-between mt-4">
-                <span className="text-sm text-gray-700">
-                  {t("Page")} {pageIndex + 1} {t("of")} {pageOptions.length}
-                </span>
-                <div>
-                  <button onClick={() => gotoPage(0)} disabled={!canPreviousPage} className="py-1 px-2 md:py-1 md:px-3 mr-1 text-gray-900 rounded-md border border-gray-900 disabled:border-gray-700">
-                    <ArrowLeftToLine className="w-4" />
-                  </button>
-                  <button onClick={() => previousPage()} disabled={!canPreviousPage} className="py-1 px-2 md:py-1 md:px-3 mr-1 text-gray-900 rounded-md border border-gray-900 disabled:border-gray-700">
-                    <ArrowLeft className="w-4" />
-                  </button>
-                  <button onClick={() => nextPage()} disabled={!canNextPage} className="py-1 px-2 md:py-1 md:px-3 mr-1 text-gray-900 rounded-md border border-gray-900 disabled:border-gray-700">
-                    <ArrowRight className="w-4" />
-                  </button>
-                  <button onClick={() => gotoPage(pageOptions.length - 1)} disabled={!canNextPage} className="py-1 px-2 md:py-1 md:px-3 mr-1 text-gray-900 rounded-md border border-gray-900 disabled:border-gray-700">
-                    <ArrowRightToLine className="w-4" />
-                  </button>
-                </div>
-                <select value={pageSize} onChange={e => setPageSize(Number(e.target.value))} className="ml-1 p-1 md:p-1 border border-gray-300 rounded-md max-w-32">
-                  {[10, 20, 30, 50].map(size => (
-                    <option key={size} value={size}>
-                      {t("Show")} {size}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
           </div>
         </>
       )}
 
       {step === 2 && (
-        <div className="mt-4 p-6 w-full max-w-4xl mx-auto">
-          <h2 className="text-xl font-semibold mb-4">{t("Describe your issue.")}</h2>
-
+        <div className="w-full max-w-3xl mx-auto">
+          <h2 className="text-xl font-semibold mb-4">{t("create_ticket_step-2_title")}</h2>
+          <p className='mb-2 text-gray-500'>{t("create_ticket_step-2_subtitle")}</p>
           <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-            <div className='shadow-sm rounded-lg bg-white p-4 '>
-              <h4 className="text-lg font-semibold">{t("Address")}</h4>
+            <div className='shadow-sm border rounded-lg bg-white p-4 '>
+              <h4 className="text-sm font-semibold">{t("create_ticket_step-2_address")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
-              <ul className="list-none list-inside text-gray-700">
+              <ul className="text-sm list-none list-inside text-gray-400">
                 <li className='flex items-center'><MapPin className='w-4 h-4 mr-2' />{selectedRow.db_address_street}</li>
                 <li className='ml-6 pb-1'>{selectedRow.db_address} {selectedRow.db_address_zip}</li>
               </ul>
             </div>
 
-            <div className='shadow-sm rounded-lg bg-white p-4 '>
-              <h4 className="text-lg font-semibold">{t("Equipment")}</h4>
+            <div className='shadow-sm border rounded-lg bg-white p-4 '>
+              <h4 className="text-sm font-semibold">{t("create_ticket_step-2_equipment")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
-              <ul className="list-none list-inside text-gray-700">
+              <ul className="text-sm list-none list-inside text-gray-400">
                 <li className='flex items-center'><Wrench className='w-4 h-4 mr-2' />{selectedRow.name}</li>
                 <li className='ml-6 pb-1'>{selectedRow.equipment_family_name}</li>
                 <li className='ml-6 pb-1'>{selectedRow.equipment_brand_name}</li>
@@ -724,14 +929,14 @@ const CreateTicket = () => {
               </ul>
             </div>
 
-            <div className='shadow-sm rounded-lg bg-white p-4 '>
-              <h4 className="text-lg font-semibold">{("Properties")}</h4>
+            <div className='shadow-sm border rounded-lg bg-white p-4 '>
+              <h4 className="text-sm font-semibold">{t("create_ticket_step-2_properties")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
-              <ul className="list-none list-inside text-gray-700 ">
-                <li className='grid grid-cols-2 gap-4'>{t("Barcode")}: <span className='font-semibold'>{selectedRow.barcode}</span></li>
-                <li className='grid grid-cols-2 gap-4'>{t("Serial Number")}: <span className='font-semibold'>{selectedRow.serial_number}</span></li>
-                <li className='grid grid-cols-2 gap-4'>{t("Our Ref")}: <span className='font-semibold'>{selectedRow.customer_reference}</span></li>
-                <li className='grid grid-cols-2 gap-4'>{t("Supplier Ref")}: <span className='font-semibold'>{selectedRow.id2}</span></li>
+              <ul className="text-sm list-none list-inside text-gray-400 ">
+                <li className='grid grid-cols-2 gap-2 items-end'>{t("create_ticket_step-2_barcode")}: <span className='font-semibold'>{selectedRow.barcode || 'NA'}</span></li>
+                <li className='grid grid-cols-2 gap-2 items-end'>{t("create_ticket_step-2_serial_number")}: <span className='font-semibold'>{selectedRow.serial_number || 'NA'}</span></li>
+                <li className='grid grid-cols-2 gap-2 items-end'>{t("create_ticket_step-2_our_ref")}: <span className='font-semibold'>{selectedRow.customer_reference || 'NA'}</span></li>
+                <li className='grid grid-cols-2 gap-2 items-end'>{t("create_ticket_step-2_supplier_ref")}: <span className='font-semibold'>{selectedRow.id2 || 'NA'}</span></li>
               </ul>
             </div>
           </div>
@@ -740,40 +945,51 @@ const CreateTicket = () => {
           </div>
           <form onSubmit={(e) => { e.preventDefault(); setStep(3); }}>
             <div className="mb-8">
-              <div className="flex gap-4">
-                <select
-                  value={ticketDetails.ticketType}
-                  onChange={(e) => handleInputChange('ticketType', e.target.value)}
-                  className="p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full"
-                >
-                  {ticketTypes.map((ticketType, index) => (
-                    <option key={index} value={ticketType.name}> {ticketType.name} </option>
-                  ))}
-                </select>
+              <div className="flex flex-row gap-8">
+                <div className="relative basis-1/2">
+                  <TicketX className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
+                  <select
+                    value={ticketDetails.ticketType}
+                    onChange={(e) => handleInputChange('ticketType', e.target.value)}
+                    className="w-full pl-10 pr-3 py-2 border rounded-md text-sm text-gray-700"
+                    required
+                  >
+                    <option>{t("create_ticket_step-2_select_ticket_type")}</option>
+                    {ticketTypes.map((ticketType, index) => (
+                      <option key={index} value={ticketType.name}> {ticketType.name} </option>
+                    ))}
+                  </select>
+                </div>
 
-                <select
-                  value={ticketDetails.severity}
-                  onChange={(e) => handleInputChange('severity', e.target.value)}
-                  className="p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full"
-                >
-                  {severities.map((severity, index) => (
-                    <option key={index} value={severity.name}> {severity.name} </option>
-                  ))}
-                </select>
+                <div className="relative basis-1/2">
+                  <Thermometer className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
+                  <select
+                    value={ticketDetails.severity}
+                    onChange={(e) => handleInputChange('severity', e.target.value)}
+                    className="w-full pl-10 pr-3 py-2 border rounded-md text-sm text-gray-700"
+                    required
+                  >
+                    <option>{t("create_ticket_step-2_select_severity")}</option>
+                    {severities.map((severity, index) => (
+                      <option key={index} value={severity.name}> {severity.name} </option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
 
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700">{t("⁕ Description about the issue.")}</label>
+              <label className="block font-medium text-gray-700">{t("create_ticket_step-2_issue_inputbox_label")}</label>
               <input
                 type="text"
                 maxLength={50}
                 value={ticketName}
                 onChange={handleNameChange}
-                className="mt-1 p-2 w-full border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder={t('create_ticket_step-2_issue_inputbox_placeholder')}
+                className="mt-1 p-2 text-sm w-full border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
-              <p className="text-sm text-gray-600 mt-1 text-end">
-                {50 - ticketName.length} characters remaining.
+              <p className="text-sm text-red-600 mt-1 text-end">
+                {50 - ticketName.length} {t("create_ticket_step-2_characters_remaining_text")}
               </p>
             </div>
 
@@ -782,10 +998,11 @@ const CreateTicket = () => {
                 maxLength={255}
                 value={textarea}
                 onChange={(e) => handleInputChange('problemDescription', e.target.value)}
-                className="mt-1 p-2 w-full border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder={t('create_ticket_step-2_description_textbox_placeholder')}
+                className="mt-1 p-2 text-sm w-full border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
-              <p className="text-sm text-gray-600 text-end">
-                {255 - textarea.length} characters remaining.
+              <p className="text-sm text-red-600 text-end">
+                {255 - textarea.length} {t("create_ticket_step-2_characters_remaining_text")}
               </p>
             </div>
 
@@ -798,9 +1015,9 @@ const CreateTicket = () => {
                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
                   <UploadCloud className="w-8 h-8 mb-3 text-gray-400" />
                   <p className="mb-2 text-sm text-gray-500">
-                    <span className="font-semibold">Click to upload</span> or drag and drop
+                    <span className="font-semibold">{t("create_ticket_step-2_upload_inputfile_label")}</span>
                   </p>
-                  <p className="text-xs text-gray-500">PNG, JPG, or PDF (max. 5MB)</p>
+                  <p className="text-xs text-gray-500">{t("create_ticket_step-2_upload_inputfile_name")}</p>
                 </div>
                 <input id="file-upload"
                   type="file"
@@ -851,10 +1068,10 @@ const CreateTicket = () => {
 
             <div className="mt-4 flex justify-end">
               <button onClick={() => setStep(1)} className="bg-white text-gray-800 font-semibold border border-gray-800 py-2 px-8 rounded-md">
-                Back
+                {t('create_ticket_popup_button_back')}
               </button>
               <button type="submit" className="bg-gray-900 text-white font-semibold py-2 px-8 rounded-md ml-2">
-                Next
+                {t('create_ticket_popup_button_next')}
               </button>
             </div>
           </form>
@@ -863,28 +1080,11 @@ const CreateTicket = () => {
 
       {step === 3 && (
         <div className="mt-4 p-6 w-full max-w-2xl mx-auto">
-          <h2 className="text-xl font-semibold mb-4">{t("Please select your preferred date for the intervention.")}</h2>
+          <h2 className="text-xl font-semibold mb-4">{t("create_ticket_page_step-3_title")}</h2>
           <form onSubmit={(e) => { e.preventDefault(); setStep(4); }}>
             {/* Yes/No Toggle for Preferred Date & Time */}
             <div className="mb-8 flex items-center">
-              <span className="text-sm text-gray-600 mr-2">{t("We'll check our technicians availability and confirm or suggest the closest alternative.")}</span>
-
-              {/* <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setPrefersDate(true)}
-                  className={`py-1 px-3 rounded-md font-semibold ${prefersDate ? "bg-indigo-600 text-white" : "bg-gray-300 text-gray-800"}`}
-                >
-                  Yes
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPrefersDate(false)}
-                  className={`py-1 px-3 rounded-md font-semibold ${!prefersDate ? "bg-indigo-600 text-white" : "bg-gray-300 text-gray-800"}`}
-                >
-                  No
-                </button>
-              </div> */}
+              <span className="text-sm text-gray-600 mr-2">{t("create_ticket_page_step-3_subtitle")}</span>
             </div>
 
             {/* Calendar Picker */}
@@ -910,7 +1110,7 @@ const CreateTicket = () => {
                 >
                   <span className="inline-flex items-center gap-2">
                     <Clock className="w-4 h-4 text-gray-500" />
-                    {selectedTime || 'Select Time'}
+                    {selectedTime || t('create_ticket_page_step-3_time_select')}
                   </span>
                   <ChevronDown className="w-4 h-4 ml-2 text-gray-500" />
                 </div>
@@ -940,62 +1140,9 @@ const CreateTicket = () => {
                 )}
               </div>
 
-
-              {/* <div className="flex items-center justify-center gap-4">
-                <div className="flex flex-col items-center bg-indigo-500 text-white rounded-t-lg rounded-b-lg">
-                  <div
-                    onClick={incrementHours}
-                    className="p-1"
-                    aria-label="Increment hours"
-                  >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                    </svg>
-                  </div>
-                  <div className="font-bold h-12 w-12 flex items-center justify-center border rounded-md bg-white text-black">
-                    {hours.toString().padStart(2, '0')}
-                  </div>
-                  <div
-                    onClick={decrementHours}
-                    className="p-1"
-                    aria-label="Decrement hours"
-                  >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                </div>
-
-                <div className="text-2xl">:</div>
-
-                <div className="flex flex-col items-center bg-indigo-500 text-white rounded-t-lg rounded-b-lg">
-                  <div
-                    onClick={incrementMinutes}
-                    className="p-1"
-                    aria-label="Increment minutes"
-                  >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                    </svg>
-                  </div>
-                  <div className="font-bold h-12 w-12 flex items-center justify-center border rounded-md bg-white text-black">
-                    {minutes.toString().padStart(2, '0')}
-                  </div>
-                  <div
-                    onClick={decrementMinutes}
-                    className="p-1"
-                    aria-label="Decrement minutes"
-                  >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                </div>
-              </div> */}
-
             </div>
             <div className='font-semibold mb-4 my-8'>
-              {t("Your selected preferred time is ")}
+              {t("create_ticket_page_step-3_selected_date_time")}
               <span className='underline pl-2'>{date.toLocaleDateString('en-BE', { year: 'numeric', month: 'long', day: 'numeric' })} | {selectedTime}</span>
             </div>
 
@@ -1003,10 +1150,10 @@ const CreateTicket = () => {
             {/* Navigation Buttons */}
             <div className="mt-4 flex justify-end">
               <button onClick={() => setStep(2)} className="bg-white text-gray-800 font-semibold border border-gray-800 py-2 px-8 rounded-md">
-                Back
+                {t('create_ticket_popup_button_back')}
               </button>
               <button type="submit" className="bg-gray-900 text-white font-semibold py-2 px-8 rounded-md ml-2">
-                Next
+                {t('create_ticket_popup_button_next')}
               </button>
             </div>
           </form>
@@ -1014,28 +1161,28 @@ const CreateTicket = () => {
       )}
 
       {step === 4 && (
-        <div className="mt-4 p-6 w-full max-w-4xl mx-auto">
-          <h2 className="text-xl font-semibold mb-4">{t("Confirm and send ticket")}</h2>
+        <div className="w-full max-w-3xl mx-auto">
+          <h2 className="text-xl font-semibold mb-4">{t("create_ticket_step-4_title")}</h2>
 
           {isSubmitModalOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-white bg-opacity-60">
               <div className="w-96 p-8 bg-white rounded-lg shadow-md border space-y-4">
                 {/* Header */}
                 <div className="flex items-center justify-between border-b pb-2">
                   <div className="flex items-center gap-2">
                     <CircleCheckBig className="w-6 h-6 text-[#14BE6F]" />
-                    <h2 className="text-lg font-semibold text-[#14BE6F]">{("Ticket Created")}</h2>
+                    <h2 className="text-lg font-semibold text-[#14BE6F]">{t("create_ticket_popup_title")}</h2>
                   </div>
                   <X className="w-6 h-6 text-[#FF3363] cursur-pointer" onClick={() => setIsSubmitModalOpen(false)} />
                 </div>
-                <p className='px-2'>{("Sit back and relax. We will respond to you as soon as possible to help you out with the repair.")}</p>
+                <p className='px-2'>{t("create_ticket_popup_text")}</p>
                 {/* Footer buttons */}
                 <div className="flex justify-between pt-2">
-                  <button onClick={() => navigate(`/create`)} className="px-4 py-2 border rounded-md text-sm text-gray-700 hover:bg-gray-100">
-                    Back Home
+                  <button onClick={() => navigate(`/`)} className="px-4 py-2 border rounded-md text-sm text-gray-700 hover:bg-gray-100">
+                    {t('create_ticket_popup_button_back_home')}
                   </button>
-                  <button onClick={() => navigate(`/ticket/${selectedRow.id}`)} className="px-4 py-2 bg-gray-900 text-white rounded-md text-sm hover:bg-gray-800">
-                    View Ticket
+                  <button onClick={() => navigate(`/ticket/${responseId}`)} className="px-4 py-2 bg-gray-900 text-white rounded-md text-sm hover:bg-gray-800">
+                    {t('create_ticket_popup_button_view_ticket')}
                   </button>
                 </div>
               </div>
@@ -1044,52 +1191,47 @@ const CreateTicket = () => {
 
           <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
             <div className='shadow-sm rounded-lg bg-white p-4 '>
-              <h4 className="text-lg font-semibold">{t("Address")}</h4>
+              <h4 className="text-lg font-semibold">{t("create_ticket_step-4_address")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
               <ul className="list-none list-inside text-gray-700">
-                <li className='flex items-center'><MapPin className='w-4 h-4 mr-2' />{selectedRow.db_address_street}</li>
-                <li className='ml-6 pb-1'>{selectedRow.db_address} {selectedRow.db_address_zip}</li>
+                <li className='flex items-center'><MapPin className='w-4 h-4 mr-2' />{selectedRow?.db_address_street}</li>
+                <li className='ml-6 pb-1'>{selectedRow?.db_address} {selectedRow?.db_address_zip}</li>
               </ul>
             </div>
 
-            <div className='shadow-sm rounded-lg bg-white p-4 '>
-              <h4 className="text-lg font-semibold">{t("Equipment")}</h4>
+            <div className='shadow-sm border rounded-lg bg-white p-4 '>
+              <h4 className="text-lg font-semibold">{t("create_ticket_step-4_equipment")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
               <ul className="list-none list-inside text-gray-700">
-                <li className='flex items-center'><Wrench className='w-4 h-4 mr-2' />{selectedRow.name}</li>
-                <li className='ml-6 pb-1'>{selectedRow.equipment_family_name}</li>
-                <li className='ml-6 pb-1'>{selectedRow.equipment_brand_name}</li>
-                <li className='ml-6 pb-1'>{selectedRow.equipment_model_name}</li>
+                <li className='flex items-center'><Wrench className='w-4 h-4 mr-2' />{selectedRow?.name}</li>
+                <li className='ml-6 pb-1'>{selectedRow?.equipment_family_name}</li>
+                <li className='ml-6 pb-1'>{selectedRow?.equipment_brand_name}</li>
+                <li className='ml-6 pb-1'>{selectedRow?.equipment_model_name}</li>
               </ul>
             </div>
 
-            <div className='shadow-sm rounded-lg bg-white p-4 '>
-              <h4 className="text-lg font-semibold">{("Properties")}</h4>
+            <div className='shadow-sm border rounded-lg bg-white p-4 '>
+              <h4 className="text-lg font-semibold">{t("create_ticket_step-4_properties")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
               <ul className="list-none list-inside text-gray-700 ">
-                <li className='grid grid-cols-2 gap-4'>{t("Barcode")}: <span className='font-semibold'>{selectedRow.barcode}</span></li>
-                <li className='grid grid-cols-2 gap-4'>{t("Serial Number")}: <span className='font-semibold'>{selectedRow.serial_number}</span></li>
-                <li className='grid grid-cols-2 gap-4'>{t("Our Ref")}: <span className='font-semibold'>{selectedRow.customer_reference}</span></li>
-                <li className='grid grid-cols-2 gap-4'>{t("Supplier Ref")}: <span className='font-semibold'>{selectedRow.id2}</span></li>
+                <li className='grid grid-cols-2 gap-4 items-end'>{t("create_ticket_step-4_barcode")}: <span className='font-semibold'>{selectedRow?.barcode || 'NA'}</span></li>
+                <li className='grid grid-cols-2 gap-4 items-end'>{t("create_ticket_step-4_serial_number")}: <span className='font-semibold'>{selectedRow?.serial_number || 'NA'}</span></li>
+                <li className='grid grid-cols-2 gap-4 items-end'>{t("create_ticket_step-4_our_ref")}: <span className='font-semibold'>{selectedRow?.customer_reference || 'NA'}</span></li>
+                <li className='grid grid-cols-2 gap-4 items-end'>{t("create_ticket_step-4_supplier_ref")}: <span className='font-semibold'>{selectedRow?.id2 || 'NA'}</span></li>
               </ul>
             </div>
 
-            <div className='shadow-sm rounded-lg bg-white p-4 '>
-              <h4 className='text-lg font-semibold'>{("Preferred date and time")}</h4>
+            <div className='shadow-sm border rounded-lg bg-white p-4 '>
+              <h4 className='text-lg font-semibold'>{t("create_ticket_step-4_preferred_date_time")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
               <ul className="list-none list-inside text-gray-700">
                 <li>{date.toLocaleDateString('nl-BE')} {selectedTime}</li>
               </ul>
             </div>
-            <div className='shadow-sm rounded-lg bg-white p-4 '>
-              <h4 className='text-lg font-semibold'>{("Severity")}</h4>
+            <div className='shadow-sm border rounded-lg bg-white p-4 '>
+              <h4 className='text-lg font-semibold'>{t("create_ticket_step-4_severity")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
               <ul className="list-none list-inside text-gray-700">
-                {/* <li>
-                  <span className={`font-medium me-2 px-1.5 py-0.5 rounded-sm ${ticketType[ticketDetails.ticketType] || "bg-gray-300"}`}>
-                    {ticketDetails.ticketType}
-                  </span>
-                </li> */}
                 <li>
                   <span className={`font-medium me-2 ${severityType[ticketDetails.severity] || "text-gray-300"}`}>
                     {ticketDetails.severity}
@@ -1097,28 +1239,28 @@ const CreateTicket = () => {
                 </li>
               </ul>
             </div>
-            <div className='shadow-sm rounded-lg bg-white p-4 '>
-              <h4 className='text-lg font-semibold'>{("Ticket Subject")}</h4>
+            <div className='shadow-sm border rounded-lg bg-white p-4 '>
+              <h4 className='text-lg font-semibold'>{t("create_ticket_step-4_ticket_subject")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
               <ul className="list-none list-inside text-gray-700">
                 <li>{ticketName}</li>
               </ul>
             </div>
 
-            <div className='col-span-3 shadow-sm bg-white rounded-lg p-4 '>
+            <div className='col-span-3 shadow-sm border bg-white rounded-lg p-4 '>
 
-              <h4 className='text-lg font-semibold'>{("Description about the issue.")}</h4>
+              <h4 className='text-lg font-semibold'>{t("create_ticket_step-4_description")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
-              <ul className="list-none list-inside text-gray-700">
+              <ul className="list-none list-inside text-gray-700 min-h-24">
                 <li>{ticketDetails.problemDescription}</li>
               </ul>
 
             </div>
-            <div className='col-span-3 shadow-sm bg-white rounded-lg p-4 '>
-              <h4 className="font-semibold my-2">{t("Files Uploaded")}</h4>
+            <div className='col-span-3 shadow-sm border bg-white rounded-lg p-4 '>
+              <h4 className="font-semibold my-2">{t("create_ticket_step-4_files_uploaded")}</h4>
 
               {/* File Thumbnails Grid */}
-              <div className="mt-2 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+              <div className="mt-2 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 min-h-8">
                 {ticketDetails?.file && ticketDetails.file.map((file, index) => {
                   const fileURL = URL.createObjectURL(file);
                   const isImage = file.type.startsWith("image/");
@@ -1147,10 +1289,10 @@ const CreateTicket = () => {
           </div>
           <div className="mt-4 flex justify-end">
             <button onClick={() => setStep(3)} className="bg-white text-gray-800 font-semibold border border-gray-800 py-2 px-8 rounded-md">
-              Back
+              {t('create_ticket_popup_button_back')}
             </button>
             <button onClick={handleSubmitTicket} className="bg-gray-900 text-white font-semibold py-2 px-8 rounded-md ml-2">
-              Confirm
+              {t('create_ticket_popup_button_confirm')}
             </button>
           </div>
         </div>

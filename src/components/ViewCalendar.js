@@ -15,7 +15,7 @@ const ViewCalendars = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [date, setDate] = useState(new Date());
-  const { t } = useTranslation('calender');
+  const { t } = useTranslation('calendar');
 
   // Search Filter states
   const [location, setLocation] = useState('');
@@ -32,15 +32,8 @@ const ViewCalendars = () => {
   useEffect(() => {
     const fetchJobs = async () => {
       try {
-        const response = await fetchData('https://v1servicedeskapi.wello.solutions/api/JobPlanningView', 'GET', auth.authKey);
+        const response = await fetchData('api/JobPlanningView', 'GET', auth.authKey);
         setContents(response.value);
-
-        const restype = await fetchData('https://v1servicedeskapi.wello.solutions/api/EquipmentFamily', 'GET', auth.authKey);
-        setEquipmentTypes(restype.value);
-
-        const resname = await fetchData('https://v1servicedeskapi.wello.solutions/api/ProjectView?$filter=root_parent_id+ne+00000000-0000-0000-0000-000000000000', 'GET', auth.authKey);
-        setEquipmentNames(resname.value);
-
         setLoading(false);
       } catch (err) {
         setError(err);
@@ -51,10 +44,38 @@ const ViewCalendars = () => {
     fetchJobs();
   }, [auth]);
 
+  useEffect(() => {
+    const fetchEquiName = async () => {
+      try {
+        const resname = await fetchData('api/ProjectView?$filter=root_parent_id+ne+00000000-0000-0000-0000-000000000000', 'GET', auth.authKey);
+        setEquipmentNames(resname.value);
+      } catch (err) {
+        setError(err);
+        setLoading(false);
+      }
+    };
+
+    fetchEquiName();
+  }, [auth]);
+
+  useEffect(() => {
+    const fetchJobsType = async () => {
+      try {
+        const restype = await fetchData('api/EquipmentFamily', 'GET', auth.authKey);
+        setEquipmentTypes(restype.value);
+      } catch (err) {
+        setError(err);
+        setLoading(false);
+      }
+    };
+
+    fetchJobsType();
+  }, [auth]);
+
   const columns = useMemo(
     () => [
       {
-        Header: t('Ref'),
+        Header: t('calender_table_heading_reference_text'),
         accessor: 'jobs_id2',
         Cell: ({ row }) => (
           <span
@@ -64,20 +85,20 @@ const ViewCalendars = () => {
         )
       },
       {
-        Header: t('Hour'),
+        Header: t('calender_table_heading_hour_text'),
         accessor: 'date_from',
         Cell: ({ value }) => new Date(value).toLocaleString('nl-BE', { hour: 'numeric', minute: 'numeric', hour12: false })
       },
       {
-        Header: t('Name'),
+        Header: t('calender_table_heading_name_text'),
         accessor: 'jobs_name',
       },
       {
-        Header: t('Address'),
+        Header: t('calender_table_heading_address_text'),
         accessor: ({ db_address_street, db_address_city, db_address_zip }) => `${db_address_street} ${db_address_city} ${db_address_zip}`
       },
       {
-        Header: t('Technician'),
+        Header: t('calender_table_heading_technician_text'),
         accessor: ({ user_firstname, user_lastname }) => `${user_firstname} ${user_lastname}`
       }
     ],
@@ -135,7 +156,7 @@ const ViewCalendars = () => {
   } = tableInstance;
 
   if (loading) {
-    return <div className="flex w-full items-center justify-center h-screen bg-gray-100">
+    return <div className="flex w-full items-center justify-center h-screen">
       <div className="relative">
         <div className="w-20 h-20 border-purple-200 border-2 rounded-full"></div>
         <div className="w-20 h-20 border-purple-700 border-t-2 animate-spin rounded-full absolute left-0 top-0"></div>
@@ -156,42 +177,46 @@ const ViewCalendars = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
-      <h1 className="text-2xl font-semibold text-gray-800 mb-6">{t('Calendar')}</h1>
+    <div className="w-full mx-auto p-6">
+      <h1 className="text-2xl font-semibold text-gray-800 mb-6">{t('calender_page_title')}</h1>
 
       {/* Back Button */}
       <button
         onClick={() => navigate('/')} // Navigate back one step in history
         className="flex items-center mb-4 font-semibold text-gray-800"
       >
-        <ArrowLeft className="mr-2 w-5 h-5" /> {t("Go Back")}
+        <ArrowLeft className="mr-2 w-5 h-5" /> {t("calender_page_go_back")}
       </button>
 
       <div className="flex flex-col lg:flex-row gap-12">
         {/* Filters Section */}
         <div className="bg-white p-6 rounded-lg shadow-[0_0_10px_2px_rgba(0,0,0,0.1)] w-full lg:w-1/3">
-          <h2 className="flex items-center text-xl font-semibold text-gray-700 mb-4">{t('Filters')} <ListFilterIcon className="w-4 h-4 ml-4" /></h2>
+          <h2 className="flex items-center text-xl font-semibold text-gray-700 mb-4">
+            {t('calendar_page_filter_label')} <ListFilterIcon className="w-4 h-4 ml-4" />
+          </h2>
           <div className="mb-4">
             <label htmlFor="location" className="block font-semibold text-gray-700 mb-2">
-              {t('Location')}
+              {t('calendar_page_filter_location_label')}
             </label>
             <input
               type="text"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              placeholder={t('Enter three letters to initiate search')}
+              placeholder={t('calendar_page_filter_location_placeholder')}
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-indigo-500"
             />
           </div>
           <div className="mb-4">
-            <label htmlFor="equipment-type" className="block font-semibold text-gray-700 mb-2">{t('Equipment Type')}</label>
+            <label htmlFor="equipment-type" className="block font-semibold text-gray-700 mb-2">
+              {t('calendar_page_filter_equipment_type_label')}
+            </label>
             <select
               id="equipment-type"
               value={selectedEquipmentType}
               onChange={(e) => setSelectedEquipmentType(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-indigo-500"
             >
-              <option value="All">{t('All equipment types')}</option>
+              <option value="All">{t('calendar_page_filter_equipment_type_select')}</option>
               {Array.isArray(equipmentTypes) && equipmentTypes
                 .sort((a, b) => a.name.localeCompare(b.name))
                 .map((type) => (
@@ -200,14 +225,16 @@ const ViewCalendars = () => {
             </select>
           </div>
           <div className="mb-4">
-            <label htmlFor="equipment" className="block font-semibold text-gray-700 mb-2">{t('Equipment')}</label>
+            <label htmlFor="equipment" className="block font-semibold text-gray-700 mb-2">
+              {t('calendar_page_filter_equipment_label')}
+            </label>
             <select
               id="equipment"
               value={selectedEquipmentName}
               onChange={(e) => setSelectedEquipmentName(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-indigo-500"
             >
-              <option value="All">All equipments</option>
+              <option value="All">{t('calendar_page_filter_equipment_select')}</option>
               {Array.isArray(equipmentNames) && equipmentNames
                 .sort((a, b) => a.name.localeCompare(b.name))
                 .map((type) => (
@@ -216,14 +243,14 @@ const ViewCalendars = () => {
             </select>
           </div>
           <button onClick={handleReset} className="w-full border border-gray-900 text-gray-900 px-4 py-2 rounded-md hover:bg-gray-200">
-            {t('Reset Filters')}
+            {t('calendar_page_filter_reset')}
           </button>
         </div>
 
         {/* Calendar Section */}
         <div>
           <div className="flex items-center mb-2 text-gray-900">
-              <BadgeInfo className='mr-2 w-5 h-5 text-gray-400' /> {t("Rounded outline represents WO.")}
+              <BadgeInfo className='mr-2 w-5 h-5 text-gray-400' /> {t("calendar_page_calendar_helping_text")}
           </div>
           <div className="bg-white rounded-lg shadow-[0_0_10px_2px_rgba(0,0,0,0.1)]">
             <Calendar
@@ -245,12 +272,12 @@ const ViewCalendars = () => {
         </div>
       </div>
 
-      <div className='shadow-[0_0_10px_2px_rgba(0,0,0,0.1)] rounded-lg p-4 mt-4'>
-        <h2 className="text-xl font-semibold text-gray-700">{date.toLocaleDateString('en-US', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'})}</h2>
+      <div className='shadow-[0_0_10px_2px_rgba(0,0,0,0.1)] rounded-lg mt-4'>
+        <h2 className="text-xl font-semibold text-gray-700 px-4 py-2">{date.toLocaleDateString('en-US', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'})}</h2>
         {rows?.length > 0 ? (
           <>
-            <div className="flex items-center mt-4 mb-2 text-gray-900">
-            <BadgeInfo className='mr-2 w-5 h-5 text-gray-400' /> {t("Click the row to view ticket details.")}
+            <div className="flex items-center mb-1 text-gray-900 px-4 py-2">
+            <BadgeInfo className='mr-2 w-5 h-5 text-gray-400' /> {t("calendar_page_table_helping_text")}
             </div>
             <div className="overflow-x-visible">
               <table {...getTableProps()} className="min-w-full bg-white divide-y divide-gray-300 border border-gray-300 shadow-lg">
@@ -279,7 +306,7 @@ const ViewCalendars = () => {
                     return (
                       <tr {...row.getRowProps()} className="cursor-pointer hover:bg-gray-200" onClick={() => navigate(`/workorder/${row.original.jobs_id}`)}>
                         {row.cells.map(cell => (
-                          <td {...cell.getCellProps()} className="px-2 py-2 text-sm text-gray-800">
+                          <td {...cell.getCellProps()} className="px-2 py-4 text-sm text-gray-800">
                             {cell.render('Cell')}
                           </td>
                         ))}
@@ -291,13 +318,13 @@ const ViewCalendars = () => {
             </div>
           </>
         ) : (
-          <div>{t("No records!!!")}</div>
+          <div className='px-4 py-2'>{t("calender_table_no_records_text")}</div>
         )}
         {/* Pagination Controls - Only show if filteredTickets exceed pageSize (10) */}
         {filteredContents.length > 10 && (
-          <div className="flex items-center justify-between mt-4">
+          <div className="flex items-center justify-between p-4">
             <span className="text-sm text-gray-700">
-              {t("Page")} {pageIndex + 1} {t("of")} {pageOptions.length}
+              {t("calender_table_pagination_page")} {pageIndex + 1} {t("calender_table_pagination_of")} {pageOptions.length}
             </span>
             <div>
               <button onClick={() => gotoPage(0)} disabled={!canPreviousPage} className="py-1 px-2 md:py-1 md:px-3 mr-1 text-gray-900 rounded-md border border-gray-900 disabled:border-gray-700">
@@ -316,7 +343,7 @@ const ViewCalendars = () => {
             <select value={pageSize} onChange={e => setPageSize(Number(e.target.value))} className="ml-1 p-1 md:p-1 border border-gray-300 rounded-md max-w-32">
               {[10, 20, 30, 50].map(size => (
                 <option key={size} value={size}>
-                  {t("Show")} {size}
+                  {t("calender_table_pagination_show")} {size}
                 </option>
               ))}
             </select>

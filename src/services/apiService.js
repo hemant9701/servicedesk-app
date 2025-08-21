@@ -2,15 +2,15 @@ import axios from 'axios';
 const auth = JSON.parse(sessionStorage.getItem('auth'))?.authKey;
 
 
-export const fetchData = async (endpoint, method = 'GET', authKey = auth, data = null) => {
+export const fetchData = async (endpoint, method = 'GET', authKey = auth, data = null, accept= 'application/json') => {
   //const authKey = auth.authKey;
   try {
     const config = {
-      url: endpoint,
+      url: `https://testservicedeskapi.odysseemobile.com/${endpoint}`,
       method,
       headers: {
         'Authorization': `Basic ${authKey}`,
-        'Accept': 'application/json',
+        'Accept': accept,
       },
       data,
     };

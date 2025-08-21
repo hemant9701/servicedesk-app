@@ -4,7 +4,7 @@ import { AuthProvider } from './AuthContext';
 import Login from './components/Login';
 import ForgetPassword from './components/ForgetPassword';
 import ProtectedRoute from './ProtectedRoute';
-//import Navigation from './components/Navigation';
+import DashboardSidebar from './components/DashboardSidebar';
 import ViewHome from './components/ViewHome';
 import About from './components/About';
 import CreateTicket from './components/CreateTicket';
@@ -20,7 +20,6 @@ import ViewCalendars from './components/ViewCalendar';
 import PasswordUpdate from './components/PasswordUpdate';
 import NotFound from './components/NotFound';
 
-import DashboardSidebar from './components/DashboardSidebar';
 import './App.css';
 import './i18n';
 
@@ -34,7 +33,7 @@ function AppContent() {
 
   
   return (
-    <div className="flex items-start">
+    <div className="flex items-start min-h-screen">
       {shouldRenderNavigation() && <DashboardSidebar />}
       
       <Routes>
@@ -57,7 +56,7 @@ function AppContent() {
           }
         />
         <Route
-          path="/create"
+          path="/createticket"
           element={
             <ProtectedRoute>
               <CreateTicket />

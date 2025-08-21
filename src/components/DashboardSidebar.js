@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Languages, ChevronRight, ChevronLeft, LayoutDashboard, BadgePlus, Ticket, CalendarDays, User, Workflow, MessageCircleQuestion, FileStack, PackagePlus, LogOut } from "lucide-react";
+import { Search, Languages, ChevronRight, ChevronLeft, House, Wrench, Ticket, Calendar, Users, Drill, MessageCircleQuestion, Folder, Settings, LogOut } from "lucide-react";
 import { Link } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { useTranslation } from "react-i18next";
@@ -11,7 +11,7 @@ export default function DashboardSidebar() {
     const [logo, setLogo] = useState('https://fsm.wello.net/wp-content/uploads/2024/01/WELLO_LOGO_Purple.png');
     const [logo_2, setLogo_2] = useState('https://fsm.wello.net/wp-content/uploads/2023/12/cropped-WN54.png');
     const { i18n } = useTranslation();
-    const userLangShort = auth?.userLang?.split('-')[0] || 'nl';
+    const userLangShort = auth?.userLang?.split('-')[0] || 'en';
     const { t } = useTranslation('dashboard');
 
     useEffect(() => {
@@ -33,9 +33,9 @@ export default function DashboardSidebar() {
     };
 
     const languageOptions = {
-        en: 'English',
-        fr: 'Français',
-        nl: 'Nederlands'
+        en: t('navbar_lang_en'),
+        fr: t('navbar_lang_fr'),
+        nl: t('navbar_lang_nl')
         // de: 'Deutsch',
         // es: 'Español',
         // pt: 'Português',
@@ -46,14 +46,17 @@ export default function DashboardSidebar() {
     const changeLanguage = (lng) => {
         i18n.changeLanguage(lng);
     };
-    
+
     useEffect(() => {
         const savedLang = localStorage.getItem('i18nextLng');
-        if (!savedLang && userLangShort) {
-            i18n.changeLanguage(userLangShort);
-            localStorage.setItem('i18nextLng', userLangShort);
+        const preferredLang = userLangShort || 'en';
+
+        if (!savedLang || savedLang !== preferredLang) {
+            i18n.changeLanguage(preferredLang);
+            localStorage.setItem('i18nextLng', preferredLang);
         }
-    }, [auth, i18n, userLangShort]);
+    }, [i18n, userLangShort]); // Triggered once when component mounts
+
 
     const getFirstLetters = (str) => {
         let words = str.split(" ");
@@ -62,24 +65,24 @@ export default function DashboardSidebar() {
 
 
     return (
-        <div className={`flex flex-col justify-between border-r-2 border-b-2 rounded-br-lg border-gray-200 text-gray-500 bg-white p-4 min-h-screen ${isCollapsed ? 'w-25' : 'w-72'} transition-width duration-300`}>
+        <div className={`flex flex-col border-r-2 border-b-2 rounded-br-2xl border-gray-200 text-[#687287] bg-white p-4 ${isCollapsed ? 'w-[5rem]' : 'w-1/4'} transition-width duration-5000`}>
             <div className="">
-                <div className="flex items-center justify-center min-h-16 gap-2 mb-2 w-full">
+                <div className="flex items-center justify-center h-16 gap-2 mb-2 w-full">
                     <a href="/">
                         {!isCollapsed ? <img src={logo} alt="Logo" className="w-32" /> : <img src={logo_2} alt="Logo" className="w-12" />}
                     </a>
                 </div>
 
                 {/* Collapse Button */}
-                <div className="flex justify-start items-center mb-2">
-                    <button onClick={toggleCollapse} className="px-4 py-2">
+                <div className="flex justify-start items-center mb-4">
+                    <button onClick={toggleCollapse} className="px-2 py-2">
                         {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
                     </button>
                     <p className={`text-lg ${isCollapsed ? 'hidden' : ''}`}>{t("navbar_collapse_arrow")}</p>
                 </div>
 
                 <div
-                    className={`relative w-full mb-4 transition-all duration-300 ${isCollapsed ? 'px-4 py-2 border-2 rounded-lg cursor-pointer' : ''
+                    className={`relative w-full mb-4 transition-all duration-300 ${isCollapsed ? 'px-2 py-2 border-2 rounded-lg cursor-pointer' : ''
                         }`}
                     onClick={handleToggle}
                 >
@@ -94,49 +97,48 @@ export default function DashboardSidebar() {
                     )}
 
                     <Search
-                        className={`w-5 h-5 text-gray-500 transition-all duration-200 ${isCollapsed ? '' : 'absolute left-3 top-2.5'
-                            }`}
+                        className={`w-5 h-5 transition-all duration-200 ${isCollapsed ? '' : 'absolute left-3 top-2.5'}`}
                     />
                 </div>
 
                 {/* Navigation Links */}
-                <Link to="/" className="flex items-center gap-2 cursor-pointer w-full px-4 py-2 rounded-lg hover:bg-gray-200 focus:border-r-4 focus:border-gray-600 focus:bg-gray-200 active:border-r-4 active:border-gray-600 active:bg-gray-200">
-                    <LayoutDashboard className="w-5 h-5" /> {!isCollapsed && t('navbar_home_page_link')}
+                <Link to="/" className="flex items-center gap-2 leading-none cursor-pointer w-full px-2 py-2 mb-0.5 rounded-lg hover:bg-gray-100 focus:border-r-4 focus:border-gray-600 focus:bg-gray-200 active:text-[#1F272D] active:border-r-4 active:border-gray-600 active:bg-gray-200">
+                    <House className="w-5 h-5" /> {!isCollapsed && t('navbar_home_page_link')}
                 </Link>
-                <Link to="/create" className="flex items-center gap-2 cursor-pointer w-full px-4 py-2 rounded-lg hover:bg-gray-200 focus:border-r-4 focus:border-gray-600 focus:bg-gray-200 active:border-r-4 active:border-gray-600 active:bg-gray-200">
-                    <BadgePlus className="w-5 h-5" /> {!isCollapsed && t('navbar_create_ticket_link')}
+                <Link to="/createticket" className="flex items-center gap-2 leading-none cursor-pointer w-full px-2 py-2 mb-0.5 rounded-lg hover:bg-gray-100 focus:border-r-4 focus:border-gray-600 focus:bg-gray-200 active:text-[#1F272D] active:border-r-4 active:border-gray-600 active:bg-gray-200">
+                    <Wrench className="w-5 h-5" /> {!isCollapsed && t('navbar_create_ticket_link')}
                 </Link>
-                <Link to="/tickets" className="flex items-center gap-2 cursor-pointer w-full px-4 py-2 rounded-lg hover:bg-gray-200 focus:border-r-4 focus:border-gray-600 focus:bg-gray-200 active:border-r-4 active:border-gray-600 active:bg-gray-200">
+                <Link to="/tickets" className="flex items-center gap-2 leading-none cursor-pointer w-full px-2 py-2 mb-0.5 rounded-lg hover:bg-gray-100 focus:border-r-4 focus:border-gray-600 focus:bg-gray-200 active:text-[#1F272D] active:border-r-4 active:border-gray-600 active:bg-gray-200">
                     <Ticket className="w-5 h-5" /> {!isCollapsed && t('navbar_tickets_list_link')}
                 </Link>
-                <Link to="/calendar" className="flex items-center gap-2 cursor-pointer w-full px-4 py-2 rounded-lg hover:bg-gray-200 focus:border-r-4 focus:border-gray-600 focus:bg-gray-200 active:border-r-4 active:border-gray-600 active:bg-gray-200">
-                    <CalendarDays className="w-5 h-5" /> {!isCollapsed && t('navbar_calendar_page_link')}
+                <Link to="/calendar" className="flex items-center gap-2 leading-none cursor-pointer w-full px-2 py-2 mb-0.5 rounded-lg hover:bg-gray-100 focus:border-r-4 focus:border-gray-600 focus:bg-gray-200 active:text-[#1F272D] active:border-r-4 active:border-gray-600 active:bg-gray-200">
+                    <Calendar className="w-5 h-5" /> {!isCollapsed && t('navbar_calendar_page_link')}
                 </Link>
-                <Link to="/workorders" className="flex items-center gap-2 cursor-pointer w-full px-4 py-2 rounded-lg hover:bg-gray-200 focus:border-r-4 focus:border-gray-600 focus:bg-gray-200 active:border-r-4 active:border-gray-600 active:bg-gray-200">
-                    <Workflow className="w-5 h-5" /> {!isCollapsed && t('navbar_work_order_list_link')}
+                <Link to="/workorders" className="flex items-center gap-2 leading-none cursor-pointer w-full px-2 py-2 rounded-lg hover:bg-gray-100 focus:border-r-4 focus:border-gray-600 focus:bg-gray-200 active:text-[#1F272D] active:border-r-4 active:border-gray-600 active:bg-gray-200">
+                    <Settings className="w-5 h-5" /> {!isCollapsed && t('navbar_work_order_list_link')}
                 </Link>
-                <div className="border-t-2 border-gray-200 my-5"></div>
-                <Link to="/users" className="flex items-center gap-2 cursor-pointer w-full px-4 py-2 rounded-lg hover:bg-gray-200 focus:border-r-4 focus:border-gray-600 focus:bg-gray-200 active:border-r-4 active:border-gray-600 active:bg-gray-200">
-                    <User className="w-5 h-5" /> {!isCollapsed && t('navbar_users_list_link')}
+                <div className="border-t-2 border-gray-100 my-4"></div>
+                <Link to="/users" className="flex items-center gap-2 leading-none cursor-pointer w-full px-2 py-2 mb-0.5 rounded-lg hover:bg-gray-100 focus:border-r-4 focus:border-gray-600 focus:bg-gray-200 active:text-[#1F272D] active:border-r-4 active:border-gray-600 active:bg-gray-200">
+                    <Users className="w-5 h-5" /> {!isCollapsed && t('navbar_users_list_link')}
                 </Link>
-                <Link to="/equipments" className="flex items-center gap-2 cursor-pointer w-full px-4 py-2 rounded-lg hover:bg-gray-200 focus:border-r-4 focus:border-gray-600 focus:bg-gray-200 active:border-r-4 active:border-gray-600 active:bg-gray-200">
-                    <PackagePlus className="w-5 h-5" /> {!isCollapsed && t('navbar_equipments_list_link')}
+                <Link to="/equipments" className="flex items-center gap-2 leading-none cursor-pointer w-full px-2 py-2 mb-0.5 rounded-lg hover:bg-gray-100 focus:border-r-4 focus:border-gray-600 focus:bg-gray-200 active:text-[#1F272D] active:border-r-4 active:border-gray-600 active:bg-gray-200">
+                    <Drill className="w-5 h-5" /> {!isCollapsed && t('navbar_equipments_list_link')}
                 </Link>
-                <Link to="/documents" className="flex items-center gap-2 cursor-pointer w-full px-4 py-2 rounded-lg hover:bg-gray-200 focus:border-r-4 focus:border-gray-600 focus:bg-gray-200 active:border-r-4 active:border-gray-600 active:bg-gray-200">
-                    <FileStack className="w-5 h-5" /> {!isCollapsed && t('navbar_documents_list_link')}
+                <Link to="/documents" className="flex items-center gap-2 leading-none cursor-pointer w-full px-2 py-2 mb-0.5 rounded-lg hover:bg-gray-100 focus:border-r-4 focus:border-gray-600 focus:bg-gray-200 active:text-[#1F272D] active:border-r-4 active:border-gray-600 active:bg-gray-200">
+                    <Folder className="w-5 h-5" /> {!isCollapsed && t('navbar_documents_list_link')}
                 </Link>
             </div>
 
-            <div className="border-t-2 border-gray-200 pt-5">
+            <div className="mt-20 relative ">
 
                 {/* Language Switcher */}
                 {!isCollapsed ? (
-                    <div className="px-4 py-2 flex items-center gap-2">
-                        
+                    <div className="px-2 py-2 flex items-center gap-2">
+
                         <Languages className="w-5 h-5" />
                         <select
                             id="language-select"
-                            className="w-full focus:outline-none focus:ring-2 focus:ring-gray-500"
+                            className="w-full focus:outline-none"
                             onChange={(e) => changeLanguage(e.target.value)}
                             value={i18n.language.split('-')[0]}
                         >
@@ -147,35 +149,25 @@ export default function DashboardSidebar() {
                             ))}
                         </select>
                     </div>
-                ): (
-                    <div className="flex flex-col items-center gap-2">
-                        <Languages className="w-5 h-5" />
-                        <select
-                            id="language-select"
-                            className="w-full p-1 border-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            onChange={(e) => changeLanguage(e.target.value)}
-                            value={i18n.language.split('-')[0].toUpperCase()}
-                        >
-                            {Object.entries(languageOptions).map(([code]) => (
-                                <option key={code} value={code}>
-                                    {code.toUpperCase()}
-                                </option>
-                            ))}
-                        </select>
+                ) : (
+                    <div
+                        className={`relative w-full mb-4 leading-none rounded-lg transition-all duration-300 hover:bg-gray-100 ${isCollapsed ? 'px-2 py-2 cursor-pointer' : ''}`}
+                        onClick={handleToggle}
+                    >
+                        <Languages className={`w-5 h-5 transition-all duration-200 ${isCollapsed ? '' : 'absolute left-3 top-2.5'}`} />
                     </div>
                 )}
 
-
-
-                <Link to="/about" className="flex items-center gap-2 cursor-pointer w-full px-4 py-2 rounded-lg hover:bg-gray-200 focus:border-r-4 focus:border-gray-600 focus:bg-gray-200 active:border-r-4 active:border-gray-600 active:bg-gray-200">
+                <Link to="/about" className="flex items-center gap-2 leading-none cursor-pointer w-full px-2 py-2 rounded-lg hover:bg-gray-100 focus:border-r-4 focus:border-gray-600 focus:bg-gray-200 active:border-r-4 active:border-gray-600 active:bg-gray-200">
                     <MessageCircleQuestion className="w-5 h-5" /> {!isCollapsed && t('navbar_support_page_link')}
                 </Link>
                 {/* Profile and Logout */}
+                <div className="border-t-2 border-gray-100 my-4"></div>
                 {auth && (
-                    <div className="flex justify-between items-center rounded-lg gap-2 px-4 py-2">
+                    <div className="flex justify-between items-center rounded-lg gap-2 px-2 py-2">
                         {!isCollapsed && (
-                            <div className="flex gap-2 text-sm font-bold">
-                                <span className="px-1 py-1 rounded-full text-gray-900 bg-gray-200">{getFirstLetters(auth.userName)}</span>
+                            <div className="flex items-center gap-2 font-bold">
+                                <span className="px-2 py-2 w-10 h-10 rounded-full text-gray-900 bg-gray-200">{getFirstLetters(auth.userName)}</span>
                                 {auth.userName}
                             </div>
                         )}

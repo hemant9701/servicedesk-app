@@ -24,7 +24,7 @@ const ForgotPassword = () => {
     try {
       // API request to send password reset email
       await axios.get(
-        `https://v1servicedeskapi.wello.solutions/api/Contact/SendPasswordReminder?domain=${domain}&e_login=${email}`
+        `api/Contact/SendPasswordReminder?domain=${domain}&e_login=${email}`
       );
       setMessage('A password reset link has been sent to your email.');
       setError('');

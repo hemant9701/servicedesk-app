@@ -18,24 +18,38 @@ const SingleTicket = () => {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('details'); // State to manage active tab
   const [fileThumbnails, setFileThumbnails] = useState({});
-  const { t } = useTranslation('ticketList');
+  const { t } = useTranslation('singleTicket');
+
+  const url = `https://testservicedeskapi.odysseemobile.com/`;
 
   const statusColors = useMemo(() => ({
-    "In progress": "bg-yellow-200 text-yellow-800",
-    "Planned": "bg-blue-200 text-blue-800",
-    "To be Planned": "bg-purple-200 text-purple-800",
-    "Escalated to WO": "bg-orange-200 text-orange-800",
-    "Open": "bg-green-200 text-green-800",
-    "Ready for Review": "bg-indigo-200 text-indigo-800",
-    "Waiting for Parts": "bg-indigo-200 text-indigo-800",
-    "Cancelled": "bg-red-200 text-red-800",
-    "Completed": "bg-pink-200 text-pink-800",
+    "In progress": "bg-yellow-100 text-yellow-600",
+    "Planned": "bg-blue-100 text-blue-600",
+    "To be Planned": "bg-purple-100 text-purple-600",
+    "Escalated to WO": "bg-orange-100 text-orange-600",
+    "Open": "bg-green-100 text-green-600",
+    "Ready for Review": "bg-indigo-100 text-indigo-600",
+    "Waiting for Parts": "bg-indigo-100 text-indigo-600",
+    "Cancelled": "bg-red-100 text-red-600",
+    "Completed": "bg-pink-100 text-pink-600",
+  }), []);
+
+  const statusDotColors = useMemo(() => ({
+    "In progress": "bg-yellow-600 text-yellow-600",
+    "Planned": "bg-blue-600 text-blue-600",
+    "To be Planned": "bg-purple-600 text-purple-600",
+    "Escalated to WO": "bg-orange-600 text-orange-600",
+    "Open": "bg-green-600 text-green-600",
+    "Ready for Review": "bg-indigo-600 text-indigo-600",
+    "Waiting for Parts": "bg-indigo-600 text-indigo-600",
+    "Cancelled": "bg-red-600 text-red-600",
+    "Completed": "bg-pink-600 text-pink-600",
   }), []);
 
   useEffect(() => {
     const getTicketAndWorkOrderDetails = async () => {
       if (!ticketId || !auth?.authKey) {
-        setError('Ticket ID or auth key is missing.');
+        setError(t('single_ticket_page_err_no_ticket_id_auth'));
         setLoading(false);
         return;
       }
@@ -44,32 +58,32 @@ const SingleTicket = () => {
         setLoading(true);
 
         // Fetch Ticket
-        const ticketEndpoint = `https://v1servicedeskapi.wello.solutions/api/TaskView(${ticketId})`;
+        const ticketEndpoint = `api/TaskView(${ticketId})`;
         const ticketData = await fetchData(ticketEndpoint, 'GET', auth.authKey);
         setTicket(ticketData);
 
         // Fetch Work Order if available
         if (ticketData?.to_id_in_table) {
           const workOrderId = ticketData.to_id_in_table;
-          const workOrderEndpoint = `https://v1servicedeskapi.wello.solutions/api/JobsView(${workOrderId})`;
+          const workOrderEndpoint = `api/JobsView(${workOrderId})`;
           const workOrderData = await fetchData(workOrderEndpoint, 'GET', auth.authKey);
           setTicketWorkOrder(workOrderData);
         }
 
         // Fetch Ticket Documents
-        const docEndpoint = `https://v1servicedeskapi.wello.solutions/api/DbFileView?$filter=db_table_name+eq+%27task%27+and+id_in_table+eq+${ticketId}`;
+        const docEndpoint = `api/DbFileView?$filter=db_table_name+eq+%27task%27+and+id_in_table+eq+${ticketId}`;
         const docData = await fetchData(docEndpoint, 'GET', auth.authKey);
         setDoc(docData.value || []);
       } catch (err) {
         console.error("Error fetching ticket/work order/docs:", err);
-        setError('Failed to fetch ticket, work order, or documents.');
+        setError(t('single_ticket_page_err_failed_to_fetch_all'));
       } finally {
         setLoading(false);
       }
     };
 
     getTicketAndWorkOrderDetails();
-  }, [auth?.authKey, ticketId]);
+  }, [auth?.authKey, ticketId, t]);
 
 
   useEffect(() => {
@@ -89,7 +103,7 @@ const SingleTicket = () => {
             if (!item.id) return;
 
             const config = {
-              url: `https://V1servicedeskapi.wello.solutions/api/DbFileView/GetFileThumbnail/?id=${item.id}&maxWidth=500&maxHeight=500`,
+              url: `${url}api/DbFileView/GetFileThumbnail/?id=${item.id}&maxWidth=500&maxHeight=500`,
               method: "GET",
               headers: {
                 Authorization: `Basic ${authKey}`,
@@ -106,18 +120,18 @@ const SingleTicket = () => {
         setFileThumbnails(updatedThumbnails); // Update state with all fetched thumbnails
       } catch (err) {
         console.error("Error fetching thumbnails:", err);
-        setError("Failed to fetch thumbnails.");
+        setError(t("single_ticket_page_err_failed_to_fetch_thumbnail"));
       } finally {
         setLoading(false);
       }
     };
 
     GetFileThumbnails();
-  }, [auth, doc]); // Run when `doc` changes
+  }, [auth, doc, url, t]); // Run when `doc` changes
 
 
   if (loading) {
-    return <div className="flex w-full items-center justify-center h-screen bg-gray-100">
+    return <div className="flex w-full items-center justify-center h-screen">
       <div className="relative">
         <div className="w-20 h-20 border-purple-200 border-2 rounded-full"></div>
         <div className="w-20 h-20 border-purple-700 border-t-2 animate-spin rounded-full absolute left-0 top-0"></div>
@@ -134,12 +148,12 @@ const SingleTicket = () => {
           onClick={() => navigate(-1)} // Navigate back one step in history
           className="flex items-center mb-4 font-semibold text-gray-800"
         >
-          <ArrowLeft className="mr-2 w-5 h-5" /> {t("Go Back")}
+          <ArrowLeft className="mr-2 w-5 h-5" /> {t("single_ticket_page_go_back")}
         </button>
       </div>
 
       <div className='shadow-md rounded-lg p-12'>
-        <h2 className="capitalize text-xl font-bold mb-4">{t("Reference")}: {ticket?.id2} | {ticket?.subject}</h2>
+        <h2 className="capitalize text-xl font-bold mb-4">{t("single_ticket_page_reference")}: {ticket?.id2} | {ticket?.subject}</h2>
 
         {/* Tab Navigation */}
         <div className="flex space-x-4 mb-4">
@@ -147,13 +161,13 @@ const SingleTicket = () => {
             className={`px-4 py-2 mr-2 font-semibold ${activeTab === 'details' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-gray-400'}`}
             onClick={() => setActiveTab('details')}
           >
-            {t("Ticket Details")}
+            {t("single_ticket_page_ticket_details")}
           </button>
           <button
             className={`px-4 py-2 mr-2 font-semibold ${activeTab === 'documents' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-gray-400'}`}
             onClick={() => setActiveTab('documents')}
           >
-            {t("Documents")}
+            {t("single_ticket_page_documents")}
           </button>
         </div>
 
@@ -161,10 +175,10 @@ const SingleTicket = () => {
 
           <div className='grid grid-cols-1 md:grid-rows-3 gap-8'>
             <div className="grid grid-cols-3 gap-8 row-start-1">
-              <div className='shadow-md rounded-lg p-8 '>
-                <h4 className="block text-lg font-semibold">{t("Location and Equipment")}</h4>
+              <div className='shadow-sm border rounded-lg p-8 '>
+                <h4 className="block text-lg font-semibold">{t("single_ticket_page_location_equipment")}</h4>
                 <hr className='my-2 w-32 border-gray-300' />
-                <ul className="list-none list-inside text-gray-600">
+                <ul className="list-none list-inside text-gray-400">
                   {ticket?.project_db_address_street ? (<li className='flex items-center'><MapPin className='w-4 h-4 mr-2' />{ticket?.project_db_address_street}</li>) : ''}
                   {ticket?.project_db_address_zip || ticket?.project_db_address_city ? (<li className='ml-6 pb-1'>{ticket?.project_db_address_zip} {ticket?.project_db_address_city}</li>) : ''}
                   {ticket?.project_db_address_phone ? (<li className='flex items-center pb-1'><Phone className='w-4 h-4 mr-2' />{ticket?.project_db_address_phone}</li>) : ''}
@@ -187,10 +201,10 @@ const SingleTicket = () => {
                 </ul>
               </div>
 
-              <div className='shadow-md rounded-lg p-8 '>
-                <h4 className="text-lg font-semibold">{t("Created By")}</h4>
+              <div className='shadow-sm border rounded-lg p-8 '>
+                <h4 className="text-lg font-semibold">{t("single_ticket_page_created_by")}</h4>
                 <hr className='my-2 w-32 border-gray-300' />
-                <ul className="list-none list-inside text-gray-600">
+                <ul className="list-none list-inside text-gray-400">
                   <li className='flex items-center pb-1'><User className='w-4 h-4 mr-2' />{ticket?.contact_fullname}</li>
                   <li className='flex items-center'><Calendar className='w-4 h-4 mr-2' />{(new Date(ticket?.date_create).getFullYear() !== 1980) ? new Date(ticket?.date_create).toLocaleString('nl-BE', {
                     year: 'numeric',
@@ -202,10 +216,10 @@ const SingleTicket = () => {
                 </ul>
               </div>
 
-              <div className='shadow-md rounded-lg p-8 '>
-                <h4 className="text-lg font-semibold">Assigned To</h4>
+              <div className='shadow-sm border rounded-lg p-8 '>
+                <h4 className="text-lg font-semibold">{t('single_ticket_page_assigned_to')}</h4>
                 <hr className='my-2 w-32 border-gray-300' />
-                <ul className="list-none list-inside text-gray-600">
+                <ul className="list-none list-inside text-gray-400">
                   <li className='flex items-center pb-1'><User className='w-4 h-4 mr-2' />{ticket?.assigned_to_user_fullname?.trim() ? ticket.assigned_to_user_fullname : 'Not Assigned'}</li>
                   {ticket?.date_assigned && (<li className='flex items-center'><Calendar className='w-4 h-4 mr-2' />{(new Date(ticket?.date_assigned).getFullYear() !== 1980) ? new Date(ticket?.date_assigned).toLocaleString('nl-BE', {
                     year: 'numeric',
@@ -213,40 +227,40 @@ const SingleTicket = () => {
                     day: '2-digit',
                     hour: '2-digit',
                     minute: '2-digit'
-                  }) : ''}</li>)}
+                  }) : ' '}</li>)}
                 </ul>
               </div>
             </div>
 
             <div className={`grid ${ticketWorkOrder?.name ? 'grid-cols-3' : 'grid-cols-2'} gap-8 row-start-2`}>
               {/* <div className={`grid grid-cols-3 gap-8 row-start-2`}> */}
-              <div className='shadow-md rounded-lg p-8 '>
-                <h4 className="text-lg font-semibold">Severity</h4>
+              <div className='shadow-sm border rounded-lg p-8 '>
+                <h4 className="text-lg font-semibold">{t('single_ticket_page_severity')}</h4>
                 <hr className='my-2 w-32 border-gray-300' />
-                <span className="text-gray-600">
+                <span className="text-gray-400">
                   {ticket?.task_priority_name}
                 </span>
               </div>
 
-              <div className='shadow-md rounded-lg p-8 '>
-                <h4 className="text-lg font-semibold">Type and Status</h4>
+              <div className='shadow-sm border rounded-lg p-8 '>
+                <h4 className="text-lg font-semibold">{t('single_ticket_page_type_status')}</h4>
                 <hr className='my-2 w-32 border-gray-300' />
-                <ul className="list-none list-inside text-gray-700">
+                <ul className="list-none list-inside text-gray-400">
                   <li className='pb-1'>
                     {ticket?.task_type_name}
                   </li>
-                  <li><span className={`text-xs font-medium pe-2 px-1 pb-0.5 rounded-full ${statusColors[ticket?.task_status_name] || "bg-gray-200 text-gray-800"}`}>
-                    <Circle className='inline w-2 h-2 mr-1 rounded-full' />
+                  <li className='mt-2.5'><span className={`pe-3 px-2 pb-1 pt-0.5 rounded-full ${statusColors[ticket?.task_status_name] || "bg-gray-200 text-gray-800"}`}>
+                    <Circle className={`inline w-2 h-2 mr-1 rounded-full ${statusDotColors[ticket?.task_status_name] || "bg-gray-800 text-gray-800"}`} />
                     {ticket?.task_status_name}
                   </span></li>
                 </ul>
               </div>
 
               {ticketWorkOrder?.name && (
-                <div className='shadow-md rounded-lg p-8 '>
-                  <h4 className="text-lg font-semibold">Linked to Work Order</h4>
+                <div className='shadow-sm border rounded-lg p-8 '>
+                  <h4 className="text-lg font-semibold">{t('single_ticket_page_linked_wo')}</h4>
                   <hr className='my-2 w-32 border-gray-300' />
-                  <ul className="list-none list-inside text-gray-600">
+                  <ul className="list-none list-inside text-gray-400">
                     <li className='flex items-center pb-1 cursor-pointer' onClick={() => navigate(`/workorder/${ticketWorkOrder?.id}`)}>{ticketWorkOrder?.id2} <ExternalLink className="ml-2 w-5 h-5" /></li>
                     <li className='flex items-center pb-1'>{ticketWorkOrder?.job_type_name}</li>
                     <li className='flex items-center pb-1'>{ticketWorkOrder?.name}</li>
@@ -255,19 +269,19 @@ const SingleTicket = () => {
             </div>
 
             <div className="row-start-3">
-              <div className='shadow-md rounded-lg p-8 '>
-                <h4 className="block text-lg font-semibold">Description</h4>
+              <div className='shadow-sm border rounded-lg p-8 '>
+                <h4 className="block text-lg font-semibold">{t('single_ticket_page_description')}</h4>
                 <hr className='my-2 w-32 border-gray-300' />
                 {ticket?.remark ? (
-                  <p className="mb-4">{ticket?.remark}</p>
+                  <p className="mb-4 text-gray-400">{ticket?.remark}</p>
                 ) : (
-                  <p className="mb-4">{t('No description has been provided.')}</p>
+                  <p className="mb-4 text-gray-400">{t('single_ticket_page_no_description')}</p>
                 )}
               </div>
             </div>
           </div>
         ) : (
-          <div className='shadow-md rounded-lg p-8 '>
+          <div className='shadow-sm border rounded-lg p-8 '>
             <div className='grid grid-cols-1 md:grid-cols-4 gap-4'>
               {doc?.length > 0 ? (
                 doc.map(item => (
@@ -291,16 +305,16 @@ const SingleTicket = () => {
                     {/* Show "View Document" only if it's an image */}
                     {item.mime_type?.startsWith("image/") && (
                       <a href={fileThumbnails[item.id] || ""} target="_blank" rel="noopener noreferrer" className="flex items-center mt-2 text-blue-600 hover:underline">
-                        <Eye className="w-6 h-6 mr-2 text-gray-600" /> View Document
+                        <Eye className="w-6 h-6 mr-2 text-gray-600" /> {t('single_ticket_page_view_document')}
                       </a>
                     )
                     }
                   </div>
                 ))
-              ) : (<p className="font-semibold text-gray-800 p-2">No document available.</p>)}
+              ) : (<p className="font-semibold text-gray-400 p-2">{t('single_ticket_page_no_document')}</p>)}
 
               {!fileThumbnails && (!doc || doc.length === 0) && (
-                <p className="font-semibold text-gray-800 p-2">No document available.</p>
+                <p className="font-semibold text-gray-400 p-2">{t('single_ticket_page_no_document')}</p>
               )}
 
             </div>

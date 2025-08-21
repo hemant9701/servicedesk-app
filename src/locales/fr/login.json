@@ -1,0 +1,10 @@
+{
+  "login_form_email": "Entrez votre email ici",
+  "login_form_password": "Mot de passe",
+  "login_remenber_me": "Se souvenir de moi",
+  "login_form_button": "Connexion",
+  "login_lang_change": "Changer",
+  "login_lang_en": "Anglais",
+  "login_lang_fr": "Français",
+  "login_lang_nl": "Néerlandais"
+}

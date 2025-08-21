@@ -5,12 +5,13 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import {
   File, Eye, Download, BadgeInfo, ArrowUp, ArrowDown, ArrowLeft, ArrowLeftToLine, ArrowRight, ArrowRightToLine,
-  LayoutGrid, Table, Type, MapPin, Milestone, Building, Calendar, FileText, Wrench
+  LayoutGrid, Table, Type, MapPin, Milestone, Building, Calendar, FileText, Wrench, Image
 } from 'lucide-react';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { ToastContainer, toast } from 'react-toastify';
 import { useAuth } from '../AuthContext.js';
+import { useTranslation } from "react-i18next";
 
 import Select from 'react-select';
 import makeAnimated from 'react-select/animated';
@@ -27,6 +28,9 @@ const ViewDocuments = () => {
   const [fileThumbnails, setFileThumbnails] = useState({});
 
   const [downloadMsg, setDownloadMsg] = useState('');
+  const { t } = useTranslation('documents');
+
+  const url = `https://testservicedeskapi.odysseemobile.com/`;
 
   const fileTypesOptions = [
     { value: "documents", label: "Documents", extentions: ["DOC", "DOCX"] },
@@ -162,7 +166,7 @@ const ViewDocuments = () => {
             sortModel: []
           }
         };
-        const response = await fetchData('https://V1servicedeskapi.wello.solutions/api/DbFileView/Search', 'POST', auth.authKey, payload);
+        const response = await fetchData(`api/DbFileView/Search`, 'POST', auth.authKey, payload);
         setContacts(response || []);
         setLoading(false);
       } catch (err) {
@@ -172,26 +176,26 @@ const ViewDocuments = () => {
     };
 
     fetchInstallations();
-  }, [auth, debouncedKeyword, debouncedLocation, debouncedStreet, debouncedCity, date, fileType, object, includeArchived]);
+  }, [auth, url, debouncedKeyword, debouncedLocation, debouncedStreet, debouncedCity, date, fileType, object, includeArchived]);
 
   useEffect(() => {
     const GetFileThumbnails = async () => {
       try {
-        if (contacts.length === 0) return; // Ensure there is data before fetching
+        if (viewMode !== 'grid') return; // Only run in grid view
+        if (contacts.length === 0) return;
 
         const authKey = auth.authKey;
         if (!authKey) return;
 
-        // Create a copy of the thumbnails object
         const updatedThumbnails = {};
 
-        // Fetch thumbnails for all documents in the array
         await Promise.all(
           contacts.map(async (item) => {
             if (!item.id || (item.mime_type !== 'image/jpeg' && item.mime_type !== 'image/png')) return;
+            //if (item.id === '0c72ecbc-489a-4995-92ff-e84ee1448474' || item.id === '970ad1e0-e616-4c22-a2a0-38b71ee9a87b') return;
 
             const config = {
-              url: `https://V1servicedeskapi.wello.solutions/api/DbFileView/GetFileThumbnail/?id=${item.id}&maxWidth=500&maxHeight=500`,
+              url: `${url}api/DbFileView/GetFileThumbnail/?id=${item.id}&maxWidth=${item.image_width || '500'}&maxHeight=${item.image_heigth || '500'}`,
               method: "GET",
               headers: {
                 Authorization: `Basic ${authKey}`,
@@ -201,13 +205,12 @@ const ViewDocuments = () => {
             };
 
             const response = await axios(config);
-            updatedThumbnails[item.id] = URL.createObjectURL(response.data); // Store URL in object
+            updatedThumbnails[item.id] = URL.createObjectURL(response.data);
           })
         );
 
-        setFileThumbnails(updatedThumbnails); // Update state with all fetched thumbnails
+        setFileThumbnails(updatedThumbnails);
       } catch (err) {
-        console.error("Error fetching thumbnails:", err);
         setError("Failed to fetch thumbnails.");
       } finally {
         setLoading(false);
@@ -215,7 +218,7 @@ const ViewDocuments = () => {
     };
 
     GetFileThumbnails();
-  }, [contacts, auth]); // Run when `doc` changes
+  }, [contacts, auth, url, viewMode]); // 👈 Add viewMode to dependencies
 
 
   const columns = useMemo(() => [
@@ -267,9 +270,9 @@ const ViewDocuments = () => {
         ) : null,
       disableSortBy: true,
     },
-    { Header: 'Object', accessor: 'object_type' },
+    { Header: t('documents_table_heading_object_text'), accessor: 'object_type' },
     {
-      Header: 'Object Name', accessor: 'object_name',
+      Header: t('documents_table_heading_object_name_text'), accessor: 'object_name',
       Cell: ({ row }) =>
         row.original.object_name ? (
           <button
@@ -300,7 +303,7 @@ const ViewDocuments = () => {
         ) : null
     },
     {
-      Header: 'File Type',
+      Header: t('documents_table_heading_file_type_text'),
       accessor: 'file_extention',
       Cell: ({ row }) =>
         row.original.file_name ? (
@@ -310,14 +313,14 @@ const ViewDocuments = () => {
         ) : null
     },
     {
-      Header: 'File Name', accessor: 'file_name',
+      Header: t('documents_table_heading_file_name_text'), accessor: 'file_name',
       Cell: ({ row }) =>
         row.original.file_name ? (
           <a
-            href={`https://V1servicedeskapi.wello.solutions/api/DbFileView/View/${row.original.file_name.replace(
+            href={`${url}api/DbFileView/View/${row.original.file_name.replace(
               /[^a-zA-Z ]/g,
               ''
-            )}?id=${row.original.id}&token=${auth.authKey}`}
+            )}?id=${row.original.id}&token=${encodeURIComponent(auth.authKey)}`}
             className="text-left"
             target="_blank"
             rel="noreferrer"
@@ -327,7 +330,7 @@ const ViewDocuments = () => {
         ) : null
     },
     {
-      Header: 'Upload When', accessor: 'date_add',
+      Header: t('documents_table_heading_upload_when_text'), accessor: 'date_add',
       Cell: ({ row }) =>
         row.original.file_name && new Date(row.original.date_add).getFullYear() !== 1980
           ? new Date(row.original.date_add).toLocaleString('nl-BE', {
@@ -339,7 +342,7 @@ const ViewDocuments = () => {
           })
           : null
     },
-  ], [auth, selectedFiles, navigate]);
+  ], [auth, selectedFiles, navigate, url, t]);
 
   const toggleFileSelection = (file) => {
     setSelectedFiles((prev) =>
@@ -354,7 +357,7 @@ const ViewDocuments = () => {
 
   //   for (const file of contacts) {
   //     try {
-  //       const url = `https://V1servicedeskapi.wello.solutions/api/DbFileView/View/${file.file_name.replace(
+  //       const url = `api/DbFileView/View/${file.file_name.replace(
   //         /[^a-zA-Z ]/g,
   //         ''
   //       )}?id=${file.id}&token=${auth.authKey}`;
@@ -405,7 +408,7 @@ const ViewDocuments = () => {
       await Promise.all(
         selectedFiles.map(async (file) => {
           const response = await fetch(
-            `https://V1servicedeskapi.wello.solutions/api/DbFileView/View/${file.file_name.replace(
+            `${url}api/DbFileView/View/${file.file_name.replace(
               /[^a-zA-Z ]/g,)}?id=${file.id}&token=${auth.authKey}`
           );
 
@@ -466,7 +469,7 @@ const ViewDocuments = () => {
   );
 
   if (loading) {
-    return <div className="flex w-full items-center justify-center h-screen bg-gray-100">
+    return <div className="flex w-full items-center justify-center h-screen">
       <div className="relative">
         <div className="w-20 h-20 border-purple-200 border-2 rounded-full"></div>
         <div className="w-20 h-20 border-purple-700 border-t-2 animate-spin rounded-full absolute left-0 top-0"></div>
@@ -475,7 +478,7 @@ const ViewDocuments = () => {
   }
 
   if (error) {
-    return <div>Error: {error.message}</div>;
+    return <div className="text-center mt-10 text-red-600">Error fetching data: {error.message}</div>;
   }
 
   return (
@@ -493,24 +496,24 @@ const ViewDocuments = () => {
         theme="colored"
       />
 
-      <h1 className="text-2xl font-semibold text-gray-800 mb-6">{("Documents")}</h1>
+      <h1 className="text-2xl font-semibold text-gray-800 mb-6">{t("documents_page_title")}</h1>
       {/* Back Button */}
       <button
         onClick={() => navigate('/')} // Navigate back one step in history
         className="flex items-center mb-4 font-semibold text-gray-800"
       >
-        <ArrowLeft className="mr-2 w-5 h-5" /> {("Go Back")}
+        <ArrowLeft className="mr-2 w-5 h-5" /> {t("documents_page_go_back")}
       </button>
 
       {/* Search Filter UI */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 shadow-md rounded-lg p-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 shadow-sm border rounded-lg p-4">
         <div className="relative">
           <Type className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
           <input
             type="text"
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
-            placeholder='Keyword'
+            placeholder={t('documents_table_filter_keyword')}
             className="w-full pl-10 pr-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
           />
         </div>
@@ -520,7 +523,7 @@ const ViewDocuments = () => {
             type="text"
             value={location}
             onChange={(e) => setLocation(e.target.value)}
-            placeholder='Location'
+            placeholder={t('documents_table_filter_location')}
             className="w-full pl-10 pr-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
           />
         </div>
@@ -530,7 +533,7 @@ const ViewDocuments = () => {
             type="text"
             value={street}
             onChange={(e) => setStreet(e.target.value)}
-            placeholder='Street'
+            placeholder={t('documents_table_filter_street')}
             className="w-full pl-10 pr-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
           />
         </div>
@@ -540,7 +543,7 @@ const ViewDocuments = () => {
             type="text"
             value={city}
             onInput={(e) => setCity(e.target.value)}
-            placeholder='City'
+            placeholder={t('documents_table_filter_city')}
             className="w-full pl-10 pr-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
           />
         </div>
@@ -586,7 +589,7 @@ const ViewDocuments = () => {
             options={fileTypesOptions}
             value={fileType}
             onChange={setFileType}
-            placeholder="Select file type"
+            placeholder={t("documents_table_filter_file_type")}
             className="w-full pl-10 border rounded-md text-sm text-gray-700"
             styles={{
               control: (base) => ({
@@ -612,7 +615,7 @@ const ViewDocuments = () => {
               options={uniqueObjects}
               value={object}
               onChange={setObject}
-              placeholder="Select objects"
+              placeholder={t("documents_table_filter_objects")}
               className="w-full pl-10 border rounded-md text-sm text-gray-700"
               classNamePrefix="react-select"
               styles={{
@@ -630,7 +633,9 @@ const ViewDocuments = () => {
           </div>
         </div>
         <div className="flex items-end gap-x-2">
-          <button onClick={handleReset} className="px-4 py-2 border rounded-md text-sm text-gray-700 hover:bg-gray-100">Reset Filters</button>
+          <button onClick={handleReset} className="px-4 py-2 border rounded-md text-sm text-gray-700 hover:bg-gray-100">
+            {t("documents_table_filter_reset_button")}
+          </button>
         </div>
       </div>
 
@@ -648,7 +653,7 @@ const ViewDocuments = () => {
                 onClick={handleDownloadSelected}
                 className="bg-gray-800 text-white px-4 py-2 rounded-md flex items-center font-semibold"
               >
-                Download <Download className="ml-2 w-5 h-5" />
+                {t("documents_table_download_button")} <Download className="ml-2 w-5 h-5" />
               </button>
             )
           )}
@@ -658,7 +663,7 @@ const ViewDocuments = () => {
         {viewMode === 'table' && (
           <>
             <div className="flex items-center mb-1 ml-2 text-gray-900">
-              <BadgeInfo className='mr-2 w-5 h-5 text-gray-400' /> {("Click on the check box to select files to download.")}
+              <BadgeInfo className='mr-2 w-5 h-5 text-gray-400' /> {t("documents_page_helping_text")}
             </div>
             <div className="overflow-x-auto">
               <table {...getTableProps()} className="min-w-full divide-y divide-gray-200 border border-gray-300">
@@ -689,7 +694,7 @@ const ViewDocuments = () => {
                     return (
                       <tr {...row.getRowProps()} className='cursor-pointer hover:bg-gray-200'>
                         {row.cells.map(cell => (
-                          <td {...cell.getCellProps()} className="p-2 text-xs text-gray-800">
+                          <td {...cell.getCellProps()} className="px-2 py-4 text-sm text-gray-800">
                             {cell.render('Cell')}
                           </td>
                         ))}
@@ -703,7 +708,7 @@ const ViewDocuments = () => {
             {contacts.length > 10 && (
               <div className="flex items-center justify-between p-2">
                 <span className="text-sm text-gray-700">
-                  {("Page")} {pageIndex + 1} {("of")} {pageOptions.length}
+                  {t("documents_table_pagination_page")} {pageIndex + 1} {t("documents_table_pagination_of")} {pageOptions.length}
                 </span>
                 <div>
                   <button onClick={() => gotoPage(0)} disabled={!canPreviousPage} className="py-1 px-2 md:py-1 md:px-3 mr-1 text-gray-900 rounded-md border border-gray-900 disabled:border-gray-700">
@@ -722,7 +727,7 @@ const ViewDocuments = () => {
                 <select value={pageSize} onChange={e => setPageSize(Number(e.target.value))} className="ml-1 p-1 md:p-1 border border-gray-300 rounded-md max-w-32">
                   {[10, 20, 30, 50].map(size => (
                     <option key={size} value={size}>
-                      {("Show")} {size}
+                      {t("documents_table_pagination_show")} {size}
                     </option>
                   ))}
                 </select>
@@ -739,34 +744,69 @@ const ViewDocuments = () => {
                   {/* Show image thumbnail if it's an image, otherwise show file icon */}
                   {item.mime_type?.startsWith("image/") ? (
                     fileThumbnails[item.id] ? (
-                      <img src={fileThumbnails[item.id]} alt={item.name} className="w-48 h-40 object-cover rounded-md mx-auto" />
-                    ) : null
+                      <img
+                        src={fileThumbnails[item.id]}
+                        alt={item.name}
+                        className="w-48 h-40 object-cover rounded-md mx-auto"
+                      />
+                    ) : (
+                      <Image className="w-48 h-40 text-gray-200 mx-auto" /> // 👈 fallback image icon
+                    )
                   ) : (
                     <File className="w-48 h-40 text-gray-600 mx-auto" />
                   )}
-                  <h6 className="text-gray-500 text-sm py-1">{item.name}</h6>
 
-                  <p className="text-gray-500">{new Date(item.date_add).toLocaleString()}</p>
+                  <h4 className="text-gray-500 text-sm py-1 break-words">{item.name}</h4>
+                  <p className="text-gray-500 text-sm">{new Date(item.date_add).toLocaleString()}</p>
 
-                  {item.file_name ? (
-                    <label className="mt-2 flex space-x-2 text-sm">
+                  {item.file_name && (
+                    <label className="mt-2 flex space-x-2 items-start text-sm">
                       <input
                         type="checkbox"
                         onChange={() => toggleFileSelection(item)}
                         checked={selectedFiles.some((file) => file.id === item.id)}
-                      /><span className='text-sm'>{("Select to Download the Document.")}</span>
-                    </label>) : null}
-                  {item.mime_type?.startsWith("image/") && (
-                    <a href={fileThumbnails[item.id] || ""} target="_blank" rel="noopener noreferrer" className="flex items-center mt-2 hover:underline">
-                      <Eye className="w-4 h-4 mr-2 text-gray-600" /> {("View Document")}
+                        className='mt-1'
+                      />
+                      <span className='text-sm'>{t("documents_table_download_checkbox")}</span>
+                    </label>
+                  )}
+
+                  {item.mime_type?.startsWith("image/") ? (
+                    <a
+                      href={fileThumbnails[item.id] || ""}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center mt-2 text-sm hover:underline"
+                    >
+                      <Eye className="w-4 h-4 mr-2 text-gray-600" />
+                      {t("documents_table_view_document_text")}
+                    </a>
+                  ) : (
+                    <a
+                      href={`${url}api/DbFileView/View/${item.file_name.replace(
+                        /[^a-zA-Z ]/g,
+                        ''
+                      )}?id=${item.id}&token=${encodeURIComponent(auth.authKey)}`}
+                      className="flex items-center mt-2 text-sm hover:underline"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      <Eye className="w-4 h-4 mr-2 text-gray-600" />
+                      {t("documents_table_view_document_text")}
                     </a>
                   )}
                 </div>
               ))
-            ) : (<p className="text-gray-600 p-4 text-center">No document available.</p>)}
+            ) : (
+              <p className="text-gray-600 p-4 text-center">
+                {t("documents_table_no_document_available")}
+              </p>
+            )}
 
             {!fileThumbnails && (!contacts || contacts.length === 0) && (
-              <p className="text-gray-600 p-4 text-center">No document available.</p>
+              <p className="text-gray-600 p-4 text-center">
+                {t("documents_table_no_document_available")}
+              </p>
             )}
           </div>
         )}

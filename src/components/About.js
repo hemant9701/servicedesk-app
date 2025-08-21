@@ -1,22 +1,25 @@
 import React from "react";
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
+import { useTranslation } from "react-i18next";
 
 const About = () => {
-    const navigate = useNavigate();
+  const { t } = useTranslation('support');
+  const navigate = useNavigate();
   return (
-    <div className="w-full mx-auto px-6 py-12">
-        <div className='flex'>
+    <div className="w-full mx-auto p-1 md:p-8">
+      <h1 className="text-2xl font-semibold text-gray-800 mb-6">{t("support_page_title")}</h1>
+      <div className='flex'>
+        {/* Back Button */}
         <button
-          onClick={() => navigate('/')}
-          className="mb-6 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-gray-600"
+          onClick={() => navigate('/')} // Navigate back one step in history
+          className="flex items-center mb-4 font-semibold text-gray-800"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="mr-2 w-5 h-5" /> {t("support_page_go_back")}
         </button>
-        <h1 className="text-2xl font-semibold text-gray-800 mb-6 ml-4">About our support</h1>
       </div>
       <p className="text-lg text-gray-600 mb-6">
-        Welcome to our application! We are dedicated to providing the best experience for our users.
+        {t("support_page_content")}
       </p>
 
     </div>

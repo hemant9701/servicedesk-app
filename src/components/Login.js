@@ -1,14 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
-import { Link } from 'react-router-dom';
+//import { Link } from 'react-router-dom';
+import { LogIn, Eye, EyeOff, Languages } from 'lucide-react';
 import { ToastContainer, toast } from 'react-toastify';
+import en from '../locales/en/login.json';
+import fr from '../locales/fr/login.json';
+import nl from '../locales/nl/login.json';
 
 const Login = () => {
   const [email, setEmail] = useState('')
-  const [domain, setDomain] = useState('testnative2')
+  const [token, setToken] = useState('Ez5IDzie+E+CLFBR3A40g2ktg97czumlArA+gnrQJKyP4JYfct6q3oBltWdW4YFP8lePTkPURYdSmioIShjEuwWcEcCWkh7UDHf+2F9J6LWkGbgbrJbFJGQRoFqJCwhX+UYAh7D0ukj6FAqWn9AX/uXoiRwQmI8XQKUiUfjJvkuCbKSMLUydLtdQPimZdwSdPmqwd/oJTlPMAcb3ndTW5g==')
   const [password, setPassword] = useState('')
-  const [rememberMe, setRememberMe] = useState(false)
+  const [visible, setVisible] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [selectedLang, setSelectedLang] = useState('en'); // Selected in <select>
   const navigate = useNavigate();
   const { login } = useAuth();
   const [logo, setLogo] = useState('https://fsm.wello.net/wp-content/uploads/2024/01/WELLO_LOGO_Purple.png');
@@ -17,16 +23,45 @@ const Login = () => {
     if (window.welloServiceDesk) {
       const { logo_primary, token } = window.welloServiceDesk;
       setLogo(logo_primary);
-      setDomain(token);
+      //setDomain(token);
+      setToken(token)
     }
   }, []);
 
-  // useEffect(() => {
-  //   if (window.welloServiceDesk && window.welloServiceDesk.domain) {
-  //       //console.log("Domain:", window.welloServiceDesk.domain);
-  //       setDomain(window.welloServiceDesk.domain);
-  //   }
-  // }, []);
+  // Available languages
+  const languages = useMemo(() => ({
+    en,
+    fr,
+    nl,
+  }), []);
+
+  // State setup
+  const [language, setLanguage] = useState('en');
+  const [translations, setTranslations] = useState(en);
+
+  // On first load, load language from localStorage
+  useEffect(() => {
+    const savedLang = localStorage.getItem('lang') || 'en';
+    setLanguage(savedLang);
+    setSelectedLang(savedLang);
+    setTranslations(languages[savedLang]);
+  }, [languages]);
+
+  // When language changes, update localStorage and translations
+  useEffect(() => {
+    localStorage.setItem('lang', language);
+    setTranslations(languages[language]);
+  }, [languages, language]);
+
+  // Translation function
+  const t = (key) => translations?.[key] || en[key] || key;
+
+  // Language label map (static)
+  const languageOptions = {
+    en: t('login_lang_en') || 'English',
+    fr: t('login_lang_fr') || 'Français',
+    nl: t('login_lang_nl') || 'Nederlands'
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -36,16 +71,12 @@ const Login = () => {
       localStorage.removeItem('rememberedEmail');
     }
 
-    e.preventDefault();
-
     try {
-      const userData = await login(domain, email, password);
+      const userData = await login(token, email, password);
       //console.log("Login successful:", userData);
       if (userData) {
         navigate("/");
-        //window.location.reload();
       }
-      //navigate("/"); // Redirect after successful login
     } catch (err) {
       toast.error(err.message || "Login failed!");
       setEmail('');
@@ -67,47 +98,45 @@ const Login = () => {
         pauseOnHover
         theme="colored"
       />
-      <div className="w-full max-w-md mx-auto">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <div className="flex justify-center mb-2">
+      <div className="w-full max-w-sm mx-auto">
+        <div className="bg-white p-4 shadow sm:rounded-lg">
+          <div className="flex justify-center mb-4 border border-1 border-gray-300 rounded-lg">
             <img src={logo} alt="Logo" className="w-40" />
           </div>
-          <h2 className="text-center text-3xl font-extrabold text-gray-900 mb-8">Sign in to your account</h2>
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email address
-              </label>
-              <div className="mt-1">
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                className="mt-1 p-2 w-full border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder={t('login_form_email')}
+              />
             </div>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <div className="mt-1">
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
+            <div className="relative">
+              <input
+                id="password"
+                name="password"
+                type={visible ? "text" : "password"}
+                autoComplete="current-password"
+                required
+                className="mt-1 p-2 w-full border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder={t('login_form_password')}
+              />
+              <button
+                type="button"
+                onClick={() => setVisible(!visible)}
+                className="absolute inset-y-0 right-0 flex items-center px-2 text-gray-500 focus:outline-none"
+              >
+                {visible ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
             </div>
 
             <div className="flex items-center justify-between">
@@ -121,26 +150,45 @@ const Login = () => {
                   onChange={(e) => setRememberMe(e.target.checked)}
                 />
                 <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
-                  Remember me
+                  {t("login_remenber_me")}
                 </label>
               </div>
 
-              <div className="text-sm">
+              {/* <div className="text-sm">
                 <Link to="/forgot-password" className="font-medium text-indigo-600 hover:text-indigo-500">
                   Forgot your password?
                 </Link>
-              </div>
+              </div> */}
             </div>
 
             <div>
               <button
                 type="submit"
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gray-900 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
               >
-                Sign in
+                {t("login_form_button")} <LogIn className='w-4 h-4 ms-1' />
               </button>
             </div>
           </form>
+        </div>
+
+        <div className="flex justify-center items-center space-x-3 mt-8">
+          <div className="flex space-x-2 text-gray-600">
+            <Languages size={20} />
+          </div>
+
+          <select
+            value={selectedLang}
+            onChange={(e) => setSelectedLang(e.target.value)}
+          >
+            {Object.entries(languageOptions).map(([code, label]) => (
+              <option key={code} value={code}>{label}</option>
+            ))}
+          </select>
+
+          <button onClick={() => setLanguage(selectedLang)}>
+            {t("login_lang_change") || "Change"}
+          </button>
         </div>
       </div>
     </div>

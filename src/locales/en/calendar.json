@@ -1,0 +1,23 @@
+{
+  "calender_page_go_back": "Go Back",
+  "calender_page_title": "Calendar",
+  "calendar_page_filter_label": "Filters",
+  "calendar_page_filter_location_label": "Location",
+  "calendar_page_filter_location_placeholder": "Enter three letters to initiate search",
+  "calendar_page_filter_equipment_type_label": "Equipment Type",
+  "calendar_page_filter_equipment_type_select": "All equipment types",
+  "calendar_page_filter_equipment_label": "Equipment",
+  "calendar_page_filter_equipment_select": "All equipments",
+  "calendar_page_filter_reset": "Reset Filters",
+  "calendar_page_calendar_helping_text": "Rounded outline represents WO.",
+  "calendar_page_table_helping_text": "Click the row to view ticket details.",
+  "calender_table_heading_reference_text": "Ref",
+  "calender_table_heading_hour_text": "Hour",
+  "calender_table_heading_name_text": "Name",
+  "calender_table_heading_address_text": "Address",
+  "calender_table_heading_technician_text": "Technician",
+  "calender_table_no_records_text": "No records!!!",
+  "calender_table_pagination_page": "Page",
+  "calender_table_pagination_of": "of",
+  "calender_table_pagination_show": "Show"
+}

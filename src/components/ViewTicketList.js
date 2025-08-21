@@ -16,21 +16,33 @@ const ViewTicketList = () => {
   const { t } = useTranslation('ticketList');
 
   const statusColors = useMemo(() => ({
-    "In progress": "bg-yellow-200 text-yellow-800",
-    "Planned": "bg-blue-200 text-blue-800",
-    "To be Planned": "bg-purple-200 text-purple-800",
-    "Escalated to WO": "bg-orange-200 text-orange-800",
-    "Open": "bg-green-200 text-green-800",
-    "Ready for Review": "bg-indigo-200 text-indigo-800",
-    "Waiting for Parts": "bg-indigo-200 text-indigo-800",
-    "Cancelled": "bg-red-200 text-red-800",
-    "Completed": "bg-pink-200 text-pink-800",
+    "In progress": "bg-yellow-100 text-yellow-600",
+    "Planned": "bg-blue-100 text-blue-600",
+    "To be Planned": "bg-purple-100 text-purple-600",
+    "Escalated to WO": "bg-orange-100 text-orange-600",
+    "Open": "bg-green-100 text-green-600",
+    "Ready for Review": "bg-indigo-100 text-indigo-600",
+    "Waiting for Parts": "bg-indigo-100 text-indigo-600",
+    "Cancelled": "bg-red-100 text-red-600",
+    "Completed": "bg-pink-100 text-pink-600",
+  }), []);
+
+  const statusDotColors = useMemo(() => ({
+    "In progress": "bg-yellow-600 text-yellow-600",
+    "Planned": "bg-blue-600 text-blue-600",
+    "To be Planned": "bg-purple-600 text-purple-600",
+    "Escalated to WO": "bg-orange-600 text-orange-600",
+    "Open": "bg-green-600 text-green-600",
+    "Ready for Review": "bg-indigo-600 text-indigo-600",
+    "Waiting for Parts": "bg-indigo-600 text-indigo-600",
+    "Cancelled": "bg-red-600 text-red-600",
+    "Completed": "bg-pink-600 text-pink-600",
   }), []);
 
   useEffect(() => {
     const fetchTickets = async () => {
       try {
-        const response = await fetchData('https://v1servicedeskapi.wello.solutions/api/TaskView/', 'GET', auth.authKey);
+        const response = await fetchData('api/TaskView/', 'GET', auth.authKey);
         setTickets(response.value); // Adjusted for your API's response structure
         setLoading(false);
       } catch (err) {
@@ -48,10 +60,10 @@ const ViewTicketList = () => {
         Header: t('tickets_list_table_heading_reference_text'),
         accessor: 'id2',
         Cell: ({ row }) => (
-          <span
-            className="text-gray-800 font-medium">
-            {row.original.id2}
-          </span>
+          <div className="text-center">
+            <span className="text-gray-800 font-medium">
+              {row.original.id2}
+            </span></div>
         ),
       },
       {
@@ -60,7 +72,7 @@ const ViewTicketList = () => {
       },
       {
         Header: t('tickets_list_table_heading_name_text'), accessor: 'subject',
-        Cell: ({ value }) => value.length > 150 ? value.slice(0, 150) + '...' : value
+        Cell: ({ value }) => value.length > 30 ? value.slice(0, 30) + '...' : value
       },
       {
         Header: t('tickets_list_table_heading_assigned_name_text'), accessor: 'assigned_to_user_fullname',
@@ -79,14 +91,14 @@ const ViewTicketList = () => {
       {
         Header: t('tickets_list_table_heading_status_text'), accessor: 'task_status_name',
         Cell: ({ row }) => (
-          <span className={`text-xs font-medium pe-2 px-1 pb-0.5 rounded-full ${statusColors[row.original.task_status_name] || "bg-gray-200 text-gray-800"}`}>
-            <Circle className='inline w-2 h-2 mr-1 rounded-full' />
+          <span className={`text-xs min-w-max inline-flex items-center font-medium pe-3 px-2 pb-1 pt-0.5 rounded-full ${statusColors[row.original.task_status_name] || "bg-gray-200 text-gray-800"}`}>
+            <Circle className={`inline w-2 h-2 mr-1 rounded-full ${statusDotColors[row.original.task_status_name] || "bg-gray-800 text-gray-800"}`} /> {row.original.project_status_name}
             {row.original.task_status_name}
           </span>
         ),
       },
     ],
-    [statusColors, t]
+    [statusColors, statusDotColors, t]
   );
 
   const filteredTickets = useMemo(() => {
@@ -94,15 +106,15 @@ const ViewTicketList = () => {
       .filter(ticket => {
         if (selectedTab === 'open') {
           return (
-            ticket.task_status_name === 'Open' ||
-            ticket.task_status_name === 'In progress' ||
-            ticket.task_status_name === 'Waiting for Parts'
+            ticket.task_status_id === 'f3507920-d746-4d1c-b81b-c2bf291830c5' ||
+            ticket.task_status_id === '4c1a28dc-e213-429d-bbd0-2595814ca9fc' ||
+            ticket.task_status_id === 'Waiting for Parts'
           );
         } else {
           return (
-            ticket.task_status_name !== 'Open' &&
-            ticket.task_status_name !== 'In progress' &&
-            ticket.task_status_name !== 'Waiting for Parts'
+            ticket.task_status_id !== 'f3507920-d746-4d1c-b81b-c2bf291830c5' &&
+            ticket.task_status_id !== '4c1a28dc-e213-429d-bbd0-2595814ca9fc' &&
+            ticket.task_status_id !== 'Waiting for Parts'
           );
         }
       })
@@ -135,7 +147,7 @@ const ViewTicketList = () => {
   );
 
   if (loading) {
-    return <div className="flex w-full items-center w-full justify-center h-screen bg-gray-100">
+    return <div className="flex w-full items-center justify-center h-screen">
       <div className="relative">
         <div className="w-20 h-20 border-purple-200 border-2 rounded-full"></div>
         <div className="w-20 h-20 border-purple-700 border-t-2 animate-spin rounded-full absolute left-0 top-0"></div>
@@ -156,27 +168,27 @@ const ViewTicketList = () => {
         onClick={() => navigate('/')} // Navigate back one step in history
         className="flex items-center mb-4 font-semibold text-gray-800"
       >
-        <ArrowLeft className="mr-2 w-5 h-5" /> {t("Go Back")}
+        <ArrowLeft className="mr-2 w-5 h-5" /> {t("tickets_list_page_go_back")}
       </button>
 
-      <div className='shadow-md rounded-lg p-4'>
+      <div className='shadow-md rounded-lg'>
         <div className="flex text-sm mb-4">
           <button
-            className={`px-4 py-2 mr-2 rounded-md font-semibold ${selectedTab === 'open' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-gray-400'}`}
+            className={`px-4 py-2 mr-2 font-semibold ${selectedTab === 'open' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-gray-400'}`}
             onClick={() => setSelectedTab('open')}
           >
             {t("tickets_list_toggle_open_tickets_text")}
           </button>
           <button
-            className={`px-4 py-2 rounded-md font-semibold ${selectedTab === 'completed' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-gray-400'}`}
+            className={`px-4 py-2 font-semibold ${selectedTab === 'completed' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-gray-400'}`}
             onClick={() => setSelectedTab('completed')}
           >
             {t("tickets_list_toggle_completed_tickets_text")}
           </button>
         </div>
 
-        <div className="flex items-center mb-1 text-gray-900">
-          <BadgeInfo className='mr-2 w-5 h-5 text-gray-400' /> {t("Click the row to view ticket details.")}
+        <div className="flex items-center mb-1 text-gray-900 px-4 py-2">
+          <BadgeInfo className='mr-2 w-5 h-5 text-gray-400' /> {t("tickets_list_page_helping_text")}
         </div>
         <div className="overflow-x-auto">
           <table {...getTableProps()} className="min-w-full divide-y divide-gray-200 border border-gray-300">
@@ -205,7 +217,7 @@ const ViewTicketList = () => {
                 return (
                   <tr {...row.getRowProps()} className="cursor-pointer hover:bg-gray-200" onClick={() => navigate(`/ticket/${row.original.id}`)}>
                     {row.cells.map(cell => (
-                      <td {...cell.getCellProps()} className="p-2 text-xs text-gray-800">
+                      <td {...cell.getCellProps()} className="px-2 py-4 text-sm text-gray-800">
                         {cell.render('Cell')}
                       </td>
                     ))}
@@ -218,9 +230,9 @@ const ViewTicketList = () => {
 
         {/* Pagination Controls - Only show if filteredTickets exceed pageSize (10) */}
         {filteredTickets.length > 10 && (
-          <div className="flex items-center justify-between mt-4">
+          <div className="flex items-center justify-between p-4">
             <span className="text-sm text-gray-700">
-              {t("Page")} {pageIndex + 1} {t("of")} {pageOptions.length}
+              {t("ticket_list_table_pagination_page")} {pageIndex + 1} {t("ticket_list_table_pagination_of")} {pageOptions.length}
             </span>
             <div>
               <button onClick={() => gotoPage(0)} disabled={!canPreviousPage} className="py-1 px-2 md:py-1 md:px-3 mr-1 text-gray-900 rounded-md border border-gray-900 disabled:border-gray-700">
@@ -239,7 +251,7 @@ const ViewTicketList = () => {
             <select value={pageSize} onChange={e => setPageSize(Number(e.target.value))} className="ml-1 p-1 md:p-1 border border-gray-300 rounded-md max-w-32">
               {[10, 20, 30, 50].map(size => (
                 <option key={size} value={size}>
-                  {t("Show")} {size}
+                  {t("ticket_list_table_pagination_show")} {size}
                 </option>
               ))}
             </select>
