@@ -9,5 +9,6 @@
   "navbar_users_list_link": "Users",
   "navbar_equipments_list_link": "Equipments",
   "navbar_documents_list_link": "Documents",
-  "navbar_support_page_link": "Support"
+  "navbar_support_page_link": "Support",
+  "navbar_language_label": "Select Language"
 }

@@ -477,7 +477,7 @@ const CreateTicket = () => {
 
 
   return (
-    <div className="w-full p-1 md:p-8 bg-gray-50 min-h-screen">
+    <div className="w-full p-1 md:p-8 bg-gray-50 h-screen">
       <ToastContainer
         position="bottom-right"
         autoClose={5000}

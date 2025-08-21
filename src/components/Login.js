@@ -15,9 +15,9 @@ const Login = () => {
 
   useEffect(() => {
     if (window.welloServiceDesk) {
-      const { logo_primary, domain } = window.welloServiceDesk;
+      const { logo_primary, token } = window.welloServiceDesk;
       setLogo(logo_primary);
-      setDomain(domain);
+      setDomain(token);
     }
   }, []);
 

@@ -1,19 +1,22 @@
 import React, { useEffect, useState } from 'react';
-import { ChevronRight, ChevronLeft, LayoutDashboard, BadgePlus, Ticket, CalendarDays, User, Workflow, MessageCircleQuestion, FileStack, PackagePlus, LogOut } from "lucide-react";
+import { Search, Languages, ChevronRight, ChevronLeft, LayoutDashboard, BadgePlus, Ticket, CalendarDays, User, Workflow, MessageCircleQuestion, FileStack, PackagePlus, LogOut } from "lucide-react";
 import { Link } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { useTranslation } from "react-i18next";
 
 export default function DashboardSidebar() {
     const { auth, logout } = useAuth();
+    const [query, setQuery] = useState('');
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [logo, setLogo] = useState('https://fsm.wello.net/wp-content/uploads/2024/01/WELLO_LOGO_Purple.png');
     const [logo_2, setLogo_2] = useState('https://fsm.wello.net/wp-content/uploads/2023/12/cropped-WN54.png');
+    const { i18n } = useTranslation();
+    const userLangShort = auth?.userLang?.split('-')[0] || 'nl';
     const { t } = useTranslation('dashboard');
 
     useEffect(() => {
         if (window.welloServiceDesk) {
-            const { logo_primary, logo_secondary} = window.welloServiceDesk;
+            const { logo_primary, logo_secondary } = window.welloServiceDesk;
             setLogo(logo_primary);
             setLogo_2(logo_secondary);
         }
@@ -23,6 +26,35 @@ export default function DashboardSidebar() {
         setIsCollapsed(!isCollapsed);
     };
 
+    const handleToggle = () => {
+        if (isCollapsed) {
+            setIsCollapsed(false);
+        }
+    };
+
+    const languageOptions = {
+        en: 'English',
+        fr: 'Français',
+        nl: 'Nederlands'
+        // de: 'Deutsch',
+        // es: 'Español',
+        // pt: 'Português',
+        // it: 'Italiano',
+        // pl: 'Polski',
+    };
+
+    const changeLanguage = (lng) => {
+        i18n.changeLanguage(lng);
+    };
+    
+    useEffect(() => {
+        const savedLang = localStorage.getItem('i18nextLng');
+        if (!savedLang && userLangShort) {
+            i18n.changeLanguage(userLangShort);
+            localStorage.setItem('i18nextLng', userLangShort);
+        }
+    }, [auth, i18n, userLangShort]);
+
     const getFirstLetters = (str) => {
         let words = str.split(" ");
         return words[0][0] + words[1][0];
@@ -30,48 +62,42 @@ export default function DashboardSidebar() {
 
 
     return (
-        <div className={`flex flex-col justify-between border-r-2 border-b-2 rounded-br-lg border-gray-200 text-gray-500 bg-white p-4 h-screen ${isCollapsed ? 'w-25' : 'w-72'} transition-width duration-300`}>
+        <div className={`flex flex-col justify-between border-r-2 border-b-2 rounded-br-lg border-gray-200 text-gray-500 bg-white p-4 min-h-screen ${isCollapsed ? 'w-25' : 'w-72'} transition-width duration-300`}>
             <div className="">
                 <div className="flex items-center justify-center min-h-16 gap-2 mb-2 w-full">
                     <a href="/">
-                    {!isCollapsed ? <img src={logo} alt="Logo" className="w-32" /> : <img src={logo_2} alt="Logo" className="w-12" />}
+                        {!isCollapsed ? <img src={logo} alt="Logo" className="w-32" /> : <img src={logo_2} alt="Logo" className="w-12" />}
                     </a>
                 </div>
 
                 {/* Collapse Button */}
-                <div className="flex justify-start items-center mb-4">
+                <div className="flex justify-start items-center mb-2">
                     <button onClick={toggleCollapse} className="px-4 py-2">
                         {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
                     </button>
                     <p className={`text-lg ${isCollapsed ? 'hidden' : ''}`}>{t("navbar_collapse_arrow")}</p>
                 </div>
 
-
-
-                <div className={`relative w-full mb-4 ${isCollapsed ? 'px-4 py-2 border-2 rounded-lg cursor-pointer' : ''}`}>
+                <div
+                    className={`relative w-full mb-4 transition-all duration-300 ${isCollapsed ? 'px-4 py-2 border-2 rounded-lg cursor-pointer' : ''
+                        }`}
+                    onClick={handleToggle}
+                >
                     {!isCollapsed && (
                         <input
                             type="text"
-                            placeholder={t("navbar_search_box")}
-                            className="w-full px-3 py-2 pl-10 text-sm border-2 rounded-lg"
+                            value={query}
+                            onChange={(e) => setQuery(e.target.value)}
+                            placeholder={t('navbar_search_box')}
+                            className="w-full px-3 py-2 pl-10 text-sm border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500"
                         />
                     )}
-                    <svg
-                        className={`left-3 top-2.5 w-5 h-5 text-gray-500 ${!isCollapsed ? 'absolute' : ''}`}
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                    >
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M21 21l-4.35-4.35M16.5 10a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0z"
-                        />
-                    </svg>
-                </div>
 
+                    <Search
+                        className={`w-5 h-5 text-gray-500 transition-all duration-200 ${isCollapsed ? '' : 'absolute left-3 top-2.5'
+                            }`}
+                    />
+                </div>
 
                 {/* Navigation Links */}
                 <Link to="/" className="flex items-center gap-2 cursor-pointer w-full px-4 py-2 rounded-lg hover:bg-gray-200 focus:border-r-4 focus:border-gray-600 focus:bg-gray-200 active:border-r-4 active:border-gray-600 active:bg-gray-200">
@@ -101,8 +127,46 @@ export default function DashboardSidebar() {
                 </Link>
             </div>
 
-
             <div className="border-t-2 border-gray-200 pt-5">
+
+                {/* Language Switcher */}
+                {!isCollapsed ? (
+                    <div className="px-4 py-2 flex items-center gap-2">
+                        
+                        <Languages className="w-5 h-5" />
+                        <select
+                            id="language-select"
+                            className="w-full focus:outline-none focus:ring-2 focus:ring-gray-500"
+                            onChange={(e) => changeLanguage(e.target.value)}
+                            value={i18n.language.split('-')[0]}
+                        >
+                            {Object.entries(languageOptions).map(([code, label]) => (
+                                <option key={code} value={code}>
+                                    {label}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                ): (
+                    <div className="flex flex-col items-center gap-2">
+                        <Languages className="w-5 h-5" />
+                        <select
+                            id="language-select"
+                            className="w-full p-1 border-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            onChange={(e) => changeLanguage(e.target.value)}
+                            value={i18n.language.split('-')[0].toUpperCase()}
+                        >
+                            {Object.entries(languageOptions).map(([code]) => (
+                                <option key={code} value={code}>
+                                    {code.toUpperCase()}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                )}
+
+
+
                 <Link to="/about" className="flex items-center gap-2 cursor-pointer w-full px-4 py-2 rounded-lg hover:bg-gray-200 focus:border-r-4 focus:border-gray-600 focus:bg-gray-200 active:border-r-4 active:border-gray-600 active:bg-gray-200">
                     <MessageCircleQuestion className="w-5 h-5" /> {!isCollapsed && t('navbar_support_page_link')}
                 </Link>
