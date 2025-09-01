@@ -160,7 +160,7 @@ const ViewWorkOrderList = () => {
     {
       columns,
       data: jobs,
-      initialState: { pageIndex: 0, pageSize: 10 }, // Set initial page size to 10
+      initialState: { pageIndex: 0, pageSize: 12 }, // Set initial page size to 10
     },
     useSortBy,
     usePagination,
@@ -181,7 +181,7 @@ const ViewWorkOrderList = () => {
 
   return (
     <div className="w-full mx-auto p-1 md:p-8">
-      <h1 className="text-2xl font-semibold text-gray-800 mb-6">{t("work_order_list_page_title")}</h1>
+      <h1 className="text-zinc-900 text-3xl font-semibold mb-6">{t("work_order_list_page_title")}</h1>
 
       {isPopupOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
@@ -230,7 +230,7 @@ const ViewWorkOrderList = () => {
       {/* Back Button */}
       <button
         onClick={() => navigate('/')} // Navigate back one step in history
-        className="flex items-center mb-4 font-semibold text-gray-800"
+        className="flex items-center mb-6 font-semibold text-zinc-900 text-base"
       >
         <ArrowLeft className="mr-2 w-5 h-5" /> {t("work_order_list_page_go_back")}
       </button>
@@ -239,7 +239,7 @@ const ViewWorkOrderList = () => {
         {/* Tabs for Open and Completed Jobs */}
         <div className="mb-4">
           <button
-            className={`px-4 py-2 mr-2 font-semibold ${selectedTab === 'open' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-gray-400'}`}
+            className={`px-4 py-2 mr-2 font-semibold leading-7 ${selectedTab === 'open' ? 'text-gray-900 border-b-2 border-zinc-800' : 'text-slate-500'}`}
             onClick={() => {
               setSelectedTab('open');
               setIsCompleted(false);
@@ -249,7 +249,7 @@ const ViewWorkOrderList = () => {
           </button>
 
           <button
-            className={`px-4 py-2 font-semibold ${selectedTab === 'completed' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-gray-400'}`}
+            className={`px-4 py-2 font-semibold leading-7 ${selectedTab === 'completed' ? 'text-gray-900 border-b-2 border-zinc-800' : 'text-slate-500'}`}
             onClick={() => {
               setSelectedTab('completed');
               setIsCompleted(true);
@@ -260,8 +260,8 @@ const ViewWorkOrderList = () => {
 
         </div>
 
-        <div className="flex items-center mb-1 text-gray-900 px-4 py-2">
-          <BadgeInfo className='mr-2 w-5 h-5 text-gray-400' /> {t("work_order_list_page_helping_text")}
+        <div className="flex items-center mb-1 text-zinc-800 text-sm font-normal px-4 py-2">
+          <BadgeInfo className='mr-2 w-5 h-5 text-slate-300' /> {t("work_order_list_page_helping_text")}
         </div>
 
         {/* Table displaying filtered jobs */}
@@ -272,7 +272,7 @@ const ViewWorkOrderList = () => {
                 <tr {...headerGroup.getHeaderGroupProps()} className="bg-white divide-x divide-gray-300">
                   {headerGroup.headers.map(column => (
                     <th {...column.getHeaderProps(column.getSortByToggleProps())}
-                      className="p-2 text-left text-sm font-semibold text-gray-400">
+                      className="p-2 whitespace-nowrap text-slate-500 text-xs font-medium leading-none">
                       {column.render("Header")}
                       {column.isSorted ? (
                         column.isSortedDesc ? (
@@ -294,7 +294,7 @@ const ViewWorkOrderList = () => {
                     {row.cells.map((cell, index) => (
                       <td
                         {...cell.getCellProps()}
-                        className={`px-2 py-4 text-sm text-gray-800 ${index !== 0 ? 'cursor-pointer' : ''}`}
+                        className={`self-stretch px-1 py-2 text-xs font-normal text-zinc-900 ${index !== 0 ? 'cursor-pointer' : ''}`}
                         onClick={index !== 0 ? () => navigate(`/workorder/${row.original.id}`) : undefined}
                       >
                         {cell.render('Cell')}
@@ -309,27 +309,27 @@ const ViewWorkOrderList = () => {
         </div>
 
         {/* Pagination Controls - Only show if filteredWorkOrder exceed pageSize (10) */}
-        {jobs.length > 10 && (
+        {jobs.length > 12 && (
           <div className="flex items-center justify-between p-4">
-            <span className="text-sm text-gray-700">
+            <span className="text-xs text-slate-700">
               {t("work_order_list_table_pagination_page")} {pageIndex + 1} {t("work_order_list_table_pagination_of")} {pageOptions.length}
             </span>
             <div>
-              <button onClick={() => gotoPage(0)} disabled={!canPreviousPage} className="py-1 px-2 md:py-1 md:px-3 mr-1 text-gray-900 rounded-md border border-gray-900 disabled:border-gray-700">
+              <button onClick={() => gotoPage(0)} disabled={!canPreviousPage} className="py-0.5 px-1 md:px-2 mr-1 text-slate-700 rounded-md border border-slate-700 disabled:border-gray-700">
                 <ArrowLeftToLine className="w-4" />
               </button>
-              <button onClick={() => previousPage()} disabled={!canPreviousPage} className="py-1 px-2 md:py-1 md:px-3 mr-1 text-gray-900 rounded-md border border-gray-900 disabled:border-gray-700">
+              <button onClick={() => previousPage()} disabled={!canPreviousPage} className="py-0.5 px-1 md:px-2 mr-1 text-slate-700 rounded-md border border-slate-700 disabled:border-gray-700">
                 <ArrowLeft className="w-4" />
               </button>
-              <button onClick={() => nextPage()} disabled={!canNextPage} className="py-1 px-2 md:py-1 md:px-3 mr-1 text-gray-900 rounded-md border border-gray-900 disabled:border-gray-700">
+              <button onClick={() => nextPage()} disabled={!canNextPage} className="py-0.5 px-1 md:px-2 mr-1 text-slate-700 rounded-md border border-slate-700 disabled:border-gray-700">
                 <ArrowRight className="w-4" />
               </button>
-              <button onClick={() => gotoPage(pageOptions.length - 1)} disabled={!canNextPage} className="py-1 px-2 md:py-1 md:px-3 mr-1 text-gray-900 rounded-md border border-gray-900 disabled:border-gray-700">
+              <button onClick={() => gotoPage(pageOptions.length - 1)} disabled={!canNextPage} className="py-0.5 px-1 md:px-2 mr-1 text-slate-700 rounded-md border border-slate-700 disabled:border-gray-700">
                 <ArrowRightToLine className="w-4" />
               </button>
             </div>
-            <select value={pageSize} onChange={e => setPageSize(Number(e.target.value))} className="ml-1 p-1 md:p-1 border border-gray-300 rounded-md max-w-32">
-              {[10, 20, 30, 50].map(size => (
+            <select value={pageSize} onChange={e => setPageSize(Number(e.target.value))} className="ml-1 p-1 md:p-1 text-xs text-slate-700 border border-slate-700 rounded-md max-w-32">
+              {[12, 24, 36, 48].map(size => (
                 <option key={size} value={size}>
                   {t("work_order_list_table_pagination_show")} {size}
                 </option>

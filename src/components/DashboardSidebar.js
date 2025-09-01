@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Search, Languages, ChevronRight, ChevronLeft, House, Wrench, Ticket, Calendar, Users, Drill, MessageCircleQuestion, Folder, Settings, LogOut } from "lucide-react";
-import { Link } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { useTranslation } from "react-i18next";
 
@@ -65,7 +65,11 @@ export default function DashboardSidebar() {
 
 
     return (
-        <div className={`flex flex-col border-r-2 border-b-2 rounded-br-2xl border-gray-200 text-[#687287] bg-white p-4 ${isCollapsed ? 'w-[5rem]' : 'w-1/4'} transition-width duration-5000`}>
+        <div className={`sticky top-0 min-h-screen flex flex-col justify-between 
+              outline outline-1 outline-offset-[-1px] outline-gray-300 overflow-y-auto
+              rounded-br-2xl rounded-tr-2xl text-slate-500 bg-white p-4 
+              ${isCollapsed ? 'w-[5rem]' : 'w-1/4'} 
+              transition-width duration-500`}>
             <div className="">
                 <div className="flex items-center justify-center h-16 gap-2 mb-2 w-full">
                     <a href="/">
@@ -78,7 +82,7 @@ export default function DashboardSidebar() {
                     <button onClick={toggleCollapse} className="px-2 py-2">
                         {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
                     </button>
-                    <p className={`text-lg ${isCollapsed ? 'hidden' : ''}`}>{t("navbar_collapse_arrow")}</p>
+                    <p className={`text-base ${isCollapsed ? 'hidden' : ''}`}>{t("navbar_collapse_arrow")}</p>
                 </div>
 
                 <div
@@ -92,7 +96,7 @@ export default function DashboardSidebar() {
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
                             placeholder={t('navbar_search_box')}
-                            className="w-full px-3 py-2 pl-10 text-sm border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500"
+                            className="w-full px-3 py-2 pl-10 text-base border-2 rounded-lg focus:outline-none focus:ring-2 focus:text-slate-500"
                         />
                     )}
 
@@ -102,34 +106,125 @@ export default function DashboardSidebar() {
                 </div>
 
                 {/* Navigation Links */}
-                <Link to="/" className="flex items-center gap-2 leading-none cursor-pointer w-full px-2 py-2 mb-0.5 rounded-lg hover:bg-gray-100 focus:border-r-4 focus:border-gray-600 focus:bg-gray-200 active:text-[#1F272D] active:border-r-4 active:border-gray-600 active:bg-gray-200">
-                    <House className="w-5 h-5" /> {!isCollapsed && t('navbar_home_page_link')}
-                </Link>
-                <Link to="/createticket" className="flex items-center gap-2 leading-none cursor-pointer w-full px-2 py-2 mb-0.5 rounded-lg hover:bg-gray-100 focus:border-r-4 focus:border-gray-600 focus:bg-gray-200 active:text-[#1F272D] active:border-r-4 active:border-gray-600 active:bg-gray-200">
+                <NavLink
+                    to="/"
+                    end // ensures exact match for root path
+                    className={({ isActive }) =>
+                        [
+                            'flex items-center gap-2 leading-none cursor-pointer w-full px-2 py-2 mb-0.5 rounded-lg',
+                            'hover:bg-gray-200 focus:border-r-4 focus:border-gray-600 focus:bg-gray-200',
+                            isActive
+                                ? 'text-zinc-800 border-r-4 border-gray-600 bg-gray-200'
+                                : 'text-zinc-500'
+                        ].join(' ')
+                    }
+                >
+                    <House className="w-5 h-5" />
+                    {!isCollapsed && t('navbar_home_page_link')}
+                </NavLink>
+
+                <NavLink to="/createticket" 
+                end // ensures exact match for root path
+                    className={({ isActive }) =>
+                        [
+                            'flex items-center gap-2 leading-none cursor-pointer w-full px-2 py-2 mb-0.5 rounded-lg',
+                            'hover:bg-gray-200 focus:border-r-4 focus:border-zinc-800 focus:bg-gray-200',
+                            isActive
+                                ? 'text-zinc-800 border-r-4 border-gray-600 bg-gray-200'
+                                : 'text-zinc-500'
+                        ].join(' ')
+                    }
+                >
                     <Wrench className="w-5 h-5" /> {!isCollapsed && t('navbar_create_ticket_link')}
-                </Link>
-                <Link to="/tickets" className="flex items-center gap-2 leading-none cursor-pointer w-full px-2 py-2 mb-0.5 rounded-lg hover:bg-gray-100 focus:border-r-4 focus:border-gray-600 focus:bg-gray-200 active:text-[#1F272D] active:border-r-4 active:border-gray-600 active:bg-gray-200">
+                </NavLink>
+                <NavLink to="/tickets" 
+                end // ensures exact match for root path
+                    className={({ isActive }) =>
+                        [
+                            'flex items-center gap-2 leading-none cursor-pointer w-full px-2 py-2 mb-0.5 rounded-lg',
+                            'hover:bg-gray-200 focus:border-r-4 focus:border-zinc-800 focus:bg-gray-200',
+                            isActive
+                                ? 'text-zinc-800 border-r-4 border-gray-600 bg-gray-200'
+                                : 'text-zinc-500'
+                        ].join(' ')
+                    }
+                >
                     <Ticket className="w-5 h-5" /> {!isCollapsed && t('navbar_tickets_list_link')}
-                </Link>
-                <Link to="/calendar" className="flex items-center gap-2 leading-none cursor-pointer w-full px-2 py-2 mb-0.5 rounded-lg hover:bg-gray-100 focus:border-r-4 focus:border-gray-600 focus:bg-gray-200 active:text-[#1F272D] active:border-r-4 active:border-gray-600 active:bg-gray-200">
+                </NavLink>
+                <NavLink to="/calendar" 
+                end // ensures exact match for root path
+                    className={({ isActive }) =>
+                        [
+                            'flex items-center gap-2 leading-none cursor-pointer w-full px-2 py-2 mb-0.5 rounded-lg',
+                            'hover:bg-gray-200 focus:border-r-4 focus:border-zinc-800 focus:bg-gray-200',
+                            isActive
+                                ? 'text-zinc-800 border-r-4 border-gray-600 bg-gray-200'
+                                : 'text-zinc-500'
+                        ].join(' ')
+                    }
+                >
                     <Calendar className="w-5 h-5" /> {!isCollapsed && t('navbar_calendar_page_link')}
-                </Link>
-                <Link to="/workorders" className="flex items-center gap-2 leading-none cursor-pointer w-full px-2 py-2 rounded-lg hover:bg-gray-100 focus:border-r-4 focus:border-gray-600 focus:bg-gray-200 active:text-[#1F272D] active:border-r-4 active:border-gray-600 active:bg-gray-200">
+                </NavLink>
+                <NavLink to="/workorders" 
+                end // ensures exact match for root path
+                    className={({ isActive }) =>
+                        [
+                            'flex items-center gap-2 leading-none cursor-pointer w-full px-2 py-2 mb-0.5 rounded-lg',
+                            'hover:bg-gray-200 focus:border-r-4 focus:border-zinc-800 focus:bg-gray-200',
+                            isActive
+                                ? 'text-zinc-800 border-r-4 border-gray-600 bg-gray-200'
+                                : 'text-zinc-500'
+                        ].join(' ')
+                    }
+                >
                     <Settings className="w-5 h-5" /> {!isCollapsed && t('navbar_work_order_list_link')}
-                </Link>
+                </NavLink>
                 <div className="border-t-2 border-gray-100 my-4"></div>
-                <Link to="/users" className="flex items-center gap-2 leading-none cursor-pointer w-full px-2 py-2 mb-0.5 rounded-lg hover:bg-gray-100 focus:border-r-4 focus:border-gray-600 focus:bg-gray-200 active:text-[#1F272D] active:border-r-4 active:border-gray-600 active:bg-gray-200">
+                <NavLink to="/users" 
+                end // ensures exact match for root path
+                    className={({ isActive }) =>
+                        [
+                            'flex items-center gap-2 leading-none cursor-pointer w-full px-2 py-2 mb-0.5 rounded-lg',
+                            'hover:bg-gray-200 focus:border-r-4 focus:border-zinc-800 focus:bg-gray-200',
+                            isActive
+                                ? 'text-zinc-800 border-r-4 border-gray-600 bg-gray-200'
+                                : 'text-zinc-500'
+                        ].join(' ')
+                    }
+                >
                     <Users className="w-5 h-5" /> {!isCollapsed && t('navbar_users_list_link')}
-                </Link>
-                <Link to="/equipments" className="flex items-center gap-2 leading-none cursor-pointer w-full px-2 py-2 mb-0.5 rounded-lg hover:bg-gray-100 focus:border-r-4 focus:border-gray-600 focus:bg-gray-200 active:text-[#1F272D] active:border-r-4 active:border-gray-600 active:bg-gray-200">
+                </NavLink>
+                <NavLink to="/equipments" 
+                end // ensures exact match for root path
+                    className={({ isActive }) =>
+                        [
+                            'flex items-center gap-2 leading-none cursor-pointer w-full px-2 py-2 mb-0.5 rounded-lg',
+                            'hover:bg-gray-200 focus:border-r-4 focus:border-zinc-800 focus:bg-gray-200',
+                            isActive
+                                ? 'text-zinc-800 border-r-4 border-gray-600 bg-gray-200'
+                                : 'text-zinc-500'
+                        ].join(' ')
+                    }
+                >
                     <Drill className="w-5 h-5" /> {!isCollapsed && t('navbar_equipments_list_link')}
-                </Link>
-                <Link to="/documents" className="flex items-center gap-2 leading-none cursor-pointer w-full px-2 py-2 mb-0.5 rounded-lg hover:bg-gray-100 focus:border-r-4 focus:border-gray-600 focus:bg-gray-200 active:text-[#1F272D] active:border-r-4 active:border-gray-600 active:bg-gray-200">
+                </NavLink>
+                <NavLink to="/documents" 
+                end // ensures exact match for root path
+                    className={({ isActive }) =>
+                        [
+                            'flex items-center gap-2 leading-none cursor-pointer w-full px-2 py-2 mb-0.5 rounded-lg',
+                            'hover:bg-gray-200 focus:border-r-4 focus:border-zinc-800 focus:bg-gray-200',
+                            isActive
+                                ? 'text-zinc-800 border-r-4 border-gray-600 bg-gray-200'
+                                : 'text-zinc-500'
+                        ].join(' ')
+                    }
+                >
                     <Folder className="w-5 h-5" /> {!isCollapsed && t('navbar_documents_list_link')}
-                </Link>
+                </NavLink>
             </div>
 
-            <div className="mt-20 relative ">
+            <div className="mt-5 relative ">
 
                 {/* Language Switcher */}
                 {!isCollapsed ? (
@@ -151,27 +246,38 @@ export default function DashboardSidebar() {
                     </div>
                 ) : (
                     <div
-                        className={`relative w-full mb-4 leading-none rounded-lg transition-all duration-300 hover:bg-gray-100 ${isCollapsed ? 'px-2 py-2 cursor-pointer' : ''}`}
+                        className={`relative w-full mb-4 leading-none rounded-lg transition-all duration-300 hover:bg-gray-200 ${isCollapsed ? 'px-2 py-2 cursor-pointer' : ''}`}
                         onClick={handleToggle}
                     >
                         <Languages className={`w-5 h-5 transition-all duration-200 ${isCollapsed ? '' : 'absolute left-3 top-2.5'}`} />
                     </div>
                 )}
 
-                <Link to="/about" className="flex items-center gap-2 leading-none cursor-pointer w-full px-2 py-2 rounded-lg hover:bg-gray-100 focus:border-r-4 focus:border-gray-600 focus:bg-gray-200 active:border-r-4 active:border-gray-600 active:bg-gray-200">
+                <NavLink to="/about" 
+                end // ensures exact match for root path
+                    className={({ isActive }) =>
+                        [
+                            'flex items-center gap-2 leading-none cursor-pointer w-full px-2 py-2 mb-0.5 rounded-lg',
+                            'hover:bg-gray-200 focus:border-r-4 focus:border-zinc-800 focus:bg-gray-200',
+                            isActive
+                                ? 'text-zinc-800 border-r-4 border-gray-600 bg-gray-200'
+                                : 'text-zinc-500'
+                        ].join(' ')
+                    }
+                >
                     <MessageCircleQuestion className="w-5 h-5" /> {!isCollapsed && t('navbar_support_page_link')}
-                </Link>
+                </NavLink>
                 {/* Profile and Logout */}
                 <div className="border-t-2 border-gray-100 my-4"></div>
                 {auth && (
                     <div className="flex justify-between items-center rounded-lg gap-2 px-2 py-2">
                         {!isCollapsed && (
-                            <div className="flex items-center gap-2 font-bold">
-                                <span className="px-2 py-2 w-10 h-10 rounded-full text-gray-900 bg-gray-200">{getFirstLetters(auth.userName)}</span>
-                                {auth.userName}
+                            <div className="flex items-center gap-2 font-semibold">
+                                <span className="px-2 py-2 w-10 h-10 rounded-full text-zinc-800 bg-gray-200">{getFirstLetters(auth.userName)}</span>
+                                <span className="text-zinc-800">{auth.userName}</span>
                             </div>
                         )}
-                        <div className="flex flex-col text-sm cursor-pointer">
+                        <div className="flex flex-col text-base cursor-pointer">
                             <button onClick={logout}>
                                 <LogOut className="w-5 h-5" />
                             </button>

@@ -15,5 +15,8 @@
   "single_ticket_page_no_document": "No document available.",
   "single_ticket_page_err_no_ticket_id_auth": "Ticket ID or auth key is missing.",
   "single_ticket_page_err_failed_to_fetch_all": "Failed to fetch ticket, work order, or documents.",
-  "single_ticket_page_err_failed_to_fetch_thumbnail": "Failed to fetch thumbnails."
+  "single_ticket_page_err_failed_to_fetch_thumbnail": "Failed to fetch thumbnails.",
+  "single_ticket_page_select_to_download": "Select to Download the Document.",
+  "single_ticket_page_download_button": "Download",
+  "single_ticket_page_download_all_button": "Download All"
 }

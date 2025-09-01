@@ -280,7 +280,7 @@ const ViewInstallations = () => {
       Cell: ({ row }) => (
         <span
           onClick={() => navigate(`/equipment/${row.original.id}`)}
-          className="text-gray-800 font-medium me-2 text-left"
+          className="me-2 text-left"
         >
           {row.original.name}
         </span>
@@ -295,7 +295,7 @@ const ViewInstallations = () => {
             onClick={() => toggleExpand(row.original.id)}
             className="pr-1"
           >
-            {expanded[row.original.id] ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
+            {expanded[row.original.id] ? <ChevronDown size={20} className='text-slate-500' /> : <ChevronUp size={20} className='text-slate-500' />}
           </button>
         ) : null
       )
@@ -319,7 +319,7 @@ const ViewInstallations = () => {
       Header: t('equipments_list_table_heading_status_text'),
       accessor: 'project_status_name',
       Cell: ({ row }) => (
-        <span className={`text-xs min-w-max inline-flex items-center font-medium pe-3 px-2 pb-1 pt-0.5 rounded-full ${statusColors[row.original.project_status_name] || "bg-gray-200 text-gray-800"}`}>
+        <span className={`text-xs min-w-max inline-flex items-center pe-3 px-2 pb-1 pt-0.5 rounded-full ${statusColors[row.original.project_status_name] || "bg-gray-200 text-gray-800"}`}>
           <Circle className={`inline w-2 h-2 mr-1 rounded-full ${statusDotColors[row.original.project_status_name] || "bg-gray-800 text-gray-800"}`} /> {row.original.project_status_name}
         </span>
       ),
@@ -396,12 +396,12 @@ const ViewInstallations = () => {
             return (
               <td
                 key={column.id || column.accessor}
-                className={`px-2 py-4 min-w-max text-sm text-gray-800 ${index === 0 ? 'flex' : ''}`}
-                style={index === 0 ? { paddingLeft: `${depth * 2 + 2}em` } : {}}
+                className={`px-2 py-4 whitespace-nowrap text-zinc-900 text-xs font-normal ${index === 0 ? 'flex' : ''}`}
+                style={index === 0 ? { paddingLeft: `${depth * 2 + 1}em` } : {}}
                 onClick={isSecondColumn ? (e) => e.stopPropagation() : undefined}
               >
                 {index === 0 && depth > 0 && (
-                  <CornerDownRight className="mr-1 text-gray-400" size={20} />
+                  <CornerDownRight className="mr-1 text-gray-300" size={20} />
                 )}
                 {cellContent}
               </td>
@@ -428,49 +428,52 @@ const ViewInstallations = () => {
 
   return (
     <div className="min-w-[78%] mx-auto p-1 md:p-8">
-      <h1 className="text-2xl font-semibold text-gray-800 mb-6">{t("equipments_list_page_title")}</h1>
+      <h1 className="text-zinc-900 text-3xl font-semibold mb-6">{t("equipments_list_page_title")}</h1>
       {/* Back Button */}
       <button
         onClick={() => navigate('/')} // Navigate back one step in history
-        className="flex items-center mb-4 font-semibold text-gray-800"
+        className="flex items-center mb-6 font-semibold text-zinc-900 text-base"
       >
         <ArrowLeft className="mr-2 w-5 h-5" /> {t("equipments_list_page_go_back")}
       </button>
 
-      <div className="flex items-center mb-4">
+      <div className="flex items-center mb-6">
         <input
           type="checkbox"
           checked={includeArchived}
           onChange={() => setIncludeArchived(!includeArchived)}
           className="mr-2"
         />
-        <label className="text-sm">{t('equipments_list_page_checkbox_label')}</label>
+        <label className="text-zinc-800 text-sm font-medium">{t('equipments_list_page_checkbox_label')}</label>
       </div>
 
-      <button onClick={() => setIsModalOpen(true)} className="flex items-center bg-white font-semibold text-gray-800 border border-gray-800 px-4 py-1 rounded-md mb-4">
-        {t('equipments_list_page_filter_button')} <Filter className="w-4 h-4 ml-4" />
+      <button onClick={() => setIsModalOpen(true)} className="flex justify-center items-center bg-white text-zinc-800 text-base font-medium leading-normal border border-zinc-800 w-48 px-5 py-3 rounded-md mb-4">
+        {t('equipments_list_page_filter_button')} <Filter size={24} className="ml-4" />
       </button>
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="w-80 p-4 bg-white rounded-lg shadow-md border space-y-4">
+          <div className="relative w-80 p-4 bg-white rounded-lg shadow-md border space-y-4">
+            <button onClick={() => setIsModalOpen(false)} className="absolute -top-1 -right-1 bg-white text-zinc-800 text-base font-medium leading-normal border border-zinc-800 px-2 rounded-full">
+              x
+            </button>
             {/* Header */}
             <div className="flex items-center justify-between border-b pb-2">
-              <div className="flex items-center gap-2">
-                <h2 className="text-sm font-semibold text-gray-700">{t('equipments_list_page_filter_label')}</h2>
-                <Filter className="w-4 h-4 text-gray-700" />
+              <div className="flex justify-center items-center bg-white text-zinc-800 text-base font-medium leading-normal border border-zinc-800 w-48 px-4 py-2 rounded-md mb-2">
+                {t('equipments_list_page_filter_label')}
+                <Filter size={24} className="ml-4" />
               </div>
             </div>
 
             {/* Location */}
             <div className="relative">
-              <MapPin className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
+              <MapPin className="absolute left-3 top-2.5 w-4 h-5 text-zinc-800" />
               <input
                 type="text"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
                 placeholder={t("equipments_list_page_filter_location")}
-                className="w-full pl-10 pr-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
+                className="w-full pl-10 pr-3 py-2 border rounded-md text-gray-500 text-base font-normal focus:outline-none focus:ring-1 focus:ring-gray-400"
               />
             </div>
 
@@ -486,26 +489,26 @@ const ViewInstallations = () => {
 
             {/* Keyword */}
             <div className="relative">
-              <Text className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
+              <Text className="absolute left-3 top-2.5 w-4 h-5 text-zinc-800" />
               <input
                 type="text"
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}
                 placeholder={t("equipments_list_page_filter_keyword")}
-                className="w-full pl-10 pr-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
+                className="w-full pl-10 pr-3 py-2 border rounded-md text-gray-500 text-base font-normal focus:outline-none focus:ring-1 focus:ring-gray-400"
               />
             </div>
 
             {/* Brands */}
             <div className="relative">
-              <Bold className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
+              <Bold className="absolute left-3 top-2.5 w-4 h-5 text-zinc-800" />
               <Select
                 components={animatedComponents}
                 options={brandOptions}
                 value={brandOptions.find(option => option.value === tempFilters.brand) || null} // match by ID
                 onChange={(selected) => setTempFilters((prev) => ({ ...prev, brand: selected.value, }))}
                 placeholder={t("equipments_list_page_filter_brands")}
-                className="w-full pl-10 border rounded-md text-sm text-gray-500"
+                className="w-full pl-10 border rounded-md text-gray-500 text-base font-normal"
                 classNamePrefix="react-select"
                 styles={{
                   control: (base) => ({
@@ -523,14 +526,14 @@ const ViewInstallations = () => {
 
             {/* Status */}
             <div className="relative">
-              <BarChart className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
+              <BarChart className="absolute left-3 top-2.5 w-4 h-5 text-zinc-800" />
               <Select
                 components={animatedComponents}
                 options={statusOptions}
                 value={statusOptions.find(option => option.value === tempFilters.status) || null} // match by ID
                 onChange={(selected) => setTempFilters((prev) => ({ ...prev, status: selected.value, }))}
                 placeholder={t("equipments_list_page_filter_status")}
-                className="w-full pl-10 border rounded-md text-sm text-gray-500"
+                className="w-full pl-10 border rounded-md text-gray-500 text-base font-normal"
                 classNamePrefix="react-select"
                 styles={{
                   control: (base) => ({
@@ -548,14 +551,14 @@ const ViewInstallations = () => {
 
             {/* Models */}
             <div className="relative">
-              <Hash className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
+              <Hash className="absolute left-3 top-2.5 w-4 h-5 text-zinc-800" />
               <Select
                 components={animatedComponents}
                 options={modelOptions}
                 value={modelOptions.find(option => option.value === tempFilters.model) || null} // match by ID
                 onChange={(selected) => setTempFilters((prev) => ({ ...prev, model: selected.value, }))}
                 placeholder={t("equipments_list_page_filter_models")}
-                className="w-full pl-10 border rounded-md text-sm text-gray-500"
+                className="w-full pl-10 border rounded-md text-gray-500 text-base font-normal"
                 classNamePrefix="react-select"
                 styles={{
                   control: (base) => ({
@@ -572,11 +575,11 @@ const ViewInstallations = () => {
             </div>
 
             {/* Footer buttons */}
-            <div className="flex justify-between pt-2">
-              <button onClick={handleReset} disabled={isLoading} className="px-4 w-[45%] py-2 border rounded-md text-sm text-gray-700 hover:bg-gray-100">
+            <div className="grid grid-cols-2 gap-4 justify-between pt-2">
+              <button onClick={handleReset} disabled={isLoading} className="px-5 py-3 border rounded-md text-sm text-zinc-800 hover:bg-zinc-100">
                 {t('equipments_list_page_filter_reset')}
               </button>
-              <button onClick={applyFilters} disabled={isLoading} className="px-4 w-[45%] py-2 bg-gray-900 text-white rounded-md text-sm hover:bg-gray-800">
+              <button onClick={applyFilters} disabled={isLoading} className="px-5 py-3 bg-zinc-800 text-white rounded-md text-sm hover:bg-zinc-800">
                 {t('equipments_list_page_filter_confirm')}
               </button>
             </div>
@@ -585,8 +588,8 @@ const ViewInstallations = () => {
       )}
 
       <div className='shadow-md rounded-lg'>
-        <div className="flex items-center mb-1 text-gray-900 px-4 py-2">
-          <BadgeInfo className='mr-2 w-5 h-5 text-gray-400' /> {t("equipments_list_page_helping_text")}
+        <div className="flex items-center mb-1 text-zinc-800 text-sm font-normal px-4 py-2">
+          <BadgeInfo className='mr-2 w-5 h-5 text-slate-300' /> {t("equipments_list_page_helping_text")}
         </div>
 
         {/* Table displaying filtered data */}
@@ -597,7 +600,7 @@ const ViewInstallations = () => {
                 <tr {...headerGroup.getHeaderGroupProps()} className="bg-white">
                   {headerGroup.headers.map((column, index) => (
                     <th {...column.getHeaderProps(column.getSortByToggleProps())}
-                      className={`px-2 py-2 text-left min-w-max text-sm font-semibold text-gray-600 ${index !== 0 ? 'border-r border-gray-300' : ''}`}>
+                      className={`px-2 py-3 text-left whitespace-nowrap text-slate-500 text-xs font-medium leading-none ${index !== 0 ? 'border-r border-gray-300' : ''}`}>
                       {column.render('Header')}
                       {column.isSorted ? (
                         column.isSortedDesc ? (
@@ -613,10 +616,10 @@ const ViewInstallations = () => {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {!isLoading && renderRows(filteredContacts)}
-              {isLoading && <Loader className="ml-2 text-blue-600 animate-spin" />}
             </tbody>
           </table>
         </div>
+        {isLoading && <Loader className="ml-2 text-blue-600 animate-spin" />}
       </div>
     </div>
   );

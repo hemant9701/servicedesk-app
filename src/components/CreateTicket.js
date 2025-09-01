@@ -6,7 +6,7 @@ import 'react-calendar/dist/Calendar.css'
 import { useAuth } from '../AuthContext';
 import { useNavigate } from 'react-router-dom';
 import {
-  XCircle, X, CornerDownRight, CircleCheckBig, ArrowLeft, Filter, FileText, Clock, File, Circle, Wrench, ArrowUp, ArrowDown,
+  XCircle, X, CornerDownRight, CircleCheckBig, Filter, FileText, Clock, File, Circle, Wrench, ArrowUp, ArrowDown,
   MapPin, Text, Bold, BarChart, Hash, Loader, UploadCloud, ChevronDown, ChevronUp, Check, BadgeInfo, TicketX, Thermometer
 } from 'lucide-react';
 import { ToastContainer, toast } from 'react-toastify';
@@ -25,7 +25,7 @@ const CreateTicket = () => {
   const [subRowsMap, setSubRowsMap] = useState({});
   const [error, setError] = useState(null);
   const [selectedRow, setSelectedRow] = useState(null);
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(0);
   const [ticketDetails, setTicketDetails] = useState({
     ticketType: '',
     severity: '',
@@ -166,10 +166,10 @@ const CreateTicket = () => {
   ];
 
   const steps = [
-    { id: 1, label: t("create_ticket_page_step_1") },
-    { id: 2, label: t("create_ticket_page_step_2") },
-    { id: 3, label: t("create_ticket_page_step_3") },
-    { id: 4, label: t("create_ticket_page_step_4") },
+    { id: 0, label: t("create_ticket_page_step_1") },
+    { id: 1, label: t("create_ticket_page_step_2") },
+    { id: 2, label: t("create_ticket_page_step_3") },
+    { id: 3, label: t("create_ticket_page_step_4") },
   ];
 
   const statusColors = useMemo(() => ({
@@ -434,7 +434,7 @@ const CreateTicket = () => {
 
   const handleRowClick = (rowData) => {
     setSelectedRow(rowData);
-    setStep(2);
+    setStep(1);
   };
 
   const columns = useMemo(() => [
@@ -535,6 +535,38 @@ const CreateTicket = () => {
     useExpanded
   );
 
+  // const renderRows = (data, depth = 0) => {
+  //   return data.map(row => (
+  //     <React.Fragment key={row.id}>
+  //       <tr
+  //         className="hover:bg-gray-50 cursor-pointer"
+  //         onClick={() => handleRowClick(row)}
+  //       >
+  //         {columns.map((column, index) => {
+  //           const isSecondColumn = index === 1; // Skip click for second column
+  //           const cellContent = column.Cell
+  //             ? column.Cell({ row: { original: row } })
+  //             : row[column.accessor];
+
+  //           return (
+  //             <td
+  //               key={column.id || column.accessor}
+  //               className={`px-2 py-4 min-w-max text-sm text-gray-800 ${index === 0 ? 'flex' : ''}`}
+  //               style={index === 0 ? { paddingLeft: `${depth * 2 + 2}em` } : {}}
+  //               onClick={isSecondColumn ? (e) => e.stopPropagation() : undefined}
+  //             >
+  //               {index === 0 && depth > 0 && (
+  //                 <CornerDownRight className="mr-1 text-gray-400" size={20} />
+  //               )}
+  //               {cellContent}
+  //             </td>
+  //           );
+  //         })}
+  //       </tr>
+  //       {expanded[row.id] && subRowsMap[row.id] && renderRows(subRowsMap[row.id], depth + 1)}
+  //     </React.Fragment>
+  //   ));
+  // };
   const renderRows = (data, depth = 0) => {
     return data.map(row => (
       <React.Fragment key={row.id}>
@@ -551,12 +583,12 @@ const CreateTicket = () => {
             return (
               <td
                 key={column.id || column.accessor}
-                className={`px-2 py-4 min-w-max text-sm text-gray-800 ${index === 0 ? 'flex' : ''}`}
-                style={index === 0 ? { paddingLeft: `${depth * 2 + 2}em` } : {}}
+                className={`px-2 py-4 whitespace-nowrap text-zinc-900 text-xs font-normal ${index === 0 ? 'flex' : ''}`}
+                style={index === 0 ? { paddingLeft: `${depth * 2 + 1}em` } : {}}
                 onClick={isSecondColumn ? (e) => e.stopPropagation() : undefined}
               >
                 {index === 0 && depth > 0 && (
-                  <CornerDownRight className="mr-1 text-gray-400" size={20} />
+                  <CornerDownRight className="mr-1 text-gray-300" size={20} />
                 )}
                 {cellContent}
               </td>
@@ -616,7 +648,7 @@ const CreateTicket = () => {
       }
 
       // Reset state after submission
-      setStep(4);
+      setStep(3);
       //setSelectedRow(null);
       //setTicketDetails({});
       //setTicketName(''); // Make sure ticketName is cleared
@@ -654,7 +686,7 @@ const CreateTicket = () => {
 
 
   return (
-    <div className="min-w-[80%] p-1 md:p-8">
+    <div className="min-w-[78%] p-1 md:p-8">
       <ToastContainer
         position="bottom-right"
         autoClose={5000}
@@ -667,21 +699,21 @@ const CreateTicket = () => {
         pauseOnHover
         theme="colored"
       />
-      {/* <h1 className="text-2xl font-semibold text-gray-800 mb-6">{t("Create New Ticket")}</h1> */}
+      <h1 className="justify-start text-zinc-900 text-3xl font-semibold mb-6">{t("Ticket creation")}</h1>
 
       {/* Step Indicator Bar */}
-      <div className='w-full border-b-2 border-gray-200'>
-        <div className="mx-auto w-9/12 relative mb-20 mx-4">
+      <div className='w-full border-b-2 mb-4 border-gray-200'>
+        <div className="mx-auto w-9/12 relative mb-16 mx-4">
           {/* Progress Line Background */}
           <div className="absolute w-full top-5 h-1 bg-gray-300 z-0" />
 
           {/* Progress Line Fill */}
           <div
-            className="absolute top-5 w-full h-1 bg-[#90AC4F] z-10 transition-all duration-300"
+            className="absolute top-5 w-full h-1 bg-lime-400 z-10 transition-all duration-300"
             style={{
-              width: `${Math.min(Math.max((step / (steps.length - 1)) * 100, 0), 100)}%`,
+              width: `${((step / 3) * 100).toFixed(2)}%`,
             }}
-          />
+          ></div>
 
           {/* Steps */}
           <div className="flex justify-between w-full gap-0 relative z-20">
@@ -690,17 +722,17 @@ const CreateTicket = () => {
                 {/* Step Circle */}
                 <div
                   className={`w-10 h-10 mx-auto rounded-full flex items-center justify-center relative z-10 ${step > item.id
-                    ? "bg-[#90AC4F] text-white"
+                    ? "bg-lime-400 text-white"
                     : step === item.id
-                      ? "bg-[#90AC4F] text-white shadow-lg"
-                      : "bg-gray-200 text-gray-400"
+                      ? "bg-lime-400 text-white shadow-lg"
+                      : "bg-gray-200 text-gray-300"
                     }`}
                 >
                   {step > item.id
                     ? <Check className='w-6 h-6' />
                     : <Circle className='w-4 h-4 bg-white rounded-full text-white' />
                   }
-                  <p className='text-sm font-medium mt-2 text-gray-800 absolute top-12 w-max'>
+                  <p className='mt-2 text-slate-700 text-base font-medium absolute top-12 w-max'>
                     {item.label}
                   </p>
                 </div>
@@ -709,85 +741,88 @@ const CreateTicket = () => {
           </div>
         </div>
       </div>
-      <button
+      {/* <button
         onClick={() => navigate('/')} // Navigate back one step in history
-        className="flex items-center my-4 font-semibold text-gray-800"
+        className="flex items-center mb-6 font-semibold text-zinc-900 text-base"
       >
         <ArrowLeft className="mr-2 w-5 h-5" /> {t("create_ticket_page_go_back")}
-      </button>
+      </button> */}
 
-      {step === 1 && (
+      {step === 0 && (
         <>
           <div className="flex items-center my-2">
             <input
               type="checkbox"
               checked={includeArchived}
               onChange={() => setIncludeArchived(!includeArchived)}
-              className="mr-2"
+              className="w-5 h-5 mr-2 outline outline-1 outline-offset-[-1px] outline-slate-300"
             />
-            <label className="text-sm">{t('create_ticket_page_checkbox_label')}</label>
+            <label className="text-zinc-800 text-sm font-medium">{t('create_ticket_page_checkbox_label')}</label>
           </div>
           {/* Search Filter UI */}
           <div className="mb-6">
-            <button onClick={() => setIsModalOpen(true)} className="flex items-center bg-white font-semibold text-gray-800 border border-gray-800 px-4 py-1 rounded-md mb-4">
-              {t('create_ticket_page_filter_button')} <Filter className="w-4 h-4 ml-4" />
+            <button onClick={() => setIsModalOpen(true)} className="flex justify-center items-center bg-white text-zinc-800 text-base font-medium leading-normal border border-zinc-800 w-48 px-5 py-3 rounded-md my-8">
+              {t('create_ticket_page_filter_button')} <Filter size={24} className="ml-4" />
             </button>
 
             {isModalOpen && (
               <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-                <div className="w-80 p-4 bg-white rounded-lg shadow-md border space-y-4">
+                <div className="relative w-80 p-4 bg-white rounded-lg shadow-md border space-y-4">
+                  <button onClick={() => setIsModalOpen(false)} className="absolute -top-1 -right-1 bg-white text-zinc-800 text-base font-medium leading-normal border border-zinc-800 px-2 rounded-full">
+                    x
+                  </button>
                   {/* Header */}
                   <div className="flex items-center justify-between border-b pb-2">
-                    <div className="flex items-center gap-2">
-                      <h2 className="text-sm font-semibold text-gray-700">{t('create_ticket_page_filter_label')}</h2>
-                      <Filter className="w-4 h-4 text-gray-700" />
+                    <div className="flex justify-center items-center bg-white text-zinc-800 text-base font-medium leading-normal border border-zinc-800 w-48 px-4 py-2 rounded-md mb-2">
+                      {t('create_ticket_page_filter_label')}
+                      <Filter size={24} className="ml-4" />
                     </div>
                   </div>
 
                   {/* Location */}
                   <div className="relative">
-                    <MapPin className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
+                    <MapPin className="absolute left-3 top-2.5 w-4 h-5 text-zinc-800" />
                     <input
                       type="text"
                       value={location}
                       onChange={(e) => setLocation(e.target.value)}
                       placeholder={t("create_ticket_page_filter_location")}
-                      className="w-full pl-10 pr-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
+                      className="w-full pl-10 pr-3 py-2 border rounded-md text-gray-500 text-base font-normal focus:outline-none focus:ring-1 focus:ring-gray-400"
                     />
                   </div>
 
                   {/* Sub-Location */}
                   {/* <div className="relative">
-              <MapPin className="absolute left-3 top-3.5 w-4 h-4 text-gray-500" />
-              <input
-                type="text"
-                placeholder="Search by Sub-Location"
-                className="w-full pl-10 pr-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
-              />
-            </div> */}
+                        <MapPin className="absolute left-3 top-3.5 w-4 h-4 text-gray-500" />
+                        <input
+                          type="text"
+                          placeholder="Search by Sub-Location"
+                          className="w-full pl-10 pr-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
+                        />
+                      </div> */}
 
                   {/* Keyword */}
                   <div className="relative">
-                    <Text className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
+                    <Text className="absolute left-3 top-2.5 w-4 h-5 text-zinc-800" />
                     <input
                       type="text"
                       value={keyword}
                       onChange={(e) => setKeyword(e.target.value)}
                       placeholder={t("create_ticket_page_filter_keyword")}
-                      className="w-full pl-10 pr-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
+                      className="w-full pl-10 pr-3 py-2 border rounded-md text-gray-500 text-base font-normal focus:outline-none focus:ring-1 focus:ring-gray-400"
                     />
                   </div>
 
                   {/* Brands */}
                   <div className="relative">
-                    <Bold className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
+                    <Bold className="absolute left-3 top-2.5 w-4 h-5 text-zinc-800" />
                     <Select
                       components={animatedComponents}
                       options={brandOptions}
                       value={brandOptions.find(option => option.value === tempFilters.brand) || null} // match by ID
                       onChange={(selected) => setTempFilters((prev) => ({ ...prev, brand: selected.value, }))}
                       placeholder={t("create_ticket_page_filter_brands")}
-                      className="w-full pl-10 border rounded-md text-sm text-gray-500"
+                      className="w-full pl-10 border rounded-md text-gray-500 text-base font-normal"
                       classNamePrefix="react-select"
                       styles={{
                         control: (base) => ({
@@ -805,14 +840,14 @@ const CreateTicket = () => {
 
                   {/* Status */}
                   <div className="relative">
-                    <BarChart className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
+                    <BarChart className="absolute left-3 top-2.5 w-4 h-5 text-zinc-800" />
                     <Select
                       components={animatedComponents}
                       options={statusOptions}
                       value={statusOptions.find(option => option.value === tempFilters.status) || null} // match by ID
                       onChange={(selected) => setTempFilters((prev) => ({ ...prev, status: selected.value, }))}
                       placeholder={t("create_ticket_page_filter_status")}
-                      className="w-full pl-10 border rounded-md text-sm text-gray-500"
+                      className="w-full pl-10 border rounded-md text-gray-500 text-base font-normal"
                       classNamePrefix="react-select"
                       styles={{
                         control: (base) => ({
@@ -830,14 +865,14 @@ const CreateTicket = () => {
 
                   {/* Models */}
                   <div className="relative">
-                    <Hash className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
+                    <Hash className="absolute left-3 top-2.5 w-4 h-5 text-zinc-800" />
                     <Select
                       components={animatedComponents}
                       options={modelOptions}
                       value={modelOptions.find(option => option.value === tempFilters.model) || null} // match by ID
                       onChange={(selected) => setTempFilters((prev) => ({ ...prev, model: selected.value, }))}
                       placeholder={t("create_ticket_page_filter_models")}
-                      className="w-full pl-10 border rounded-md text-sm text-gray-500"
+                      className="w-full pl-10 border rounded-md text-gray-500 text-base font-normal"
                       classNamePrefix="react-select"
                       styles={{
                         control: (base) => ({
@@ -854,23 +889,25 @@ const CreateTicket = () => {
                   </div>
 
                   {/* Footer buttons */}
-                  <div className="flex justify-between pt-2">
-                    <button onClick={handleReset} disabled={isLoading} className="px-4 w-[45%] py-2 border rounded-md text-sm text-gray-700 hover:bg-gray-100">
+                  <div className="grid grid-cols-2 gap-4 justify-between pt-2">
+                    <button onClick={handleReset} disabled={isLoading} className="px-5 py-3 border rounded-md text-sm text-zinc-800 hover:bg-zinc-100">
                       {t('create_ticket_page_filter_reset')}
                     </button>
-                    <button onClick={applyFilters} disabled={isLoading} className="px-4 w-[45%] py-2 bg-gray-900 text-white rounded-md text-sm hover:bg-gray-800">
+                    <button onClick={applyFilters} disabled={isLoading} className="px-5 py-3 bg-zinc-800 text-white rounded-md text-sm hover:bg-zinc-800">
                       {t('create_ticket_page_filter_confirm')}
                     </button>
                   </div>
                 </div>
               </div>
             )}
+
           </div>
 
           <div className="bg-white rounded-lg shadow-md">
             <h2 className="text-xl font-semibold mb-2 px-4 pt-4">{t("create_ticket_step-1_title")}</h2>
-            <div className="flex items-center mb-1 text-gray-900 px-4 pb-4">
-              <BadgeInfo className='mr-2 w-5 h-5 text-gray-400' /> {t("create_ticket_step-1_helping_text")}
+
+            <div className="flex items-center mb-1 text-zinc-800 text-sm font-normal px-4 py-2">
+              <BadgeInfo className='mr-2 w-5 h-5 text-slate-300' /> {t("create_ticket_step-1_helping_text")}
             </div>
             {/* Contacts Table */}
             <div className="overflow-x-auto">
@@ -880,7 +917,7 @@ const CreateTicket = () => {
                     <tr {...headerGroup.getHeaderGroupProps()} key={headerIndex} className="bg-white">
                       {headerGroup.headers.map((column, index) => (
                         <th {...column.getHeaderProps(column.getSortByToggleProps())}
-                          className={`px-2 py-2 text-left min-w-max text-sm font-semibold text-gray-600 ${index !== 0 ? 'border-r border-gray-300' : ''}`}>
+                          className={`px-2 py-3 text-left whitespace-nowrap text-slate-500 text-xs font-medium leading-none ${index !== 0 ? 'border-r border-gray-300' : ''}`}>
                           {column.render('Header')}
                           {column.isSorted ? (
                             column.isSortedDesc ? (
@@ -896,32 +933,32 @@ const CreateTicket = () => {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {!isLoading && renderRows(filteredContacts)}
-                  {isLoading && <Loader className="ml-2 text-blue-600 animate-spin" />}
                 </tbody>
               </table>
             </div>
+            {isLoading && <Loader className="ml-2 text-blue-600 animate-spin" />}
           </div>
         </>
       )}
 
-      {step === 2 && (
+      {step === 1 && (
         <div className="w-full max-w-3xl mx-auto">
-          <h2 className="text-xl font-semibold mb-4">{t("create_ticket_step-2_title")}</h2>
-          <p className='mb-2 text-gray-500'>{t("create_ticket_step-2_subtitle")}</p>
+          <h2 className="text-zinc-900 text-xl font-semibold mb-6">{t("create_ticket_step-2_title")}</h2>
+          <p className='mb-2 text-gray-400 text-sm font-medium leading-tight'>{t("create_ticket_step-2_subtitle")}</p>
           <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
             <div className='shadow-sm border rounded-lg bg-white p-4 '>
-              <h4 className="text-sm font-semibold">{t("create_ticket_step-2_address")}</h4>
+              <h4 className="text-zinc-900 text-xs font-semibold leading-normal">{t("create_ticket_step-2_address")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
-              <ul className="text-sm list-none list-inside text-gray-400">
+              <ul className="text-sm list-none list-inside text-slate-500 text-xs font-medium">
                 <li className='flex items-center'><MapPin className='w-4 h-4 mr-2' />{selectedRow.db_address_street}</li>
                 <li className='ml-6 pb-1'>{selectedRow.db_address} {selectedRow.db_address_zip}</li>
               </ul>
             </div>
 
             <div className='shadow-sm border rounded-lg bg-white p-4 '>
-              <h4 className="text-sm font-semibold">{t("create_ticket_step-2_equipment")}</h4>
+              <h4 className="text-zinc-900 text-xs font-semibold leading-normal">{t("create_ticket_step-2_equipment")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
-              <ul className="text-sm list-none list-inside text-gray-400">
+              <ul className="text-sm list-none list-inside text-slate-500 text-xs font-medium">
                 <li className='flex items-center'><Wrench className='w-4 h-4 mr-2' />{selectedRow.name}</li>
                 <li className='ml-6 pb-1'>{selectedRow.equipment_family_name}</li>
                 <li className='ml-6 pb-1'>{selectedRow.equipment_brand_name}</li>
@@ -930,9 +967,9 @@ const CreateTicket = () => {
             </div>
 
             <div className='shadow-sm border rounded-lg bg-white p-4 '>
-              <h4 className="text-sm font-semibold">{t("create_ticket_step-2_properties")}</h4>
+              <h4 className="text-zinc-900 text-xs font-semibold leading-normal">{t("create_ticket_step-2_properties")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
-              <ul className="text-sm list-none list-inside text-gray-400 ">
+              <ul className="text-sm list-none list-inside text-slate-500 text-xs font-medium">
                 <li className='grid grid-cols-2 gap-2 items-end'>{t("create_ticket_step-2_barcode")}: <span className='font-semibold'>{selectedRow.barcode || 'NA'}</span></li>
                 <li className='grid grid-cols-2 gap-2 items-end'>{t("create_ticket_step-2_serial_number")}: <span className='font-semibold'>{selectedRow.serial_number || 'NA'}</span></li>
                 <li className='grid grid-cols-2 gap-2 items-end'>{t("create_ticket_step-2_our_ref")}: <span className='font-semibold'>{selectedRow.customer_reference || 'NA'}</span></li>
@@ -940,19 +977,31 @@ const CreateTicket = () => {
               </ul>
             </div>
           </div>
-          <div className='w-full max-w-md mx-auto'>
-            <hr className=' my-8 border-b-2 border-gray-200' />
+          <div className='w-full w-full mx-auto'>
+            <hr className=' my-12 border-b-1 border-gray-200' />
           </div>
-          <form onSubmit={(e) => { e.preventDefault(); setStep(3); }}>
+          <form onSubmit={(e) => { e.preventDefault(); setStep(2); }}>
             <div className="mb-8">
               <div className="flex flex-row gap-8">
                 <div className="relative basis-1/2">
-                  <TicketX className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
+                  <TicketX className="absolute left-3 top-2.5 w-5 h-5 text-gray-500" />
                   <select
                     value={ticketDetails.ticketType}
                     onChange={(e) => handleInputChange('ticketType', e.target.value)}
-                    className="w-full pl-10 pr-3 py-2 border rounded-md text-sm text-gray-700"
+                    className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-md text-gray-500 text-base font-normal leading-normal"
                     required
+                    classNamePrefix="react-select"
+                    styles={{
+                      control: (base) => ({
+                        ...base,
+                        border: 'none',
+                        boxShadow: 'none',
+                      }),
+                      placeholder: (base) => ({
+                        ...base,
+                        color: '#6b7280',
+                      }),
+                    }}
                   >
                     <option>{t("create_ticket_step-2_select_ticket_type")}</option>
                     {ticketTypes.map((ticketType, index) => (
@@ -962,12 +1011,23 @@ const CreateTicket = () => {
                 </div>
 
                 <div className="relative basis-1/2">
-                  <Thermometer className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
+                  <Thermometer className="absolute left-3 top-2.5 w-5 h-5 text-gray-500" />
                   <select
                     value={ticketDetails.severity}
                     onChange={(e) => handleInputChange('severity', e.target.value)}
-                    className="w-full pl-10 pr-3 py-2 border rounded-md text-sm text-gray-700"
+                    className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-md text-gray-500 text-base font-normal leading-normal"
                     required
+                    styles={{
+                      control: (base) => ({
+                        ...base,
+                        border: 'none',
+                        boxShadow: 'none',
+                      }),
+                      placeholder: (base) => ({
+                        ...base,
+                        color: '#6b7280',
+                      }),
+                    }}
                   >
                     <option>{t("create_ticket_step-2_select_severity")}</option>
                     {severities.map((severity, index) => (
@@ -979,16 +1039,16 @@ const CreateTicket = () => {
             </div>
 
             <div className="mb-4">
-              <label className="block font-medium text-gray-700">{t("create_ticket_step-2_issue_inputbox_label")}</label>
+              <label className="block text-slate-700 text-sm font-medium leading-tight">{t("create_ticket_step-2_issue_inputbox_label")}</label>
               <input
                 type="text"
                 maxLength={50}
                 value={ticketName}
                 onChange={handleNameChange}
                 placeholder={t('create_ticket_step-2_issue_inputbox_placeholder')}
-                className="mt-1 p-2 text-sm w-full border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="mt-1 p-2 text-gray-400 font-normal leading-normal text-base w-full border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
-              <p className="text-sm text-red-600 mt-1 text-end">
+              <p className="text-red-500 text-xs font-normal leading-normal mt-1 text-end">
                 {50 - ticketName.length} {t("create_ticket_step-2_characters_remaining_text")}
               </p>
             </div>
@@ -999,9 +1059,9 @@ const CreateTicket = () => {
                 value={textarea}
                 onChange={(e) => handleInputChange('problemDescription', e.target.value)}
                 placeholder={t('create_ticket_step-2_description_textbox_placeholder')}
-                className="mt-1 p-2 text-sm w-full border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="mt-1 p-2 text-gray-400 font-normal leading-normal text-base w-full border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
-              <p className="text-sm text-red-600 text-end">
+              <p className="text-red-500 text-xs font-normal leading-normal mt-1 text-end">
                 {255 - textarea.length} {t("create_ticket_step-2_characters_remaining_text")}
               </p>
             </div>
@@ -1013,11 +1073,11 @@ const CreateTicket = () => {
                 className="flex flex-col items-center justify-center w-full h-40 px-4 transition bg-white border-1 border rounded-md cursor-pointer border-gray-300"
               >
                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                  <UploadCloud className="w-8 h-8 mb-3 text-gray-400" />
-                  <p className="mb-2 text-sm text-gray-500">
-                    <span className="font-semibold">{t("create_ticket_step-2_upload_inputfile_label")}</span>
+                  <UploadCloud className="w-8 h-8 mb-3 p-1.5 rounded-3xl text-zinc-800 bg-gray-200" />
+                  <p className="mb-2 text-zinc-800 text-sm leading-tight">
+                    <span className="font-medium">{t("create_ticket_step-2_upload_inputfile_label")}</span>
                   </p>
-                  <p className="text-xs text-gray-500">{t("create_ticket_step-2_upload_inputfile_name")}</p>
+                  <p className="text-gray-500 text-xs font-normal leading-none">{t("create_ticket_step-2_upload_inputfile_name")}</p>
                 </div>
                 <input id="file-upload"
                   type="file"
@@ -1067,10 +1127,10 @@ const CreateTicket = () => {
             </div>
 
             <div className="mt-4 flex justify-end">
-              <button onClick={() => setStep(1)} className="bg-white text-gray-800 font-semibold border border-gray-800 py-2 px-8 rounded-md">
+              <button onClick={() => setStep(0)} className="w-48 px-5 py-3 border border-2 bg-white rounded-lg flex items-center justify-center text-zinc-800 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
                 {t('create_ticket_popup_button_back')}
               </button>
-              <button type="submit" className="bg-gray-900 text-white font-semibold py-2 px-8 rounded-md ml-2">
+              <button type="submit" className="w-48 px-5 py-3 ml-2 bg-zinc-800 rounded-lg flex items-center justify-center text-pink-50 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
                 {t('create_ticket_popup_button_next')}
               </button>
             </div>
@@ -1078,15 +1138,12 @@ const CreateTicket = () => {
         </div>
       )}
 
-      {step === 3 && (
+      {step === 2 && (
         <div className="mt-4 p-6 w-full max-w-2xl mx-auto">
-          <h2 className="text-xl font-semibold mb-4">{t("create_ticket_page_step-3_title")}</h2>
-          <form onSubmit={(e) => { e.preventDefault(); setStep(4); }}>
-            {/* Yes/No Toggle for Preferred Date & Time */}
-            <div className="mb-8 flex items-center">
-              <span className="text-sm text-gray-600 mr-2">{t("create_ticket_page_step-3_subtitle")}</span>
-            </div>
-
+          <h2 className="text-zinc-900 text-xl font-semibold mb-4">{t("create_ticket_page_step-3_title")}</h2>
+          <div className="text-zinc-900 text-sm text-base font-normal mb-8">{t("create_ticket_page_step-3_subtitle")}</div>
+      
+          <form onSubmit={(e) => { e.preventDefault(); setStep(3); }}>
             {/* Calendar Picker */}
             <div className="flex flex-col lg:flex-row gap-6">
               <div className="react-calendar-wrapper border border-gray-300 rounded-lg">
@@ -1141,18 +1198,18 @@ const CreateTicket = () => {
               </div>
 
             </div>
-            <div className='font-semibold mb-4 my-8'>
+            <div className='text-zinc-900 text-base font-medium my-8'>
               {t("create_ticket_page_step-3_selected_date_time")}
-              <span className='underline pl-2'>{date.toLocaleDateString('en-BE', { year: 'numeric', month: 'long', day: 'numeric' })} | {selectedTime}</span>
+              <span className='underline ml-4'>{date.toLocaleDateString('en-BE', { year: 'numeric', month: 'long', day: 'numeric' })} | {selectedTime || '08:00'}</span>
             </div>
 
 
             {/* Navigation Buttons */}
             <div className="mt-4 flex justify-end">
-              <button onClick={() => setStep(2)} className="bg-white text-gray-800 font-semibold border border-gray-800 py-2 px-8 rounded-md">
+              <button onClick={() => setStep(1)} className="w-48 px-5 py-3 border border-2 bg-white rounded-lg flex items-center justify-center text-zinc-800 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
                 {t('create_ticket_popup_button_back')}
               </button>
-              <button type="submit" className="bg-gray-900 text-white font-semibold py-2 px-8 rounded-md ml-2">
+              <button type="submit" className="w-48 px-5 py-3 ml-2 bg-zinc-800 rounded-lg flex items-center justify-center text-pink-50 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
                 {t('create_ticket_popup_button_next')}
               </button>
             </div>
@@ -1160,9 +1217,9 @@ const CreateTicket = () => {
         </div>
       )}
 
-      {step === 4 && (
+      {step === 3 && (
         <div className="w-full max-w-3xl mx-auto">
-          <h2 className="text-xl font-semibold mb-4">{t("create_ticket_step-4_title")}</h2>
+          <h2 className="text-zinc-900 text-xl font-semibold mb-4">{t("create_ticket_step-4_title")}</h2>
 
           {isSubmitModalOpen && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-white bg-opacity-60">
@@ -1170,18 +1227,18 @@ const CreateTicket = () => {
                 {/* Header */}
                 <div className="flex items-center justify-between border-b pb-2">
                   <div className="flex items-center gap-2">
-                    <CircleCheckBig className="w-6 h-6 text-[#14BE6F]" />
-                    <h2 className="text-lg font-semibold text-[#14BE6F]">{t("create_ticket_popup_title")}</h2>
+                    <CircleCheckBig className="w-6 h-6 text-emerald-500" />
+                    <h2 className="text-lg font-semibold text-emerald-500">{t("create_ticket_popup_title")}</h2>
                   </div>
-                  <X className="w-6 h-6 text-[#FF3363] cursur-pointer" onClick={() => setIsSubmitModalOpen(false)} />
+                  <X className="w-6 h-6 text-rose-500 cursur-pointer" onClick={() => setIsSubmitModalOpen(false)} />
                 </div>
                 <p className='px-2'>{t("create_ticket_popup_text")}</p>
                 {/* Footer buttons */}
                 <div className="flex justify-between pt-2">
-                  <button onClick={() => navigate(`/`)} className="px-4 py-2 border rounded-md text-sm text-gray-700 hover:bg-gray-100">
+                  <button onClick={() => navigate(`/`)} className="px-4 py-2 border border-2 bg-white rounded-lg flex items-center justify-center text-zinc-800 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
                     {t('create_ticket_popup_button_back_home')}
                   </button>
-                  <button onClick={() => navigate(`/ticket/${responseId}`)} className="px-4 py-2 bg-gray-900 text-white rounded-md text-sm hover:bg-gray-800">
+                  <button onClick={() => navigate(`/ticket/${responseId}`)} className="px-4 py-2 ml-2 bg-zinc-800 rounded-lg flex items-center justify-center text-pink-50 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
                     {t('create_ticket_popup_button_view_ticket')}
                   </button>
                 </div>
@@ -1191,18 +1248,18 @@ const CreateTicket = () => {
 
           <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
             <div className='shadow-sm rounded-lg bg-white p-4 '>
-              <h4 className="text-lg font-semibold">{t("create_ticket_step-4_address")}</h4>
+              <h4 className="text-zinc-900 text-xs font-semibold leading-normal">{t("create_ticket_step-4_address")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
-              <ul className="list-none list-inside text-gray-700">
+              <ul className="text-sm list-none list-inside text-slate-500 text-xs font-medium">
                 <li className='flex items-center'><MapPin className='w-4 h-4 mr-2' />{selectedRow?.db_address_street}</li>
                 <li className='ml-6 pb-1'>{selectedRow?.db_address} {selectedRow?.db_address_zip}</li>
               </ul>
             </div>
 
             <div className='shadow-sm border rounded-lg bg-white p-4 '>
-              <h4 className="text-lg font-semibold">{t("create_ticket_step-4_equipment")}</h4>
+              <h4 className="text-zinc-900 text-xs font-semibold leading-normal">{t("create_ticket_step-4_equipment")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
-              <ul className="list-none list-inside text-gray-700">
+              <ul className="text-sm list-none list-inside text-slate-500 text-xs font-medium">
                 <li className='flex items-center'><Wrench className='w-4 h-4 mr-2' />{selectedRow?.name}</li>
                 <li className='ml-6 pb-1'>{selectedRow?.equipment_family_name}</li>
                 <li className='ml-6 pb-1'>{selectedRow?.equipment_brand_name}</li>
@@ -1211,9 +1268,9 @@ const CreateTicket = () => {
             </div>
 
             <div className='shadow-sm border rounded-lg bg-white p-4 '>
-              <h4 className="text-lg font-semibold">{t("create_ticket_step-4_properties")}</h4>
+              <h4 className="text-zinc-900 text-xs font-semibold leading-normal">{t("create_ticket_step-4_properties")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
-              <ul className="list-none list-inside text-gray-700 ">
+              <ul className="text-sm list-none list-inside text-slate-500 text-xs font-medium">
                 <li className='grid grid-cols-2 gap-4 items-end'>{t("create_ticket_step-4_barcode")}: <span className='font-semibold'>{selectedRow?.barcode || 'NA'}</span></li>
                 <li className='grid grid-cols-2 gap-4 items-end'>{t("create_ticket_step-4_serial_number")}: <span className='font-semibold'>{selectedRow?.serial_number || 'NA'}</span></li>
                 <li className='grid grid-cols-2 gap-4 items-end'>{t("create_ticket_step-4_our_ref")}: <span className='font-semibold'>{selectedRow?.customer_reference || 'NA'}</span></li>
@@ -1222,16 +1279,16 @@ const CreateTicket = () => {
             </div>
 
             <div className='shadow-sm border rounded-lg bg-white p-4 '>
-              <h4 className='text-lg font-semibold'>{t("create_ticket_step-4_preferred_date_time")}</h4>
+              <h4 className='text-zinc-900 text-xs font-semibold leading-normal'>{t("create_ticket_step-4_preferred_date_time")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
-              <ul className="list-none list-inside text-gray-700">
+              <ul className="text-sm list-none list-inside text-slate-500 text-xs font-medium">
                 <li>{date.toLocaleDateString('nl-BE')} {selectedTime}</li>
               </ul>
             </div>
             <div className='shadow-sm border rounded-lg bg-white p-4 '>
-              <h4 className='text-lg font-semibold'>{t("create_ticket_step-4_severity")}</h4>
+              <h4 className='text-zinc-900 text-xs font-semibold leading-normal'>{t("create_ticket_step-4_severity")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
-              <ul className="list-none list-inside text-gray-700">
+              <ul className="text-sm list-none list-inside text-slate-500 text-xs font-medium">
                 <li>
                   <span className={`font-medium me-2 ${severityType[ticketDetails.severity] || "text-gray-300"}`}>
                     {ticketDetails.severity}
@@ -1240,24 +1297,23 @@ const CreateTicket = () => {
               </ul>
             </div>
             <div className='shadow-sm border rounded-lg bg-white p-4 '>
-              <h4 className='text-lg font-semibold'>{t("create_ticket_step-4_ticket_subject")}</h4>
+              <h4 className='text-zinc-900 text-xs font-semibold leading-normal'>{t("create_ticket_step-4_ticket_subject")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
-              <ul className="list-none list-inside text-gray-700">
+              <ul className="text-sm list-none list-inside text-slate-500 text-xs font-medium">
                 <li>{ticketName}</li>
               </ul>
             </div>
 
             <div className='col-span-3 shadow-sm border bg-white rounded-lg p-4 '>
-
-              <h4 className='text-lg font-semibold'>{t("create_ticket_step-4_description")}</h4>
+              <h4 className='text-zinc-900 text-xs font-semibold leading-normal'>{t("create_ticket_step-4_description")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
-              <ul className="list-none list-inside text-gray-700 min-h-24">
+              <ul className="text-sm list-none list-inside text-slate-500 text-xs font-medium min-h-24">
                 <li>{ticketDetails.problemDescription}</li>
               </ul>
 
             </div>
             <div className='col-span-3 shadow-sm border bg-white rounded-lg p-4 '>
-              <h4 className="font-semibold my-2">{t("create_ticket_step-4_files_uploaded")}</h4>
+              <h4 className="text-zinc-900 text-xs font-semibold leading-normal my-2">{t("create_ticket_step-4_files_uploaded")}</h4>
 
               {/* File Thumbnails Grid */}
               <div className="mt-2 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 min-h-8">
@@ -1288,10 +1344,10 @@ const CreateTicket = () => {
             </div>
           </div>
           <div className="mt-4 flex justify-end">
-            <button onClick={() => setStep(3)} className="bg-white text-gray-800 font-semibold border border-gray-800 py-2 px-8 rounded-md">
+            <button onClick={() => setStep(2)} className="w-48 px-5 py-3 border border-2 bg-white rounded-lg flex items-center justify-center text-zinc-800 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
               {t('create_ticket_popup_button_back')}
             </button>
-            <button onClick={handleSubmitTicket} className="bg-gray-900 text-white font-semibold py-2 px-8 rounded-md ml-2">
+            <button onClick={handleSubmitTicket} className="w-48 px-5 py-3 ml-2 bg-zinc-800 rounded-lg flex items-center justify-center text-pink-50 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
               {t('create_ticket_popup_button_confirm')}
             </button>
           </div>

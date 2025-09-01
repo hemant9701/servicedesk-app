@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import { fetchData } from '../services/apiService';
 import { useAuth } from '../AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Loader } from 'lucide-react';
 import { useTranslation } from "react-i18next";
 
 function maskEmail(email) {
@@ -38,6 +38,7 @@ const PasswordUpdate = () => {
 
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
   const { t } = useTranslation('updatePassword');
 
   useEffect(() => {
@@ -49,9 +50,24 @@ const PasswordUpdate = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validation: Ensure new password is not the same as the old password
+    if (newPassword === currentPassword) {
+      setError(t('update_password_page_err_new_password_same'));
+      return;
+    }
+
     // Validation: Ensure new passwords match
     if (newPassword !== confirmNewPassword) {
       setError(t('update_password_page_err_password_not_match'));
+      return;
+    }
+
+    // Validation: Ensure password is strong
+    // Example rule: at least 6 characters, one uppercase, one lowercase, one number, one special character
+    const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/;
+    if (!strongPasswordRegex.test(newPassword)) {
+      setError(t('update_password_page_err_weak_password'));
       return;
     }
 
@@ -65,6 +81,7 @@ const PasswordUpdate = () => {
     }
 
     try {
+      setIsLoading(true);
       // Step 1: Login using provided credentials
       const userData = await login(token, auth.authEmail, currentPassword);
 
@@ -89,7 +106,7 @@ const PasswordUpdate = () => {
       // Step 3: OTP token received, continue flow
       setOtpToken(response.otp_token);
       setShowOTPModal(true);
-
+      setIsLoading(false);
     } catch (err) {
       console.error('Password update flow error:', err);
       setError(err.message || t('update_password_page_err_failed'));
@@ -117,7 +134,7 @@ const PasswordUpdate = () => {
       'new_password': newPassword
     }
 
-    console.log(payload);
+    //console.log(payload);
 
     try {
       const response = await fetchData('api/ContactPlug/verify-changepw', 'PUT', currentToken, payload);
@@ -188,7 +205,13 @@ const PasswordUpdate = () => {
             type="submit"
             className="w-full bg-gray-900 text-white py-2 px-4 rounded-md font-semibold hover:bg-gray-700 transition duration-200"
           >
-            {t("update_password_page_update_button")}
+            {!isLoading && t("update_password_page_update_button")}
+            {isLoading && (
+              <div role="status" aria-live="polite" className="flex items-center">
+                <Loader className="ml-2 text-zinc-600 animate-spin" />
+                <span className="ml-2">Loading...</span>
+              </div>
+            )}
           </button>
         </form>
 

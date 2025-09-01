@@ -140,7 +140,7 @@ const ViewTicketList = () => {
     {
       columns,
       data: filteredTickets,
-      initialState: { pageIndex: 0, pageSize: 10 }, // Set initial page size to 10
+      initialState: { pageIndex: 0, pageSize: 12 }, // Set initial page size to 10
     },
     useSortBy,
     usePagination
@@ -161,34 +161,34 @@ const ViewTicketList = () => {
 
   return (
     <div className="w-full mx-auto p-1 md:p-4">
-      <h1 className="text-2xl font-semibold text-gray-800 mb-6">{t("tickets_list_page_title")}</h1>
+      <h1 className="text-zinc-900 text-3xl font-semibold mb-6">{t("tickets_list_page_title")}</h1>
 
       {/* Back Button */}
       <button
         onClick={() => navigate('/')} // Navigate back one step in history
-        className="flex items-center mb-4 font-semibold text-gray-800"
+        className="flex items-center mb-6 font-semibold text-zinc-900 text-base"
       >
         <ArrowLeft className="mr-2 w-5 h-5" /> {t("tickets_list_page_go_back")}
       </button>
 
       <div className='shadow-md rounded-lg'>
-        <div className="flex text-sm mb-4">
+        <div className="flex text-lg mb-4">
           <button
-            className={`px-4 py-2 mr-2 font-semibold ${selectedTab === 'open' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-gray-400'}`}
+            className={`px-4 py-2 mr-2 font-semibold leading-7 ${selectedTab === 'open' ? 'text-gray-900 border-b-2 border-zinc-800' : 'text-slate-500'}`}
             onClick={() => setSelectedTab('open')}
           >
             {t("tickets_list_toggle_open_tickets_text")}
           </button>
           <button
-            className={`px-4 py-2 font-semibold ${selectedTab === 'completed' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-gray-400'}`}
+            className={`px-4 py-2 font-semibold leading-7 ${selectedTab === 'completed' ? 'text-gray-900 border-b-2 border-zinc-800' : 'text-slate-500'}`}
             onClick={() => setSelectedTab('completed')}
           >
             {t("tickets_list_toggle_completed_tickets_text")}
           </button>
         </div>
 
-        <div className="flex items-center mb-1 text-gray-900 px-4 py-2">
-          <BadgeInfo className='mr-2 w-5 h-5 text-gray-400' /> {t("tickets_list_page_helping_text")}
+        <div className="flex items-center mb-1 text-zinc-800 text-sm font-normal px-4 py-2">
+          <BadgeInfo className='mr-2 w-5 h-5 text-slate-300' /> {t("tickets_list_page_helping_text")}
         </div>
         <div className="overflow-x-auto">
           <table {...getTableProps()} className="min-w-full divide-y divide-gray-200 border border-gray-300">
@@ -197,7 +197,7 @@ const ViewTicketList = () => {
                 <tr {...headerGroup.getHeaderGroupProps()} className="bg-white divide-x divide-gray-300">
                   {headerGroup.headers.map(column => (
                     <th {...column.getHeaderProps(column.getSortByToggleProps())}
-                      className="p-2 text-left text-sm font-semibold text-gray-400">
+                      className="p-2 whitespace-nowrap text-slate-500 text-xs font-medium leading-none">
                       {column.render('Header')}
                       {column.isSorted ? (
                         column.isSortedDesc ? (
@@ -216,8 +216,8 @@ const ViewTicketList = () => {
                 prepareRow(row);
                 return (
                   <tr {...row.getRowProps()} className="cursor-pointer hover:bg-gray-200" onClick={() => navigate(`/ticket/${row.original.id}`)}>
-                    {row.cells.map(cell => (
-                      <td {...cell.getCellProps()} className="px-2 py-4 text-sm text-gray-800">
+                    {row.cells.map((cell, index) => (
+                      <td {...cell.getCellProps()} className="self-stretch px-1 py-2 text-xs font-normal text-zinc-900">
                         {cell.render('Cell')}
                       </td>
                     ))}
@@ -229,27 +229,27 @@ const ViewTicketList = () => {
         </div>
 
         {/* Pagination Controls - Only show if filteredTickets exceed pageSize (10) */}
-        {filteredTickets.length > 10 && (
+        {filteredTickets.length > 12 && (
           <div className="flex items-center justify-between p-4">
-            <span className="text-sm text-gray-700">
+            <span className="text-xs text-slate-700">
               {t("ticket_list_table_pagination_page")} {pageIndex + 1} {t("ticket_list_table_pagination_of")} {pageOptions.length}
             </span>
             <div>
-              <button onClick={() => gotoPage(0)} disabled={!canPreviousPage} className="py-1 px-2 md:py-1 md:px-3 mr-1 text-gray-900 rounded-md border border-gray-900 disabled:border-gray-700">
+              <button onClick={() => gotoPage(0)} disabled={!canPreviousPage} className="py-0.5 px-1 md:px-2 mr-1 text-slate-700 rounded-md border border-slate-700 disabled:border-gray-700">
                 <ArrowLeftToLine className="w-4" />
               </button>
-              <button onClick={() => previousPage()} disabled={!canPreviousPage} className="py-1 px-2 md:py-1 md:px-3 mr-1 text-gray-900 rounded-md border border-gray-900 disabled:border-gray-700">
+              <button onClick={() => previousPage()} disabled={!canPreviousPage} className="py-0.5 px-1 md:px-2 mr-1 text-slate-700 rounded-md border border-slate-700 disabled:border-gray-700">
                 <ArrowLeft className="w-4" />
               </button>
-              <button onClick={() => nextPage()} disabled={!canNextPage} className="py-1 px-2 md:py-1 md:px-3 mr-1 text-gray-900 rounded-md border border-gray-900 disabled:border-gray-700">
+              <button onClick={() => nextPage()} disabled={!canNextPage} className="py-0.5 px-1 md:px-2 mr-1 text-slate-700 rounded-md border border-slate-700 disabled:border-gray-700">
                 <ArrowRight className="w-4" />
               </button>
-              <button onClick={() => gotoPage(pageOptions.length - 1)} disabled={!canNextPage} className="py-1 px-2 md:py-1 md:px-3 mr-1 text-gray-900 rounded-md border border-gray-900 disabled:border-gray-700">
+              <button onClick={() => gotoPage(pageOptions.length - 1)} disabled={!canNextPage} className="py-0.5 px-1 md:px-2 mr-1 text-slate-700 rounded-md border border-slate-700 disabled:border-gray-700">
                 <ArrowRightToLine className="w-4" />
               </button>
             </div>
-            <select value={pageSize} onChange={e => setPageSize(Number(e.target.value))} className="ml-1 p-1 md:p-1 border border-gray-300 rounded-md max-w-32">
-              {[10, 20, 30, 50].map(size => (
+            <select name="table_pagination" id="table_pagination" value={pageSize} onChange={e => setPageSize(Number(e.target.value))} className="ml-1 p-1 md:p-1 text-xs text-slate-700 border border-slate-700 rounded-md max-w-32">
+              {[12, 24, 36, 48].map(size => (
                 <option key={size} value={size}>
                   {t("ticket_list_table_pagination_show")} {size}
                 </option>

@@ -530,7 +530,7 @@ const SingleInstallation = () => {
               <p className="text-gray-400 p-4 text-center px-12 pb-12">{t("single_equipment_page_no_document")}</p>
             )}
             {doc.length > 0 && (
-              <div className='flex justify-end mt-4'>
+              <div className='flex justify-end mt-4 px-12 pb-12'>
                 {selectedFiles.length !== 0 && (
                   <button
                     onClick={handleDownloadSelected}

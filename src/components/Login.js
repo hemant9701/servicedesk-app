@@ -11,7 +11,9 @@ import nl from '../locales/nl/login.json';
 const Login = () => {
   const [email, setEmail] = useState('')
   const [token, setToken] = useState('Ez5IDzie+E+CLFBR3A40g2ktg97czumlArA+gnrQJKyP4JYfct6q3oBltWdW4YFP8lePTkPURYdSmioIShjEuwWcEcCWkh7UDHf+2F9J6LWkGbgbrJbFJGQRoFqJCwhX+UYAh7D0ukj6FAqWn9AX/uXoiRwQmI8XQKUiUfjJvkuCbKSMLUydLtdQPimZdwSdPmqwd/oJTlPMAcb3ndTW5g==')
+  //const [token, setToken] = useState('')
   const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false);
   const [visible, setVisible] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [selectedLang, setSelectedLang] = useState('en'); // Selected in <select>
@@ -65,6 +67,7 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setLoading(true);
     if (rememberMe) {
       localStorage.setItem('rememberedEmail', email);
     } else {
@@ -82,6 +85,15 @@ const Login = () => {
       setEmail('');
       setPassword('');
     }
+  }
+
+  if (loading) {
+    return <div className="flex w-full items-center justify-center h-screen">
+      <div className="relative">
+        <div className="w-20 h-20 border-purple-200 border-2 rounded-full"></div>
+        <div className="w-20 h-20 border-purple-700 border-t-2 animate-spin rounded-full absolute left-0 top-0"></div>
+      </div>
+    </div>;
   }
 
   return (

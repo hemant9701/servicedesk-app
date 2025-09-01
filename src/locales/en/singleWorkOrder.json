@@ -22,5 +22,8 @@
   "single_work_order_page_err_no_ticket_id": "Work Order ID is not provided.",
   "single_work_order_page_err_failed_to_fetch_wo": "Failed to fetch workOrder details.",
   "single_work_order_page_err_failed_to_fetch_document": "Failed to fetch documents.",
-  "single_work_order_page_err_failed_to_fetch_thumbnail": "Failed to fetch thumbnails."
+  "single_work_order_page_err_failed_to_fetch_thumbnail": "Failed to fetch thumbnails.",
+  "single_work_order_page_select_to_download": "Select to Download the Document.",
+  "single_work_order_page_download_button": "Download",
+  "single_work_order_page_download_all_button": "Download All"
 }

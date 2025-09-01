@@ -5,14 +5,19 @@ import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import { useAuth } from '../AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { BadgeInfo, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, ArrowLeftToLine, ArrowRightToLine, ListFilterIcon } from 'lucide-react';
+import { BadgeInfo, Loader, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, ArrowLeftToLine, ArrowRightToLine, Filter } from 'lucide-react';
 import { useTranslation } from "react-i18next";
+import { startOfMonth, endOfMonth, format } from 'date-fns';
+import Select from 'react-select';
+import makeAnimated from 'react-select/animated';
+const animatedComponents = makeAnimated();
 
 const ViewCalendars = () => {
   const navigate = useNavigate();
   const { auth } = useAuth();
   const [contents, setContents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [date, setDate] = useState(new Date());
   const { t } = useTranslation('calendar');
@@ -25,14 +30,26 @@ const ViewCalendars = () => {
   const [selectedEquipmentName, setSelectedEquipmentName] = useState('All');
   const [includeArchived, setIncludeArchived] = useState(false);
 
-  const onDateChange = (newDate) => {
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+
+  const onDateChange = async (newDate) => {
+    setIsLoading(true);
     setDate(newDate);
+    setIsLoading(false);
   };
 
   useEffect(() => {
     const fetchJobs = async () => {
+      const formatDate = (date) => format(date, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+      const dateFrom = formatDate(startOfMonth(currentMonth));
+      const dateTo = formatDate(endOfMonth(currentMonth));
+
+      const query = `date_from gt '${dateFrom}' and date_to le '${dateTo}'`;
+      const encodedQuery = encodeURIComponent(query);
+      const url = `api/JobPlanningView?$filter=${encodedQuery}`;
+
       try {
-        const response = await fetchData('api/JobPlanningView', 'GET', auth.authKey);
+        const response = await fetchData(url, 'GET', auth.authKey);
         setContents(response.value);
         setLoading(false);
       } catch (err) {
@@ -40,9 +57,12 @@ const ViewCalendars = () => {
         setLoading(false);
       }
     };
-
     fetchJobs();
-  }, [auth]);
+  }, [auth, currentMonth]);
+
+  const handleMonthChange = ({ activeStartDate }) => {
+    setCurrentMonth(activeStartDate);
+  };
 
   useEffect(() => {
     const fetchEquiName = async () => {
@@ -55,10 +75,6 @@ const ViewCalendars = () => {
       }
     };
 
-    fetchEquiName();
-  }, [auth]);
-
-  useEffect(() => {
     const fetchJobsType = async () => {
       try {
         const restype = await fetchData('api/EquipmentFamily', 'GET', auth.authKey);
@@ -69,8 +85,27 @@ const ViewCalendars = () => {
       }
     };
 
+    fetchEquiName();
     fetchJobsType();
   }, [auth]);
+
+  const equipmentNamesOptions = Array.isArray(equipmentNames)
+    ? equipmentNames
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((model) => ({
+        value: model.id,
+        label: model.name,
+      }))
+    : [];
+
+  const equipmentTypesOptions = Array.isArray(equipmentTypes)
+    ? equipmentTypes
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((model) => ({
+        value: model.id,
+        label: model.name,
+      }))
+    : [];
 
   const columns = useMemo(
     () => [
@@ -79,7 +114,7 @@ const ViewCalendars = () => {
         accessor: 'jobs_id2',
         Cell: ({ row }) => (
           <span
-            className="text-gray-800 font-medium" >
+            className="text-zinc-900 text-xs font-semibold" >
             {row.original.jobs_id2}
           </span>
         )
@@ -138,8 +173,8 @@ const ViewCalendars = () => {
   }, [contents, location, date, selectedEquipmentType, selectedEquipmentName, includeArchived]);
 
 
-  const tableInstance = useTable({ columns, data: filteredContents, initialState: { pageIndex: 0, pageSize: 10 }, }, useSortBy);
-  const { 
+  const tableInstance = useTable({ columns, data: filteredContents, initialState: { pageIndex: 0, pageSize: 12 }, }, useSortBy);
+  const {
     getTableProps,
     getTableBodyProps,
     headerGroups,
@@ -178,24 +213,24 @@ const ViewCalendars = () => {
 
   return (
     <div className="w-full mx-auto p-6">
-      <h1 className="text-2xl font-semibold text-gray-800 mb-6">{t('calender_page_title')}</h1>
+      <h1 className="text-zinc-900 text-3xl font-semibold mb-6">{t('calender_page_title')}</h1>
 
       {/* Back Button */}
       <button
         onClick={() => navigate('/')} // Navigate back one step in history
-        className="flex items-center mb-4 font-semibold text-gray-800"
+        className="flex items-center mb-6 font-semibold text-zinc-900 text-base"
       >
         <ArrowLeft className="mr-2 w-5 h-5" /> {t("calender_page_go_back")}
       </button>
 
       <div className="flex flex-col lg:flex-row gap-12">
         {/* Filters Section */}
-        <div className="bg-white p-6 rounded-lg shadow-[0_0_10px_2px_rgba(0,0,0,0.1)] w-full lg:w-1/3">
-          <h2 className="flex items-center text-xl font-semibold text-gray-700 mb-4">
-            {t('calendar_page_filter_label')} <ListFilterIcon className="w-4 h-4 ml-4" />
+        <div className="bg-white p-4 rounded-lg shadow-[0_0_10px_2px_rgba(0,0,0,0.1)] w-full lg:w-1/3">
+          <h2 className="flex items-center text-zinc-900 text-base font-medium leading-normal pb-6">
+            {t('calendar_page_filter_label')} <Filter className="w-5 h-4 ml-4" />
           </h2>
           <div className="mb-4">
-            <label htmlFor="location" className="block font-semibold text-gray-700 mb-2">
+            <label htmlFor="location" className="block text-zinc-900 text-base font-normal leading-normal mb-2">
               {t('calendar_page_filter_location_label')}
             </label>
             <input
@@ -203,44 +238,78 @@ const ViewCalendars = () => {
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               placeholder={t('calendar_page_filter_location_placeholder')}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-indigo-500"
+              className="w-full px-2 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:border-indigo-500"
             />
           </div>
           <div className="mb-4">
-            <label htmlFor="equipment-type" className="block font-semibold text-gray-700 mb-2">
+            <label htmlFor="equipment-type" className="block text-zinc-900 text-base font-normal leading-normal mb-2">
               {t('calendar_page_filter_equipment_type_label')}
             </label>
-            <select
-              id="equipment-type"
-              value={selectedEquipmentType}
-              onChange={(e) => setSelectedEquipmentType(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-indigo-500"
-            >
-              <option value="All">{t('calendar_page_filter_equipment_type_select')}</option>
-              {Array.isArray(equipmentTypes) && equipmentTypes
-                .sort((a, b) => a.name.localeCompare(b.name))
-                .map((type) => (
-                  <option key={type.id} value={type.id}>{type.name}</option>
-                ))}
-            </select>
+            <Select
+              components={animatedComponents}
+              defaultValue={equipmentTypes[0]}
+              options={equipmentTypesOptions}
+              value={equipmentTypesOptions.find(option => option.value === equipmentTypes) || null} // match by ID
+              onChange={(selected) => setSelectedEquipmentType(selected)}
+              placeholder={t("calendar_page_filter_equipment_type_select")}
+              className="w-full py-1 text-gray-500 text-base font-normal leading-normal border rounded-md"
+              styles={{
+                control: (base) => ({
+                  ...base,
+                  border: 'none',
+                  boxShadow: 'none', // also remove focus ring
+                }),
+                option: (base, state) => ({
+                  ...base,
+                  color: state.isSelected
+                    ? '#ffffff' // white text when selected
+                    : state.isFocused
+                      ? '#fff' // Tailwind blue-700 on hover
+                      : '#374151', // Tailwind gray-700 default
+                  backgroundColor: state.isSelected
+                    ? '#374151' // Tailwind blue-500
+                    : state.isFocused
+                      ? '#9CA3AF' // Tailwind blue-100
+                      : 'transparent',
+                  cursor: 'pointer',
+                }),
+              }}
+            />
           </div>
           <div className="mb-4">
-            <label htmlFor="equipment" className="block font-semibold text-gray-700 mb-2">
+            <label htmlFor="equipment" className="block text-zinc-900 text-base font-normal leading-normal mb-2">
               {t('calendar_page_filter_equipment_label')}
             </label>
-            <select
-              id="equipment"
-              value={selectedEquipmentName}
-              onChange={(e) => setSelectedEquipmentName(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-indigo-500"
-            >
-              <option value="All">{t('calendar_page_filter_equipment_select')}</option>
-              {Array.isArray(equipmentNames) && equipmentNames
-                .sort((a, b) => a.name.localeCompare(b.name))
-                .map((type) => (
-                  <option key={type.equipment_family_id} value={type.equipment_family_id}>{type.equipment_family_name} - {type.name} - {type.db_address_street}</option>
-                ))}
-            </select>
+            <Select
+              components={animatedComponents}
+              defaultValue={equipmentNames[0]}
+              options={equipmentNamesOptions}
+              value={equipmentNamesOptions.find(option => option.value === equipmentNames) || null} // match by ID
+              onChange={(selected) => setSelectedEquipmentName(selected)}
+              placeholder={t("calendar_page_filter_equipment_select")}
+              className="w-full py-1 text-gray-500 text-base font-normal leading-normal border rounded-md"
+              styles={{
+                control: (base) => ({
+                  ...base,
+                  border: 'none',
+                  boxShadow: 'none', // also remove focus ring
+                }),
+                option: (base, state) => ({
+                  ...base,
+                  color: state.isSelected
+                    ? '#ffffff' // white text when selected
+                    : state.isFocused
+                      ? '#fff' // Tailwind blue-700 on hover
+                      : '#374151', // Tailwind gray-700 default
+                  backgroundColor: state.isSelected
+                    ? '#374151' // Tailwind blue-500
+                    : state.isFocused
+                      ? '#9CA3AF' // Tailwind blue-100
+                      : 'transparent',
+                  cursor: 'pointer',
+                }),
+              }}
+            />
           </div>
           <button onClick={handleReset} className="w-full border border-gray-900 text-gray-900 px-4 py-2 rounded-md hover:bg-gray-200">
             {t('calendar_page_filter_reset')}
@@ -249,23 +318,26 @@ const ViewCalendars = () => {
 
         {/* Calendar Section */}
         <div>
-          <div className="flex items-center mb-2 text-gray-900">
-              <BadgeInfo className='mr-2 w-5 h-5 text-gray-400' /> {t("calendar_page_calendar_helping_text")}
+          <div className="flex items-center mb-1 text-zinc-800 text-sm font-normal px-4 py-2">
+            <BadgeInfo className='mr-2 w-5 h-5 text-slate-300' /> {t("calendar_page_calendar_helping_text")}
           </div>
           <div className="bg-white rounded-lg shadow-[0_0_10px_2px_rgba(0,0,0,0.1)]">
             <Calendar
               onChange={onDateChange}
               value={date}
+              onActiveStartDateChange={handleMonthChange}
               tileClassName={({ date, view }) => {
                 if (view === 'month' && datesWithData.includes(date.toDateString())) {
                   return 'rounded-date';
                 }
                 return null;
               }}
-              calendarType="gregory" // Week starts on Sunday
-              formatShortWeekday={(locale, date) => date.toLocaleDateString(locale, { weekday: 'short' }).slice(0, 1)}
-              prev2Label={null}  // Remove double prev
-              next2Label={null}  // Remove double next
+              calendarType="gregory"
+              formatShortWeekday={(locale, date) =>
+                date.toLocaleDateString(locale, { weekday: 'short' }).slice(0, 1)
+              }
+              prev2Label={null}
+              next2Label={null}
               className="calendar-component"
             />
           </div>
@@ -273,20 +345,20 @@ const ViewCalendars = () => {
       </div>
 
       <div className='shadow-[0_0_10px_2px_rgba(0,0,0,0.1)] rounded-lg mt-4'>
-        <h2 className="text-xl font-semibold text-gray-700 px-4 py-2">{date.toLocaleDateString('en-US', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'})}</h2>
+        <h2 className="text-gray-900 text-lg font-medium leading-7 px-4 py-2">{date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h2>
         {rows?.length > 0 ? (
           <>
-            <div className="flex items-center mb-1 text-gray-900 px-4 py-2">
-            <BadgeInfo className='mr-2 w-5 h-5 text-gray-400' /> {t("calendar_page_table_helping_text")}
+            <div className="flex items-center mb-1 text-zinc-800 text-sm font-normal px-4 py-2">
+              <BadgeInfo className='mr-2 w-5 h-5 text-slate-300' /> {t("calendar_page_table_helping_text")}
             </div>
             <div className="overflow-x-visible">
-              <table {...getTableProps()} className="min-w-full bg-white divide-y divide-gray-300 border border-gray-300 shadow-lg">
+              <table {...getTableProps()} className="min-w-full bg-white divide-y divide-gray-200 border border-gray-300 shadow-lg">
                 <thead className="bg-white">
                   {headerGroups.map(headerGroup => (
-                    <tr {...headerGroup.getHeaderGroupProps()} className="bg-white divide-x divide-gray-300">
+                    <tr {...headerGroup.getHeaderGroupProps()} className="divide-x divide-gray-300">
                       {headerGroup.headers.map(column => (
                         <th {...column.getHeaderProps(column.getSortByToggleProps())}
-                          className="p-2 text-left text-sm font-semibold text-gray-400">
+                          className="p-2 whitespace-nowrap text-left text-slate-500 text-xs font-medium leading-none">
                           {column.render('Header')}
                           {column.isSorted ? (
                             column.isSortedDesc ? (
@@ -304,24 +376,27 @@ const ViewCalendars = () => {
                   {rows.map(row => {
                     prepareRow(row);
                     return (
-                      <tr {...row.getRowProps()} className="cursor-pointer hover:bg-gray-200" onClick={() => navigate(`/workorder/${row.original.jobs_id}`)}>
-                        {row.cells.map(cell => (
-                          <td {...cell.getCellProps()} className="px-2 py-4 text-sm text-gray-800">
-                            {cell.render('Cell')}
-                          </td>
-                        ))}
-                      </tr>
+                      !isLoading && (
+                        <tr {...row.getRowProps()} className="cursor-pointer hover:bg-gray-200" onClick={() => navigate(`/workorder/${row.original.jobs_id}`)}>
+                          {row.cells.map((cell, index) => (
+                            <td {...cell.getCellProps()} className={`self-stretch px-1 py-2 text-xs font-normal text-zinc-900 ${index === 0 ? 'text-center' : ''}`}>
+                              {cell.render('Cell')}
+                            </td>
+                          ))}
+                        </tr>
+                      )
                     );
                   })}
                 </tbody>
               </table>
             </div>
+            {isLoading && <Loader className="ml-2 text-blue-600 animate-spin" />}
           </>
         ) : (
           <div className='px-4 py-2'>{t("calender_table_no_records_text")}</div>
         )}
         {/* Pagination Controls - Only show if filteredTickets exceed pageSize (10) */}
-        {filteredContents.length > 10 && (
+        {filteredContents.length > 12 && (
           <div className="flex items-center justify-between p-4">
             <span className="text-sm text-gray-700">
               {t("calender_table_pagination_page")} {pageIndex + 1} {t("calender_table_pagination_of")} {pageOptions.length}
@@ -341,7 +416,7 @@ const ViewCalendars = () => {
               </button>
             </div>
             <select value={pageSize} onChange={e => setPageSize(Number(e.target.value))} className="ml-1 p-1 md:p-1 border border-gray-300 rounded-md max-w-32">
-              {[10, 20, 30, 50].map(size => (
+              {[12, 24, 36, 48].map(size => (
                 <option key={size} value={size}>
                   {t("calender_table_pagination_show")} {size}
                 </option>

@@ -5,10 +5,8 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import {
   File, Eye, Download, BadgeInfo, ArrowUp, ArrowDown, ArrowLeft, ArrowLeftToLine, ArrowRight, ArrowRightToLine,
-  LayoutGrid, Table, Type, MapPin, Milestone, Building, Calendar, FileText, Wrench, Image
+  LayoutGrid, Table, Type, MapPin, Milestone, Building, Calendar, FileText, Wrench, Image, Loader
 } from 'lucide-react';
-import JSZip from 'jszip';
-import { saveAs } from 'file-saver';
 import { ToastContainer, toast } from 'react-toastify';
 import { useAuth } from '../AuthContext.js';
 import { useTranslation } from "react-i18next";
@@ -22,6 +20,7 @@ const ViewDocuments = () => {
   const { auth } = useAuth();
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [viewMode, setViewMode] = useState('table');
 
@@ -31,6 +30,34 @@ const ViewDocuments = () => {
   const { t } = useTranslation('documents');
 
   const url = `https://testservicedeskapi.odysseemobile.com/`;
+
+  const [gridPageIndex, setGridPageIndex] = useState(0);
+  const [gridPageSize, setGridPageSize] = useState(12);
+
+  const gridPageCount = Math.ceil(contacts.length / gridPageSize);
+  const gridPageOptions = Array.from({ length: gridPageCount }, (_, i) => i);
+
+  const gotoGridPage = (page) => {
+    setGridPageIndex(Math.max(0, Math.min(page, gridPageCount - 1)));
+  };
+
+  const previousGridPage = () => {
+    if (gridPageIndex > 0) setGridPageIndex(gridPageIndex - 1);
+  };
+
+  const nextGridPage = () => {
+    if (gridPageIndex < gridPageCount - 1) setGridPageIndex(gridPageIndex + 1);
+  };
+
+  const canGridPreviousPage = gridPageIndex > 0;
+  const canGridNextPage = gridPageIndex < gridPageCount - 1;
+
+  const paginatedContacts = contacts.slice(
+    gridPageIndex * gridPageSize,
+    gridPageIndex * gridPageSize + gridPageSize
+  );
+
+
 
   const fileTypesOptions = [
     { value: "documents", label: "Documents", extentions: ["DOC", "DOCX"] },
@@ -62,6 +89,17 @@ const ViewDocuments = () => {
     { value: "project", label: "Equipment" }
   ];
 
+  const getTimestamp = () => {
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const hh = String(now.getHours()).padStart(2, '0');
+    const min = String(now.getMinutes()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}_${hh}${min}`;
+  };
+
+
   // Search Filter states
   const [keyword, setKeyword] = useState('');
   const [location, setLocation] = useState('');
@@ -70,55 +108,12 @@ const ViewDocuments = () => {
   const [date, setDate] = useState([uniqueDates[0]]);
   const [fileType, setFileType] = useState([]);
   const [object, setObject] = useState([]);
-  const [includeArchived, setIncludeArchived] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
 
-  // Debounced states
-  const [debouncedKeyword, setDebouncedKeyword] = useState(keyword);
-  const [debouncedLocation, setDebouncedLocation] = useState(location);
-  const [debouncedStreet, setDebouncedStreet] = useState(street);
-  const [debouncedCity, setDebouncedCity] = useState(city);
-
-  // const fileExtn = useMemo(() => ({
-  //   "PDF": "bg-yellow-500 text-white",
-  //   "PNG": "bg-blue-500 text-white",
-  //   "ZIP": "bg-purple-500 text-white",
-  //   "TXT": "bg-orange-500 text-white",
-  //   "DOCX": "bg-green-500 text-white",
-  //   "DOC": "bg-green-500 text-white",
-  //   "XLSX": "bg-indigo-500 text-white",
-  //   "XLS": "bg-indigo-500 text-white",
-  //   "JPG": "bg-red-500 text-white",
-  //   "JPEG": "bg-pink-500 text-white",
-  // }), []);
-
   useEffect(() => {
-    const debounceTimer = setTimeout(() => {
-      setDebouncedKeyword(keyword);
-    }, 500);
-    return () => clearTimeout(debounceTimer);
-  }, [keyword]);
+    setLoading(true)
+  }, []);
 
-  useEffect(() => {
-    const debounceTimer = setTimeout(() => {
-      setDebouncedLocation(location);
-    }, 500);
-    return () => clearTimeout(debounceTimer);
-  }, [location]);
-
-  useEffect(() => {
-    const debounceTimer = setTimeout(() => {
-      setDebouncedStreet(street);
-    }, 500);
-    return () => clearTimeout(debounceTimer);
-  }, [street]);
-
-  useEffect(() => {
-    const debounceTimer = setTimeout(() => {
-      setDebouncedCity(city);
-    }, 500);
-    return () => clearTimeout(debounceTimer);
-  }, [city]);
 
   useEffect(() => {
     if (downloadMsg) {
@@ -126,57 +121,55 @@ const ViewDocuments = () => {
     }
   }, [downloadMsg]);
 
-  useEffect(() => {
-    const fetchInstallations = async () => {
-      try {
-        const payload = {
-          keyword: debouncedKeyword,
-          file_types: fileType.map((type) => type.value),
-          project_id: "00000000-0000-0000-0000-000000000000",
-          db_report_type_ids: [],
-          street: debouncedStreet,
-          city: debouncedCity,
-          added_date: date.length ? date.map((d) => d.value) : date.value,
-          object_list: object.map((obj) => obj.value) || [
-            "company",
-            "task",
-            "jobs",
-            "project",
-            "you"
-          ],
-          file_extentions: fileType.reduce((acc, type) => acc.concat(type.extentions), []),
-          file_extentions_not_in: [],
-          date_add_min: `${date.length ? date.map((d) => d.value) : date.value}-01-01T00:00:00.000`,
-          date_add_max: `${date.length ? date.map((d) => d.value) : date.value}-12-31T23:59:59.000`,
-          query_object: {
-            startRow: 0,
-            endRow: 500,
-            rowGroupCols: [
-              {
-                id: "object_type",
-                displayName: "Object",
-                field: "object_type"
-              }
-            ],
-            valueCols: [],
-            pivotCols: [],
-            pivotMode: false,
-            groupKeys: object.map((obj) => obj.label) || [],
-            filterModel: {},
-            sortModel: []
-          }
-        };
-        const response = await fetchData(`api/DbFileView/Search`, 'POST', auth.authKey, payload);
-        setContacts(response || []);
-        setLoading(false);
-      } catch (err) {
-        setError(err);
-        setLoading(false);
-      }
-    };
 
-    fetchInstallations();
-  }, [auth, url, debouncedKeyword, debouncedLocation, debouncedStreet, debouncedCity, date, fileType, object, includeArchived]);
+  const fetchInstallations = async (filters) => {
+    try {
+      const payload = {
+        keyword: keyword,
+        file_types: fileType.map((type) => type.value),
+        project_id: "00000000-0000-0000-0000-000000000000",
+        db_report_type_ids: [],
+        street: street || '',
+        city: city || '',
+        added_date: date.length ? date.map((d) => d.value) : date.value,
+        object_list: object.map((obj) => obj.value) || [
+          "company",
+          "task",
+          "jobs",
+          "project",
+          "you"
+        ],
+        file_extentions: fileType.reduce((acc, type) => acc.concat(type.extentions), []),
+        file_extentions_not_in: [],
+        date_add_min: `${date.length ? date.map((d) => d.value) : date.value}-01-01T00:00:00.000`,
+        date_add_max: `${date.length ? date.map((d) => d.value) : date.value}-12-31T23:59:59.000`,
+        query_object: {
+          startRow: 0,
+          endRow: 500,
+          rowGroupCols: [
+            {
+              id: "object_type",
+              displayName: "Object",
+              field: "object_type"
+            }
+          ],
+          valueCols: [],
+          pivotCols: [],
+          pivotMode: false,
+          groupKeys: object.map((obj) => obj.label) || [],
+          filterModel: {},
+          sortModel: []
+        }
+      };
+      const response = await fetchData(`api/DbFileView/Search`, 'POST', auth.authKey, payload);
+      setContacts(response || []);
+    } catch (err) {
+      setError(err);
+      setIsLoading(false);
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   useEffect(() => {
     const GetFileThumbnails = async () => {
@@ -220,28 +213,45 @@ const ViewDocuments = () => {
     GetFileThumbnails();
   }, [contacts, auth, url, viewMode]); // 👈 Add viewMode to dependencies
 
+  // Confirm button
+  const handleSearch = () => {
+    const filters = {
+      keyword,
+      location,
+      street,
+      city,
+      date,
+      fileType,
+      object,
+    };
+
+    setIsLoading(true);
+    fetchInstallations(filters); // use values directly
+  };
 
   const columns = useMemo(() => [
     {
       id: '1', // Unique ID for this column
       Header: ({ rows }) => {
-        const allVisibleSelected = rows.every(row =>
+        const hasRows = rows.length > 0;
+
+        const allVisibleSelected = hasRows && rows.every(row =>
           selectedFiles.some(file => file.id === row.original.id)
         );
 
-        const someVisibleSelected = rows.some(row =>
+        const someVisibleSelected = hasRows && rows.some(row =>
           selectedFiles.some(file => file.id === row.original.id)
         );
 
         const handleSelectAll = () => {
+          if (!hasRows) return;
+
           if (allVisibleSelected) {
-            // Deselect all visible
             const visibleIds = rows.map(row => row.original.id);
             setSelectedFiles(prev =>
               prev.filter(file => !visibleIds.includes(file.id))
             );
           } else {
-            // Select all visible that aren't already selected
             const newSelections = rows
               .map(row => row.original)
               .filter(file => !selectedFiles.some(f => f.id === file.id));
@@ -250,27 +260,38 @@ const ViewDocuments = () => {
         };
 
         return (
-          <input
-            type="checkbox"
-            onChange={handleSelectAll}
-            checked={allVisibleSelected}
-            ref={el => {
-              if (el) el.indeterminate = !allVisibleSelected && someVisibleSelected;
-            }}
-          />
-        );
+          <div className='flex justify-around items-center'>
+            <span>Select All</span>
+            <input
+              className='w-4 h-4 rounded-sm'
+              type="checkbox"
+              onChange={handleSelectAll}
+              checked={hasRows && allVisibleSelected}
+              ref={el => {
+                if (el) el.indeterminate = hasRows && !allVisibleSelected && someVisibleSelected;
+              }}
+            />
+          </div>
+        )
       },
       Cell: ({ row }) =>
         row.original.file_name ? (
           <input
             type="checkbox"
+            className='w-4 h-4 rounded-sm'
             onChange={() => toggleFileSelection(row.original)}
             checked={selectedFiles.some(file => file.id === row.original.id)}
           />
         ) : null,
       disableSortBy: true,
     },
-    { Header: t('documents_table_heading_object_text'), accessor: 'object_type' },
+    {
+      Header: t('documents_table_heading_object_text'),
+      accessor: 'object_type',
+      Cell: ({ row }) => (
+        <span>{row.original.object_type || '—'}</span>
+      )
+    },
     {
       Header: t('documents_table_heading_object_name_text'), accessor: 'object_name',
       Cell: ({ row }) =>
@@ -296,7 +317,6 @@ const ViewDocuments = () => {
               }
               navigate(`${path}`)
             }}
-            className="text-left"
           >
             {row.original.object_name}
           </button>
@@ -337,8 +357,6 @@ const ViewDocuments = () => {
             year: 'numeric',
             month: '2-digit',
             day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit'
           })
           : null
     },
@@ -352,82 +370,125 @@ const ViewDocuments = () => {
     );
   };
 
-  // const handleDownloadAll = async () => {
-  //   const zip = new JSZip(); // Create a new ZIP instance
+  const handleDownloadAll = async () => {
+    const endpoint = `${url}api/DbFileView/downloadall/?token=${encodeURIComponent(auth.authKey)}`;
+    //const selectedIds = contacts.map(file => file.id);
 
-  //   for (const file of contacts) {
-  //     try {
-  //       const url = `api/DbFileView/View/${file.file_name.replace(
-  //         /[^a-zA-Z ]/g,
-  //         ''
-  //       )}?id=${file.id}&token=${auth.authKey}`;
+    const payload = {
+      keyword: keyword,
+      file_types: fileType.map((type) => type.value),
+      project_id: "00000000-0000-0000-0000-000000000000",
+      db_report_type_ids: [],
+      street: street,
+      city: city,
+      added_date: date.length ? date.map((d) => d.value) : date.value,
+      object_list: object.map((obj) => obj.value) || [
+        "company",
+        "task",
+        "jobs",
+        "project",
+        "you"
+      ],
+      file_extentions: fileType.reduce((acc, type) => acc.concat(type.extentions), []),
+      file_extentions_not_in: [],
+      date_add_min: `${date.length ? date.map((d) => d.value) : date.value}-01-01T00:00:00.000`,
+      date_add_max: `${date.length ? date.map((d) => d.value) : date.value}-12-31T23:59:59.000`,
+      query_object: {
+        startRow: 0,
+        endRow: 500,
+        rowGroupCols: [
+          {
+            id: "object_type",
+            displayName: "Object",
+            field: "object_type"
+          }
+        ],
+        valueCols: [],
+        pivotCols: [],
+        pivotMode: false,
+        groupKeys: object.map((obj) => obj.label) || [],
+        filterModel: {},
+        sortModel: []
+      }
+    };
 
-  //       // Fetch the file content
-  //       const response = await fetch(url, { method: 'GET' });
-  //       if (!response.ok) {
-  //         throw new Error(`Failed to fetch file: ${file.file_name}`);
-  //       } else {
-  //         setDownloadMsg('All Documents');
-  //       }
-
-  //       const blob = await response.blob();
-  //       const arrayBuffer = await blob.arrayBuffer();
-
-  //       // Add the file to the ZIP archive
-  //       zip.file(file.file_name || 'file', arrayBuffer);
-  //     } catch (error) {
-  //       console.error(`Error fetching file ${file.file_name}:`, error.message);
-  //     }
-  //   }
-
-  //   // Generate the ZIP archive and trigger the download
-  //   zip.generateAsync({ type: 'blob' }).then((content) => {
-  //     const blobUrl = window.URL.createObjectURL(content);
-
-  //     // Create a temporary link element
-  //     const link = document.createElement('a');
-  //     link.href = blobUrl;
-  //     link.download = 'files.zip'; // Name of the ZIP file
-  //     document.body.appendChild(link);
-  //     link.click();
-  //     document.body.removeChild(link);
-
-  //     // Revoke the object URL to free up memory
-  //     window.URL.revokeObjectURL(blobUrl);
-  //   });
-  // };
-
-  const handleDownloadSelected = async () => {
-    if (selectedFiles.length === 0) {
-      return;
-    }
-
-    const zip = new JSZip();
+    const formData = new URLSearchParams();
+    formData.append('paraString', JSON.stringify(payload));
 
     try {
-      await Promise.all(
-        selectedFiles.map(async (file) => {
-          const response = await fetch(
-            `${url}api/DbFileView/View/${file.file_name.replace(
-              /[^a-zA-Z ]/g,)}?id=${file.id}&token=${auth.authKey}`
-          );
+      const response = await axios.post(endpoint, formData.toString(), {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        responseType: 'blob', // Important for binary file download
+      });
 
-          if (!response.ok) {
-            throw new Error(`Failed to download ${file.file_name}`);
-          } else {
-            setDownloadMsg('Selected Documents');
-          }
-
-          const blob = await response.blob();
-          zip.file(file.file_name, blob);
-        })
-      );
-
-      const zipBlob = await zip.generateAsync({ type: 'blob' });
-      saveAs(zipBlob, 'SelectedFiles.zip');
+      // Extract filename if available
+      const timestamp = getTimestamp();
+      const filename = `downloadall_${timestamp}.zip`;
+      const blob = new Blob([response.data], { type: 'application/zip' });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      setDownloadMsg('Downloading...');
     } catch (error) {
-      console.error('Error downloading files:', error);
-      //alert('Failed to download selected files.');
+      console.error('Download failed:', error);
+      // Optional: show toast or fallback UI
+    }
+  };
+
+  const handleDownloadSelected = async () => {
+    const endpoint = `${url}api/DbFileView/download/?token=${encodeURIComponent(auth.authKey)}`;
+    const selectedIds = selectedFiles.map(file => file.id);
+
+    const formData = new URLSearchParams();
+    formData.append('paraString', JSON.stringify(selectedIds));
+
+    try {
+      const response = await axios.post(endpoint, formData.toString(), {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        responseType: 'blob', // Important for binary file download
+      });
+
+      if (response.data.size === 0) {
+        console.warn('Empty ZIP received — skipping download.');
+        return;
+      }
+
+
+      // Extract filename if available
+      const timestamp = getTimestamp();
+      let filename;
+      if (selectedIds.length === 1) {
+        // Use original file name if available
+        const originalFile = selectedFiles.find(f => f.id === selectedIds[0]);
+        const baseName = originalFile?.name?.split('.').slice(0, -1).join('.') || 'file';
+        const ext = originalFile?.name?.split('.').pop() || 'zip';
+        filename = `${baseName}_${timestamp}.${ext}`;
+      } else {
+        filename = `download_${timestamp}.zip`;
+      }
+
+      const blob = new Blob([response.data], { type: 'application/zip' });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      setDownloadMsg('Downloading...');
+    } catch (error) {
+      console.error('Download failed:', error);
+      // Optional: show toast or fallback UI
     }
   };
 
@@ -437,11 +498,13 @@ const ViewDocuments = () => {
     setLocation('');
     setStreet('');
     setCity('');
-    setDate([uniqueDates[0]]);
     setFileType([]);
     setObject([]);
-    toggleFileSelection([]);
-    setIncludeArchived(false);
+
+    // clear results
+    setContacts([]);
+    setFileThumbnails({});
+    setError(null);
   };
 
   const {
@@ -462,7 +525,7 @@ const ViewDocuments = () => {
     {
       columns,
       data: contacts,
-      initialState: { pageIndex: 0, pageSize: 10 },
+      initialState: { pageIndex: 0, pageSize: 12 },
     },
     useSortBy,
     usePagination
@@ -496,11 +559,11 @@ const ViewDocuments = () => {
         theme="colored"
       />
 
-      <h1 className="text-2xl font-semibold text-gray-800 mb-6">{t("documents_page_title")}</h1>
+      <h1 className="text-zinc-900 text-3xl font-semibold mb-6">{t("documents_page_title")}</h1>
       {/* Back Button */}
       <button
         onClick={() => navigate('/')} // Navigate back one step in history
-        className="flex items-center mb-4 font-semibold text-gray-800"
+        className="flex items-center mb-6 font-semibold text-zinc-900 text-base"
       >
         <ArrowLeft className="mr-2 w-5 h-5" /> {t("documents_page_go_back")}
       </button>
@@ -508,54 +571,54 @@ const ViewDocuments = () => {
       {/* Search Filter UI */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 shadow-sm border rounded-lg p-4">
         <div className="relative">
-          <Type className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
+          <Type className="absolute left-3 top-3 w-6 h-6 text-gray-500" />
           <input
             type="text"
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
             placeholder={t('documents_table_filter_keyword')}
-            className="w-full pl-10 pr-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
+            className="w-full pl-12 pr-3.5 py-3 text-gray-500 text-base font-normal leading-normal border rounded-md focus:outline-none focus:ring-1 focus:ring-gray-500"
           />
         </div>
         <div className="relative">
-          <MapPin className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
+          <MapPin className="absolute left-3 top-3 w-6 h-6 text-gray-500" />
           <input
             type="text"
             value={location}
             onChange={(e) => setLocation(e.target.value)}
             placeholder={t('documents_table_filter_location')}
-            className="w-full pl-10 pr-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
+            className="w-full pl-12 pr-3.5 py-3 text-gray-500 text-base font-normal leading-normal border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
           />
         </div>
         <div className="relative">
-          <Milestone className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
+          <Milestone className="absolute left-3 top-3 w-6 h-6 text-gray-500" />
           <input
             type="text"
             value={street}
             onChange={(e) => setStreet(e.target.value)}
             placeholder={t('documents_table_filter_street')}
-            className="w-full pl-10 pr-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
+            className="w-full pl-12 pr-3.5 py-3 text-gray-500 text-base font-normal leading-normal border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
           />
         </div>
         <div className="relative">
-          <Building className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
+          <Building className="absolute left-3 top-3 w-6 h-6 text-gray-500" />
           <input
             type="text"
             value={city}
             onInput={(e) => setCity(e.target.value)}
             placeholder={t('documents_table_filter_city')}
-            className="w-full pl-10 pr-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
+            className="w-full pl-12 pr-3.5 py-3 text-gray-500 text-base font-normal leading-normal border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
           />
         </div>
         <div className="relative">
-          <Calendar className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
+          <Calendar className="absolute left-3 top-3 w-6 h-6 text-gray-500" />
           <Select
             components={animatedComponents}
             defaultValue={uniqueDates[0]}
             options={uniqueDates}
             value={date}
             onChange={setDate}
-            className="w-full pl-10 border rounded-md text-sm text-gray-700"
+            className="w-full pl-10 py-1 text-gray-500 text-base font-normal leading-normal border rounded-md"
             styles={{
               control: (base) => ({
                 ...base,
@@ -580,7 +643,7 @@ const ViewDocuments = () => {
           />
         </div>
         <div className="relative">
-          <FileText className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
+          <FileText className="absolute left-3 top-3 w-6 h-6 text-gray-500" />
           <Select
             closeMenuOnSelect={false}
             components={animatedComponents}
@@ -590,23 +653,33 @@ const ViewDocuments = () => {
             value={fileType}
             onChange={setFileType}
             placeholder={t("documents_table_filter_file_type")}
-            className="w-full pl-10 border rounded-md text-sm text-gray-700"
+            className="w-full pl-10 py-1 text-gray-500 text-base font-normal leading-normal border rounded-md"
             styles={{
               control: (base) => ({
                 ...base,
                 border: 'none',
                 boxShadow: 'none', // also remove focus ring
               }),
-              placeholder: (base) => ({
+              option: (base, state) => ({
                 ...base,
-                color: '#9CA3AF', // Tailwind gray-400
+                color: state.isSelected
+                  ? '#ffffff' // white text when selected
+                  : state.isFocused
+                    ? '#fff' // Tailwind blue-700 on hover
+                    : '#374151', // Tailwind gray-700 default
+                backgroundColor: state.isSelected
+                  ? '#374151' // Tailwind blue-500
+                  : state.isFocused
+                    ? '#9CA3AF' // Tailwind blue-100
+                    : 'transparent',
+                cursor: 'pointer',
               }),
             }}
           />
         </div>
         <div className="relative">
           <div className="relative w-full">
-            <Wrench className="absolute left-3 top-2.5 w-4 h-4 text-gray-500 pointer-events-none" />
+            <Wrench className="absolute left-3 top-3 w-6 h-6 text-gray-500" />
             <Select
               closeMenuOnSelect={false}
               components={animatedComponents}
@@ -616,7 +689,7 @@ const ViewDocuments = () => {
               value={object}
               onChange={setObject}
               placeholder={t("documents_table_filter_objects")}
-              className="w-full pl-10 border rounded-md text-sm text-gray-700"
+              className="w-full pl-10 py-1 text-gray-500 text-base font-normal leading-normal border rounded-md"
               classNamePrefix="react-select"
               styles={{
                 control: (base) => ({
@@ -624,48 +697,67 @@ const ViewDocuments = () => {
                   border: 'none',
                   boxShadow: 'none', // also remove focus ring
                 }),
-                placeholder: (base) => ({
+                option: (base, state) => ({
                   ...base,
-                  color: '#9CA3AF', // Tailwind gray-400
+                  color: state.isSelected
+                    ? '#ffffff' // white text when selected
+                    : state.isFocused
+                      ? '#fff' // Tailwind blue-700 on hover
+                      : '#374151', // Tailwind gray-700 default
+                  backgroundColor: state.isSelected
+                    ? '#374151' // Tailwind blue-500
+                    : state.isFocused
+                      ? '#9CA3AF' // Tailwind blue-100
+                      : 'transparent',
+                  cursor: 'pointer',
                 }),
               }}
             />
           </div>
         </div>
         <div className="flex items-end gap-x-2">
-          <button onClick={handleReset} className="px-4 py-2 border rounded-md text-sm text-gray-700 hover:bg-gray-100">
+          <button onClick={handleReset} className="w-48 px-5 py-3 border border-zinc-900 rounded-md text-sm text-gray-700 hover:bg-zinc-800 hover:text-white">
             {t("documents_table_filter_reset_button")}
+          </button>
+          <button onClick={handleSearch} className="w-48 px-5 py-3 border border-zinc-900 rounded-md text-sm text-white bg-zinc-800 hover:text-gray-900 hover:bg-white">
+            {t("Confirm")}
           </button>
         </div>
       </div>
 
       <div className="shadow-md rounded-lg mb-4">
         <div className="flex items-end justify-end gap-x-2 py-2 pr-2">
-          {contacts.length !== 0 && (<button
-            className="text-gray-900 px-2 py-1"
+          <button
+            className="text-zinc-800 px-2 py-1"
             onClick={() => setViewMode(viewMode === 'table' ? 'grid' : 'table')}
           >
-            {viewMode === 'table' ? <LayoutGrid className="w-8 h-8" /> : <Table className="w-8 h-8" />}
-          </button>)}
+            {viewMode === 'table' ? <LayoutGrid className="w-10 h-10" /> : <Table className="w-10 h-10" />}
+          </button>
           {contacts.length !== 0 && (
             selectedFiles.length !== 0 && (
               <button
                 onClick={handleDownloadSelected}
-                className="bg-gray-800 text-white px-4 py-2 rounded-md flex items-center font-semibold"
+                className="w-48 px-5 py-3 bg-zinc-800 rounded-lg flex items-center justify-center text-pink-50 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]"
               >
-                {t("documents_table_download_button")} <Download className="ml-2 w-5 h-5" />
+                {t("documents_table_download_button")} <Download className="ml-2 w-6 h-5" />
               </button>
             )
           )}
+          <button
+            onClick={handleDownloadAll}
+            className="w-48 px-5 py-3 bg-zinc-800 rounded-lg flex items-center justify-center text-pink-50 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]"
+          >
+            {t("documents_table_downloadall_button")} <Download className="ml-2 w-6 h-5" />
+          </button>
         </div>
 
         {/* Table displaying data */}
         {viewMode === 'table' && (
           <>
-            <div className="flex items-center mb-1 ml-2 text-gray-900">
-              <BadgeInfo className='mr-2 w-5 h-5 text-gray-400' /> {t("documents_page_helping_text")}
+            <div className="flex items-center mb-1 text-zinc-800 text-sm font-normal px-4 py-2">
+              <BadgeInfo className='mr-2 w-5 h-5 text-slate-300' /> {t("documents_page_helping_text")}
             </div>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-hidden">
               <table {...getTableProps()} className="min-w-full divide-y divide-gray-200 border border-gray-300">
                 <thead className="bg-white">
                   {headerGroups.map(headerGroup => (
@@ -673,7 +765,7 @@ const ViewDocuments = () => {
                       {headerGroup.headers.map(column => (
                         <th
                           {...column.getHeaderProps(column.getSortByToggleProps())}
-                          className="px-2 py-2 text-left text-sm font-semibold text-gray-600"
+                          className="p-2 whitespace-nowrap text-left text-slate-500 text-xs font-medium leading-none"
                         >
                           {column.render('Header')}
                           {column.isSorted ? (
@@ -692,40 +784,43 @@ const ViewDocuments = () => {
                   {page.map(row => {
                     prepareRow(row);
                     return (
-                      <tr {...row.getRowProps()} className='cursor-pointer hover:bg-gray-200'>
-                        {row.cells.map(cell => (
-                          <td {...cell.getCellProps()} className="px-2 py-4 text-sm text-gray-800">
-                            {cell.render('Cell')}
-                          </td>
-                        ))}
-                      </tr>
+                      !isLoading && (
+                        <tr {...row.getRowProps()} key={row.original.id} className="cursor-pointer hover:bg-gray-200">
+                          {row.cells.map((cell, index) => (
+                            <td {...cell.getCellProps()} className={`self-stretch px-1 py-2 text-xs font-normal text-zinc-900 ${index === 0 ? 'text-center' : ''}`}>
+                              {cell.render('Cell')}
+                            </td>
+                          ))}
+                        </tr>
+                      )
                     );
                   })}
                 </tbody>
               </table>
             </div>
+              {isLoading && <Loader className="ml-2 text-blue-600 animate-spin" />}
             {/* Pagination Controls */}
-            {contacts.length > 10 && (
+            {!isLoading && contacts.length > 12 && (
               <div className="flex items-center justify-between p-2">
-                <span className="text-sm text-gray-700">
+                <span className="text-xs text-slate-700">
                   {t("documents_table_pagination_page")} {pageIndex + 1} {t("documents_table_pagination_of")} {pageOptions.length}
                 </span>
                 <div>
-                  <button onClick={() => gotoPage(0)} disabled={!canPreviousPage} className="py-1 px-2 md:py-1 md:px-3 mr-1 text-gray-900 rounded-md border border-gray-900 disabled:border-gray-700">
+                  <button onClick={() => gotoPage(0)} disabled={!canPreviousPage} className="py-0.5 px-1 md:px-2 mr-1 text-slate-700 rounded-md border border-slate-700 disabled:border-gray-700">
                     <ArrowLeftToLine className="w-4" />
                   </button>
-                  <button onClick={() => previousPage()} disabled={!canPreviousPage} className="py-1 px-2 md:py-1 md:px-3 mr-1 text-gray-900 rounded-md border border-gray-900 disabled:border-gray-700">
+                  <button onClick={() => previousPage()} disabled={!canPreviousPage} className="py-0.5 px-1 md:px-2 mr-1 text-slate-700 rounded-md border border-slate-700 disabled:border-gray-700">
                     <ArrowLeft className="w-4" />
                   </button>
-                  <button onClick={() => nextPage()} disabled={!canNextPage} className="py-1 px-2 md:py-1 md:px-3 mr-1 text-gray-900 rounded-md border border-gray-900 disabled:border-gray-700">
+                  <button onClick={() => nextPage()} disabled={!canNextPage} className="py-0.5 px-1 md:px-2 mr-1 text-slate-700 rounded-md border border-slate-700 disabled:border-gray-700">
                     <ArrowRight className="w-4" />
                   </button>
-                  <button onClick={() => gotoPage(pageOptions.length - 1)} disabled={!canNextPage} className="py-1 px-2 md:py-1 md:px-3 mr-1 text-gray-900 rounded-md border border-gray-900 disabled:border-gray-700">
+                  <button onClick={() => gotoPage(pageOptions.length - 1)} disabled={!canNextPage} className="py-0.5 px-1 md:px-2 mr-1 text-slate-700 rounded-md border border-slate-700 disabled:border-gray-700">
                     <ArrowRightToLine className="w-4" />
                   </button>
                 </div>
-                <select value={pageSize} onChange={e => setPageSize(Number(e.target.value))} className="ml-1 p-1 md:p-1 border border-gray-300 rounded-md max-w-32">
-                  {[10, 20, 30, 50].map(size => (
+                <select value={pageSize} onChange={e => setPageSize(Number(e.target.value))} className="ml-1 p-1 md:p-1 text-xs text-slate-700 border border-slate-700 rounded-md max-w-32">
+                  {[12, 24, 36, 48].map(size => (
                     <option key={size} value={size}>
                       {t("documents_table_pagination_show")} {size}
                     </option>
@@ -737,78 +832,109 @@ const ViewDocuments = () => {
         )}
 
         {viewMode === 'grid' && (
-          <div className='grid grid-cols-1 md:grid-cols-4 gap-4 p-8'>
-            {contacts?.length > 0 ? (
-              contacts.map(item => (
-                <div key={item.id} className="p-2 flex flex-col border rounded-lg shadow-md">
-                  {/* Show image thumbnail if it's an image, otherwise show file icon */}
-                  {item.mime_type?.startsWith("image/") ? (
-                    fileThumbnails[item.id] ? (
-                      <img
-                        src={fileThumbnails[item.id]}
-                        alt={item.name}
-                        className="w-48 h-40 object-cover rounded-md mx-auto"
-                      />
+          <>
+            <div className='grid grid-cols-1 md:grid-cols-4 gap-4 p-8'>
+              {paginatedContacts?.length > 0 ? (
+                paginatedContacts.map(item => (
+                  <div key={item.id} className="p-2 flex flex-col border rounded-lg shadow-md">
+                    {/* Show image thumbnail if it's an image, otherwise show file icon */}
+                    {item.mime_type?.startsWith("image/") ? (
+                      fileThumbnails[item.id] ? (
+                        <img
+                          src={fileThumbnails[item.id]}
+                          alt={item.name}
+                          className="w-48 h-40 object-cover rounded-md mx-auto"
+                        />
+                      ) : (
+                        <Image className="w-48 h-40 text-gray-200 mx-auto" /> // 👈 fallback image icon
+                      )
                     ) : (
-                      <Image className="w-48 h-40 text-gray-200 mx-auto" /> // 👈 fallback image icon
-                    )
-                  ) : (
-                    <File className="w-48 h-40 text-gray-600 mx-auto" />
-                  )}
+                      <File className="w-48 h-40 text-gray-600 mx-auto" />
+                    )}
 
-                  <h4 className="text-gray-500 text-sm py-1 break-words">{item.name}</h4>
-                  <p className="text-gray-500 text-sm">{new Date(item.date_add).toLocaleString()}</p>
+                    <h4 className="text-gray-500 text-sm py-1 break-words">{item.name}</h4>
+                    <p className="text-gray-500 text-sm">{new Date(item.date_add).toLocaleString()}</p>
 
-                  {item.file_name && (
-                    <label className="mt-2 flex space-x-2 items-start text-sm">
-                      <input
-                        type="checkbox"
-                        onChange={() => toggleFileSelection(item)}
-                        checked={selectedFiles.some((file) => file.id === item.id)}
-                        className='mt-1'
-                      />
-                      <span className='text-sm'>{t("documents_table_download_checkbox")}</span>
-                    </label>
-                  )}
+                    {item.file_name && (
+                      <label className="mt-2 flex space-x-2 items-start text-sm">
+                        <input
+                          type="checkbox"
+                          onChange={() => toggleFileSelection(item)}
+                          checked={selectedFiles.some((file) => file.id === item.id)}
+                          className='mt-1'
+                        />
+                        <span className='text-sm'>{t("documents_table_download_checkbox")}</span>
+                      </label>
+                    )}
 
-                  {item.mime_type?.startsWith("image/") ? (
-                    <a
-                      href={fileThumbnails[item.id] || ""}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center mt-2 text-sm hover:underline"
-                    >
-                      <Eye className="w-4 h-4 mr-2 text-gray-600" />
-                      {t("documents_table_view_document_text")}
-                    </a>
-                  ) : (
-                    <a
-                      href={`${url}api/DbFileView/View/${item.file_name.replace(
-                        /[^a-zA-Z ]/g,
-                        ''
-                      )}?id=${item.id}&token=${encodeURIComponent(auth.authKey)}`}
-                      className="flex items-center mt-2 text-sm hover:underline"
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      <Eye className="w-4 h-4 mr-2 text-gray-600" />
-                      {t("documents_table_view_document_text")}
-                    </a>
-                  )}
+                    {item.mime_type?.startsWith("image/") ? (
+                      <a
+                        href={fileThumbnails[item.id] || ""}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center mt-2 text-sm hover:underline"
+                      >
+                        <Eye className="w-4 h-4 mr-2 text-gray-600" />
+                        {t("documents_table_view_document_text")}
+                      </a>
+                    ) : (
+                      <a
+                        href={`${url}api/DbFileView/View/${item.file_name.replace(
+                          /[^a-zA-Z ]/g,
+                          ''
+                        )}?id=${item.id}&token=${encodeURIComponent(auth.authKey)}`}
+                        className="flex items-center mt-2 text-sm hover:underline"
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <Eye className="w-4 h-4 mr-2 text-gray-600" />
+                        {t("documents_table_view_document_text")}
+                      </a>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-600 p-4 text-center">
+                  {t("documents_table_no_document_available")}
+                </p>
+              )}
+
+              {!fileThumbnails && (!paginatedContacts || paginatedContacts.length === 0) && (
+                <p className="text-gray-600 p-4 text-center">
+                  {t("documents_table_no_document_available")}
+                </p>
+              )}
+            </div>
+
+            {contacts.length > 12 && (
+              <div className="flex items-center justify-between p-2">
+                <span className="text-xs text-slate-700">
+                  {t("documents_table_pagination_page")} {gridPageIndex + 1} {t("documents_table_pagination_of")} {gridPageOptions.length}
+                </span>
+                <div>
+                  <button onClick={() => gotoGridPage(0)} disabled={!canGridPreviousPage} className="py-0.5 px-1 md:px-2 mr-1 text-slate-700 rounded-md border border-slate-700 disabled:border-gray-700">
+                    <ArrowLeftToLine className="w-4" />
+                  </button>
+                  <button onClick={() => previousGridPage()} disabled={!canGridPreviousPage} className="py-0.5 px-1 md:px-2 mr-1 text-slate-700 rounded-md border border-slate-700 disabled:border-gray-700">
+                    <ArrowLeft className="w-4" />
+                  </button>
+                  <button onClick={() => nextGridPage()} disabled={!canGridNextPage} className="py-0.5 px-1 md:px-2 mr-1 text-slate-700 rounded-md border border-slate-700 disabled:border-gray-700">
+                    <ArrowRight className="w-4" />
+                  </button>
+                  <button onClick={() => gotoGridPage(gridPageOptions.length - 1)} disabled={!canGridNextPage} className="py-0.5 px-1 md:px-2 mr-1 text-slate-700 rounded-md border border-slate-700 disabled:border-gray-700">
+                    <ArrowRightToLine className="w-4" />
+                  </button>
                 </div>
-              ))
-            ) : (
-              <p className="text-gray-600 p-4 text-center">
-                {t("documents_table_no_document_available")}
-              </p>
+                <select value={gridPageSize} onChange={e => setGridPageSize(Number(e.target.value))} className="ml-1 p-1 md:p-1 text-xs text-slate-700 border border-slate-700 rounded-md max-w-32">
+                  {[12, 24, 36, 48].map(size => (
+                    <option key={size} value={size}>
+                      {t("documents_table_pagination_show")} {size}
+                    </option>
+                  ))}
+                </select>
+              </div>
             )}
-
-            {!fileThumbnails && (!contacts || contacts.length === 0) && (
-              <p className="text-gray-600 p-4 text-center">
-                {t("documents_table_no_document_available")}
-              </p>
-            )}
-          </div>
+          </>
         )}
       </div>
     </div >

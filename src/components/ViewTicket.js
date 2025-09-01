@@ -2,6 +2,9 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { fetchData } from '../services/apiService';
 import axios from 'axios';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
+import { ToastContainer, toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { File, Eye, ArrowLeft, Circle, MapPin, Phone, Wrench, User, Calendar, ExternalLink } from "lucide-react";
@@ -14,10 +17,13 @@ const SingleTicket = () => {
   const [ticket, setTicket] = useState(null);
   const [ticketWorkOrder, setTicketWorkOrder] = useState();
   const [doc, setDoc] = useState([]);
+  const [file, setFile] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('details'); // State to manage active tab
   const [fileThumbnails, setFileThumbnails] = useState({});
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [downloadMsg, setDownloadMsg] = useState('');
   const { t } = useTranslation('singleTicket');
 
   const url = `https://testservicedeskapi.odysseemobile.com/`;
@@ -45,6 +51,12 @@ const SingleTicket = () => {
     "Cancelled": "bg-red-600 text-red-600",
     "Completed": "bg-pink-600 text-pink-600",
   }), []);
+
+  useEffect(() => {
+    if (downloadMsg) {
+      toast.success("Downloading!");
+    }
+  }, [downloadMsg]);
 
   useEffect(() => {
     const getTicketAndWorkOrderDetails = async () => {
@@ -113,6 +125,7 @@ const SingleTicket = () => {
             };
 
             const response = await axios(config);
+            setFile(response);
             updatedThumbnails[item.id] = URL.createObjectURL(response.data); // Store URL in object
           })
         );
@@ -128,6 +141,100 @@ const SingleTicket = () => {
 
     GetFileThumbnails();
   }, [auth, doc, url, t]); // Run when `doc` changes
+
+  const handleDownloadAll = async () => {
+    const zip = new JSZip(); // Create a new ZIP instance
+    if (doc.length === 0) return; // Ensure there is data before fetching
+
+    const docId = doc[0]?.id; // Use the first document ID (or adjust as needed)
+    if (!docId) return;
+
+    const authKey = auth?.authKey;
+    if (!authKey) return;
+
+    try {
+      const url = {
+        url: `api/DbFileView/GetFileThumbnail/?id=${docId}&maxWidth=256&maxHeight=256`,
+        method: 'GET',
+        headers: {
+          'Authorization': `Basic ${authKey}`,
+          'Accept': 'image/png',
+        },
+        responseType: 'blob',
+      };
+
+      // Fetch the file content
+      const response = await fetch(url, { method: 'GET' });
+      if (!response.ok) {
+        throw new Error(`Failed to fetch file: ${file.file_name}`);
+      }
+
+      const blob = await response.blob();
+      const arrayBuffer = await blob.arrayBuffer();
+
+      // Add the file to the ZIP archive
+      zip.file(file.file_name || 'file', arrayBuffer);
+    } catch (error) {
+      console.error(`Error fetching file ${file.file_name}:`, error.message);
+    }
+
+    // Generate the ZIP archive and trigger the download
+    zip.generateAsync({ type: 'blob' }).then((content) => {
+      const blobUrl = window.URL.createObjectURL(content);
+
+      // Create a temporary link element
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = 'files.zip'; // Name of the ZIP file
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Revoke the object URL to free up memory
+      window.URL.revokeObjectURL(blobUrl);
+    });
+  };
+
+  const toggleFileSelection = (file) => {
+    setSelectedFiles((prev) =>
+      prev.some((f) => f.id === file.id)
+        ? prev.filter((f) => f.id !== file.id)
+        : [...prev, file]
+    );
+  };
+
+  const handleDownloadSelected = async () => {
+    const zip = new JSZip();
+    if (doc.length === 0) return; // Ensure there is data before fetching
+
+    const docId = doc[0]?.id; // Use the first document ID (or adjust as needed)
+    if (!docId) return;
+
+    try {
+      await Promise.all(
+        selectedFiles.map(async (file) => {
+          const response = await fetch(
+            `api/DbFileView/GetFileThumbnail/?id=${docId}&maxWidth=256&maxHeight=256`
+          );
+
+          if (!response.ok) {
+            throw new Error(`Failed to download ${file.file_name}`);
+          } else {
+            setDownloadMsg(t('single_ticket_page_selected_documents'));
+          }
+
+          const blob = await response.blob();
+          zip.file(file.file_name, blob);
+        })
+      );
+
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      saveAs(zipBlob, 'SelectedFiles.zip');
+    } catch (error) {
+      console.error('Error downloading files:', error);
+      //alert('Failed to download selected files.');
+    }
+  };
 
 
   if (loading) {
@@ -281,43 +388,114 @@ const SingleTicket = () => {
             </div>
           </div>
         ) : (
-          <div className='shadow-sm border rounded-lg p-8 '>
-            <div className='grid grid-cols-1 md:grid-cols-4 gap-4'>
-              {doc?.length > 0 ? (
-                doc.map(item => (
-                  <div key={item.id} className="p-4 flex flex-col items-center border rounded-lg shadow-md">
-                    {/* Show image thumbnail if it's an image, otherwise show file icon */}
-                    {item.mime_type?.startsWith("image/") ? (
-                      <img src={fileThumbnails[item.id] || ""} alt={item.name} className="w-32 h-32 object-cover rounded-md" />
-                    ) : (
-                      <File className="w-32 h-32 text-gray-600" />
-                    )}
-                    <h6 className="font-bold">{item.name}</h6>
+          // <div className='shadow-sm border rounded-lg p-8 '>
+          //   <div className='grid grid-cols-1 md:grid-cols-4 gap-4'>
+          //     {doc?.length > 0 ? (
+          //       doc.map(item => (
+          //         <div key={item.id} className="p-4 flex flex-col items-center border rounded-lg shadow-md">
 
-                    <p className="text-gray-500">{(new Date(ticket?.date_update).getFullYear() !== 1980) ? new Date(ticket?.date_update).toLocaleString('nl-BE', {
-                      year: 'numeric',
-                      month: '2-digit',
-                      day: '2-digit',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    }) : ''}</p>
+          //           {item.mime_type?.startsWith("image/") ? (
+          //             <img src={fileThumbnails[item.id] || ""} alt={item.name} className="w-32 h-32 object-cover rounded-md" />
+          //           ) : (
+          //             <File className="w-32 h-32 text-gray-600" />
+          //           )}
+          //           <h6 className="font-bold">{item.name}</h6>
 
-                    {/* Show "View Document" only if it's an image */}
-                    {item.mime_type?.startsWith("image/") && (
-                      <a href={fileThumbnails[item.id] || ""} target="_blank" rel="noopener noreferrer" className="flex items-center mt-2 text-blue-600 hover:underline">
-                        <Eye className="w-6 h-6 mr-2 text-gray-600" /> {t('single_ticket_page_view_document')}
+          //           <p className="text-gray-500">{(new Date(ticket?.date_update).getFullYear() !== 1980) ? new Date(ticket?.date_update).toLocaleString('nl-BE', {
+          //             year: 'numeric',
+          //             month: '2-digit',
+          //             day: '2-digit',
+          //             hour: '2-digit',
+          //             minute: '2-digit'
+          //           }) : ''}</p>
+
+
+          //           {item.mime_type?.startsWith("image/") && (
+          //             <a href={fileThumbnails[item.id] || ""} target="_blank" rel="noopener noreferrer" className="flex items-center mt-2 text-blue-600 hover:underline">
+          //               <Eye className="w-6 h-6 mr-2 text-gray-600" /> {t('single_ticket_page_view_document')}
+          //             </a>
+          //           )
+          //           }
+          //         </div>
+          //       ))
+          //     ) : (<p className="font-semibold text-gray-400 p-2">{t('single_ticket_page_no_document')}</p>)}
+
+          //     {!fileThumbnails && (!doc || doc.length === 0) && (
+          //       <p className="font-semibold text-gray-400 p-2">{t('single_ticket_page_no_document')}</p>
+          //     )}
+
+          //   </div>
+          // </div>
+
+          <div className=''>
+            <ToastContainer
+              position="bottom-right"
+              autoClose={5000}
+              hideProgressBar={false}
+              newestOnTop={false}
+              closeOnClick
+              rtl={false}
+              pauseOnFocusLoss
+              draggable
+              pauseOnHover
+              theme="colored"
+            />
+            {doc?.length > 0 ? (
+              <div className='grid grid-cols-1 md:grid-cols-4 gap-4'>
+                {doc.map(item => (
+                  <div key={item.id} className="p-2 flex flex-col border rounded-lg shadow-md">
+                    <div className='flex flex-col items-center'>
+                      {/* Show image thumbnail if it's an image, otherwise show file icon */}
+                      {item.mime_type?.startsWith("image/") ? (
+                        <img src={fileThumbnails[item.id] || ""} alt={item.name} className="w-48 h-48 object-cover rounded-md mx-auto" />
+                      ) : (
+                        <File className="w-48 h-48 text-gray-600" />
+                      )}
+                    </div>
+                    <div className='flex flex-col'>
+                      <h4 className="text-gray-500 text-sm py-1 break-words">{item.name}</h4>
+
+                      <p className="text-gray-500 text-sm">{new Date(item.date_add).toLocaleString()}</p>
+
+                      {item.file_name ? (
+                        <label className="mt-2 flex space-x-2 items-start text-sm">
+                          <input
+                            type="checkbox"
+                            onChange={() => toggleFileSelection(item)}
+                            checked={selectedFiles.some((file) => file.id === item.id)}
+                            className='mt-1'
+                          /><span>{t("single_ticket_page_select_to_download")}</span>
+                        </label>) : null}
+
+                      {/* Show "View Document" only if it's an image */}
+
+                      <a href={fileThumbnails[item.id] || ""} target="_blank" rel="noopener noreferrer" className="flex items-center mt-2 text-sm hover:underline">
+                        <Eye className="w-6 h-6 mr-2 text-gray-600" /> {t("single_ticket_page_view_document")}
                       </a>
-                    )
-                    }
+                    </div>
                   </div>
-                ))
-              ) : (<p className="font-semibold text-gray-400 p-2">{t('single_ticket_page_no_document')}</p>)}
-
-              {!fileThumbnails && (!doc || doc.length === 0) && (
-                <p className="font-semibold text-gray-400 p-2">{t('single_ticket_page_no_document')}</p>
-              )}
-
-            </div>
+                ))}
+              </div>
+            ) : (<p className="text-gray-800 p-4 font-semibold">{t("single_ticket_page_no_document")}</p>)
+            }
+            {!fileThumbnails && (!doc || doc.length === 0) && (
+              <p className="text-gray-400 p-4 text-center">{t("single_ticket_page_no_document")}</p>
+            )}
+            {doc.length > 0 && (
+              <div className='flex justify-end mt-4'>
+                {selectedFiles.length !== 0 && (
+                  <button
+                    onClick={handleDownloadSelected}
+                    className="bg-gray-900 text-white px-2 py-1 mr-2 rounded-md hover:bg-gray-800">
+                    {t("single_ticket_page_download_button")}
+                  </button>)}
+                <button
+                  onClick={handleDownloadAll}
+                  className="bg-gray-900 text-white px-2 py-1 rounded-md hover:bg-gray-800">
+                  {t("single_ticket_page_download_all_button")}
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

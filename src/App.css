@@ -140,8 +140,7 @@
 }
 
 .react-calendar__tile--active {
-  background-color: #191919; /* Blue-500 */
-  color: white;
+  background-color: #E1E6EA; /* Blue-500 */
   border-radius: 50%;
 }
 
@@ -159,14 +158,13 @@ abbr:where([title]) {
 
 /* Your custom circular date style */
 .react-calendar__tile.rounded-date {
-  border: 2px solid #6b7280; /* Tailwind's indigo-600 */
-  color: #6b7280;
+  border: 2px solid #1F272D; /* Tailwind's indigo-600 */
+  /* color: #6b7280; */
   border-radius: 50%; /* ensures a full circle */
 }
 
 .react-calendar__tile--active:enabled:hover, .react-calendar__tile--active:enabled:focus {
-  background-color: #191919; /* Blue-500 */
-  color: white;
+  background-color: #454545; /* Blue-500 */
 }
 
 .react-calendar__tile--neighboringMonth {
