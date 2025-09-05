@@ -38,13 +38,15 @@ const CreateTicket = () => {
   const [expanded, setExpanded] = useState({});
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [location, setLocation] = useState('');
-  const [keyword, setKeyword] = useState('');
+
+  const [allLocations, setAllLocations] = useState([]);
+  const [locationHints, setLocationHints] = useState([]);
 
   const EmptyGuid = "00000000-0000-0000-0000-000000000000";
 
   const [filters, setFilters] = useState({
     location: "",
+    locationLabel: "",
     keyword: "",
     brand: EmptyGuid,
     model: EmptyGuid,
@@ -85,6 +87,103 @@ const CreateTicket = () => {
     '16:00', '16:30', '17:00', '17:30',
     '18:00'
   ];
+
+  const fetchProjects = useCallback(
+    async ({ parentOnly, groupKeys = [], parentId = null }) => {
+      const url = `api/ProjectView/Search?keyword=${filters.keyword}&projectReference=&projectReferenceBackOffice=&companyID=${EmptyGuid}&equipmentModelID=${filters.model}&equipmentBrandID=${filters.brand}&equipmentFamilyID=${EmptyGuid}&projectStatusID=${filters.status}&createdFrom=1980-01-01T00:00:00.000&createdTo=1980-01-01T00:00:00.000&includesClosed=false&parentOnly=${parentOnly}&contactId=${auth.userId}&rootParentId=${EmptyGuid}&includeLocation=true`;
+
+      const payload = {
+        startRow: 0,
+        endRow: 500,
+        rowGroupCols: [],
+        valueCols: [],
+        pivotCols: [],
+        pivotMode: false,
+        groupKeys,
+        filterModel: {},
+        sortModel: []
+      };
+
+      try {
+        const response = await fetchData(url, 'POST', auth.authKey, payload);
+        const mapped = response.map(item => ({
+          ...item,
+          subRows: item.has_child ? [] : []
+        }));
+
+        if (parentOnly || (!parentOnly && !parentId)) {
+          setContacts(mapped);
+        }
+        if (!parentOnly && parentId) {
+          setSubRowsMap(prev => ({ ...prev, [parentId]: mapped }));
+        }
+        return await mapped;
+      } catch (err) {
+        console.error(err);
+        setError(err);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [auth, filters]
+  );
+
+  useEffect(() => {
+    const loadLocations = async () => {
+      try {
+        const projects = await fetchProjects({ parentOnly: true });
+
+        const locations = Array.isArray(projects)
+          ? [
+            ...new Map(
+              projects.map(p => {
+                const name = p.name ? `${p.name} -` : '';
+                const street = p.db_address_street || '';
+                const streetNumber = p.db_address_street_number || '';
+                const zip = p.db_address_zip || '';
+                const city = p.db_address_city || '';
+
+                const label = [name, street, streetNumber, city, zip]
+                  .filter(Boolean)
+                  .join(' ');
+
+                return [p.id, { id: p.id, label }];
+              })
+            ).values(),
+          ]
+          : [];
+
+        setAllLocations(locations); // locations: Array<{ id, label }>
+      } catch (err) {
+        console.error('Failed to fetch locations', err);
+      }
+    };
+
+    loadLocations();
+  }, [fetchProjects]);
+
+  const handleLocationChange = (e) => {
+    const value = e.target.value;
+    setTempFilters(prev => ({ ...prev, locationLabel: value }));
+
+    if (value.length >= 3) {
+      const filtered = allLocations.filter(loc =>
+        loc.label.toLowerCase().includes(value.toLowerCase())
+      );
+      setLocationHints(filtered);
+    } else {
+      setLocationHints([]);
+    }
+  };
+
+  const handleHintClick = (hint) => {
+    setTempFilters(prev => ({
+      ...prev,
+      location: hint.id,         // ✅ store ID
+      locationLabel: hint.label  // show label in input
+    }));
+    setLocationHints([]);
+  };
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -129,31 +228,25 @@ const CreateTicket = () => {
     fetchModels();
   }, [auth]);
 
-  // Prepare options with default "All Brands"
-  const brandOptions = [
-    ...(Array.isArray(fetchBrands)
-      ? fetchBrands
-        .sort((a, b) => a.name.localeCompare(b.name))
-        .map((brand) => ({
-          value: brand.id,
-          label: brand.name,
-        }))
-      : []),
-  ];
+  const brandOptions = Array.isArray(fetchBrands)
+    ? fetchBrands
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map(brand => ({
+        value: brand.id,
+        label: brand.name,
+      }))
+    : [];
 
-  // Prepare options with default "All Brands"
-  const modelOptions = [
-    ...(Array.isArray(fetchModels)
-      ? fetchModels
-        .sort((a, b) => a.name.localeCompare(b.name))
-        .map((model) => ({
-          value: model.id,
-          label: model.name,
-        }))
-      : []),
-  ];
+  const modelOptions = Array.isArray(fetchModels)
+    ? fetchModels
+      .filter(model => model.equipment_brand_id === tempFilters.brand) // ✅ filter by brand
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map(model => ({
+        value: model.id,
+        label: model.name,
+      }))
+    : [];
 
-  // Prepare options with default "All Brands"
   const statusOptions = [
     ...(Array.isArray(fetchStatuses)
       ? fetchStatuses
@@ -229,46 +322,6 @@ const CreateTicket = () => {
   const removeFile = (index) => {
     setFiles(files.filter((_, i) => i !== index));
   };
-
-  const fetchProjects = useCallback(
-    async ({ parentOnly, groupKeys = [], parentId = null }) => {
-      const url = `api/ProjectView/Search?keyword=&projectReference=&projectReferenceBackOffice=&companyID=00000000-0000-0000-0000-000000000000&equipmentModelID=${filters.model}&equipmentBrandID=${filters.brand}&equipmentFamilyID=00000000-0000-0000-0000-000000000000&projectStatusID=${filters.status}&createdFrom=1980-01-01T00:00:00.000&createdTo=1980-01-01T00:00:00.000&includesClosed=false&parentOnly=${parentOnly}&contactId=${auth.userId}&rootParentId=00000000-0000-0000-0000-000000000000&includeLocation=true`;
-
-      const payload = {
-        startRow: 0,
-        endRow: 500,
-        rowGroupCols: [],
-        valueCols: [],
-        pivotCols: [],
-        pivotMode: false,
-        groupKeys,
-        filterModel: {},
-        sortModel: []
-      };
-
-      try {
-        const response = await fetchData(url, 'POST', auth.authKey, payload);
-        const mapped = response.map(item => ({
-          ...item,
-          subRows: item.has_child ? [] : []
-        }));
-
-        if (parentOnly || (!parentOnly && !parentId)) {
-          setContacts(mapped);
-        }
-        if (!parentOnly && parentId) {
-          setSubRowsMap(prev => ({ ...prev, [parentId]: mapped }));
-        }
-
-      } catch (err) {
-        console.error(err);
-        setError(err);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [auth, filters]
-  );
 
   useEffect(() => {
     fetchProjects({ parentOnly: true });
@@ -485,11 +538,13 @@ const CreateTicket = () => {
   const filteredContacts = useMemo(() => {
     return contacts.filter(contact => {
       const matchesLocation = filters.location
-        ? contact.db_address_street?.toLowerCase().includes(filters.location.toLowerCase())
+        ? contact?.id === filters.location
         : true;
 
       const matchesKeyword = filters.keyword
-        ? contact.name?.toLowerCase().includes(filters.keyword.toLowerCase())
+        ? Object.values(contact || {})
+          .filter(val => typeof val === 'string') // only check string fields
+          .some(val => val.toLowerCase().includes(filters.keyword.toLowerCase()))
         : true;
 
       const matchesBrand =
@@ -535,38 +590,6 @@ const CreateTicket = () => {
     useExpanded
   );
 
-  // const renderRows = (data, depth = 0) => {
-  //   return data.map(row => (
-  //     <React.Fragment key={row.id}>
-  //       <tr
-  //         className="hover:bg-gray-50 cursor-pointer"
-  //         onClick={() => handleRowClick(row)}
-  //       >
-  //         {columns.map((column, index) => {
-  //           const isSecondColumn = index === 1; // Skip click for second column
-  //           const cellContent = column.Cell
-  //             ? column.Cell({ row: { original: row } })
-  //             : row[column.accessor];
-
-  //           return (
-  //             <td
-  //               key={column.id || column.accessor}
-  //               className={`px-2 py-4 min-w-max text-sm text-gray-800 ${index === 0 ? 'flex' : ''}`}
-  //               style={index === 0 ? { paddingLeft: `${depth * 2 + 2}em` } : {}}
-  //               onClick={isSecondColumn ? (e) => e.stopPropagation() : undefined}
-  //             >
-  //               {index === 0 && depth > 0 && (
-  //                 <CornerDownRight className="mr-1 text-gray-400" size={20} />
-  //               )}
-  //               {cellContent}
-  //             </td>
-  //           );
-  //         })}
-  //       </tr>
-  //       {expanded[row.id] && subRowsMap[row.id] && renderRows(subRowsMap[row.id], depth + 1)}
-  //     </React.Fragment>
-  //   ));
-  // };
   const renderRows = (data, depth = 0) => {
     return data.map(row => (
       <React.Fragment key={row.id}>
@@ -682,9 +705,6 @@ const CreateTicket = () => {
     }
   };
 
-
-
-
   return (
     <div className="min-w-[78%] p-1 md:p-8">
       <ToastContainer
@@ -783,13 +803,28 @@ const CreateTicket = () => {
                   <div className="relative">
                     <MapPin className="absolute left-3 top-2.5 w-4 h-5 text-zinc-800" />
                     <input
+                      name="location"
+                      id="location"
                       type="text"
-                      value={location}
-                      onChange={(e) => setLocation(e.target.value)}
+                      value={tempFilters.locationLabel}
+                      onChange={handleLocationChange}
                       placeholder={t("create_ticket_page_filter_location")}
                       className="w-full pl-10 pr-3 py-2 border rounded-md text-gray-500 text-base font-normal focus:outline-none focus:ring-1 focus:ring-gray-400"
                     />
                   </div>
+                  {locationHints.length > 0 && (
+                    <ul className="absolute z-10 bg-white border mt-1 rounded-md w-full shadow-md">
+                      {locationHints.map(hint => (
+                        <li
+                          key={hint.id}
+                          onClick={() => handleHintClick(hint)}
+                          className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm text-gray-700"
+                        >
+                          {hint.label}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
 
                   {/* Sub-Location */}
                   {/* <div className="relative">
@@ -805,9 +840,11 @@ const CreateTicket = () => {
                   <div className="relative">
                     <Text className="absolute left-3 top-2.5 w-4 h-5 text-zinc-800" />
                     <input
+                      name='keyword'
+                      id='keyword'
                       type="text"
-                      value={keyword}
-                      onChange={(e) => setKeyword(e.target.value)}
+                      value={tempFilters.keyword}
+                      onChange={(e) => setTempFilters(prev => ({ ...prev, keyword: e.target.value }))}
                       placeholder={t("create_ticket_page_filter_keyword")}
                       className="w-full pl-10 pr-3 py-2 border rounded-md text-gray-500 text-base font-normal focus:outline-none focus:ring-1 focus:ring-gray-400"
                     />
@@ -838,15 +875,15 @@ const CreateTicket = () => {
                     />
                   </div>
 
-                  {/* Status */}
+                  {/* Models */}
                   <div className="relative">
-                    <BarChart className="absolute left-3 top-2.5 w-4 h-5 text-zinc-800" />
+                    <Hash className="absolute left-3 top-2.5 w-4 h-5 text-zinc-800" />
                     <Select
                       components={animatedComponents}
-                      options={statusOptions}
-                      value={statusOptions.find(option => option.value === tempFilters.status) || null} // match by ID
-                      onChange={(selected) => setTempFilters((prev) => ({ ...prev, status: selected.value, }))}
-                      placeholder={t("create_ticket_page_filter_status")}
+                      options={modelOptions}
+                      value={modelOptions.find(option => option.value === tempFilters.model) || null} // match by ID
+                      onChange={(selected) => setTempFilters((prev) => ({ ...prev, model: selected.value, }))}
+                      placeholder={t("create_ticket_page_filter_models")}
                       className="w-full pl-10 border rounded-md text-gray-500 text-base font-normal"
                       classNamePrefix="react-select"
                       styles={{
@@ -863,15 +900,15 @@ const CreateTicket = () => {
                     />
                   </div>
 
-                  {/* Models */}
+                  {/* Status */}
                   <div className="relative">
-                    <Hash className="absolute left-3 top-2.5 w-4 h-5 text-zinc-800" />
+                    <BarChart className="absolute left-3 top-2.5 w-4 h-5 text-zinc-800" />
                     <Select
                       components={animatedComponents}
-                      options={modelOptions}
-                      value={modelOptions.find(option => option.value === tempFilters.model) || null} // match by ID
-                      onChange={(selected) => setTempFilters((prev) => ({ ...prev, model: selected.value, }))}
-                      placeholder={t("create_ticket_page_filter_models")}
+                      options={statusOptions}
+                      value={statusOptions.find(option => option.value === tempFilters.status) || null} // match by ID
+                      onChange={(selected) => setTempFilters((prev) => ({ ...prev, status: selected.value, }))}
+                      placeholder={t("create_ticket_page_filter_status")}
                       className="w-full pl-10 border rounded-md text-gray-500 text-base font-normal"
                       classNamePrefix="react-select"
                       styles={{
@@ -1142,7 +1179,7 @@ const CreateTicket = () => {
         <div className="mt-4 p-6 w-full max-w-2xl mx-auto">
           <h2 className="text-zinc-900 text-xl font-semibold mb-4">{t("create_ticket_page_step-3_title")}</h2>
           <div className="text-zinc-900 text-sm text-base font-normal mb-8">{t("create_ticket_page_step-3_subtitle")}</div>
-      
+
           <form onSubmit={(e) => { e.preventDefault(); setStep(3); }}>
             {/* Calendar Picker */}
             <div className="flex flex-col lg:flex-row gap-6">

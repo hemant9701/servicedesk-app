@@ -1,11 +1,16 @@
 {
-  "work_order_list_page_title": "Work Order List",
-  "work_order_list_toggle_pending_text": "Pending",
-  "work_order_list_toggle_completed_text": "Completed",
-  "work_order_list_table_heading_reference_text": "Reference",
-  "work_order_list_table_heading_planned_date_text": "Planned date",
-  "work_order_list_table_heading_status_text": "Status",
-  "work_order_list_table_heading_address_text": "Address",
-  "work_order_list_table_heading_name_text": "Name",
-  "work_order_list_table_heading_type_text": "Type"
+  "work_order_list_page_go_back": "Revenir en arrière",
+  "work_order_list_page_helping_text": "Cliquez sur la ligne pour afficher les détails de l'ordre de travail.",
+  "work_order_list_page_title": "Liste des ordres de travail",
+  "work_order_list_table_heading_address_text": "Adresse",
+  "work_order_list_table_heading_name_text": "Nom",
+  "work_order_list_table_heading_planned_date_text": "Date prévue",
+  "work_order_list_table_heading_reference_text": "Référence",
+  "work_order_list_table_heading_status_text": "Statut",
+  "work_order_list_table_heading_type_text": "Type",
+  "work_order_list_table_pagination_of": "de",
+  "work_order_list_table_pagination_page": "Page",
+  "work_order_list_table_pagination_show": "Montrer",
+  "work_order_list_toggle_completed_text": "Bons de travail clôturés",
+  "work_order_list_toggle_pending_text": "Bons de travail ouverts"
 }

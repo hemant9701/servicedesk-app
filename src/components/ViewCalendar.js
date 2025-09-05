@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { useTable, useSortBy } from 'react-table';
 import { fetchData } from '../services/apiService.js';
 import Calendar from 'react-calendar';
@@ -23,7 +23,7 @@ const ViewCalendars = () => {
   const { t } = useTranslation('calendar');
 
   // Search Filter states
-  const [location, setLocation] = useState('');
+  //const [location, setLocation] = useState('');
   const [equipmentTypes, setEquipmentTypes] = useState([]);
   const [equipmentNames, setEquipmentNames] = useState([]);
   const [selectedEquipmentType, setSelectedEquipmentType] = useState('All');
@@ -31,6 +31,117 @@ const ViewCalendars = () => {
   const [includeArchived, setIncludeArchived] = useState(false);
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
+
+  const [allLocations, setAllLocations] = useState([]);
+  const [locationHints, setLocationHints] = useState([]);
+
+  const EmptyGuid = "00000000-0000-0000-0000-000000000000";
+
+  const [filters, setFilters] = useState({
+    location: "",
+    locationLabel: "",
+    keyword: "",
+    brand: EmptyGuid,
+    model: EmptyGuid,
+    status: EmptyGuid,
+    includeArchived: false
+  });
+
+  const [tempFilters, setTempFilters] = useState(filters);
+
+  const fetchProjects = useCallback(
+    async ({ parentOnly, groupKeys = [], parentId = null }) => {
+      const url = `api/ProjectView/Search?keyword=&projectReference=&projectReferenceBackOffice=&companyID=${EmptyGuid}&equipmentModelID=${EmptyGuid}&equipmentBrandID=${EmptyGuid}&equipmentFamilyID=${EmptyGuid}&projectStatusID=${EmptyGuid}&createdFrom=1980-01-01T00:00:00.000&createdTo=1980-01-01T00:00:00.000&includesClosed=false&parentOnly=${parentOnly}&contactId=${auth.userId}&rootParentId=${EmptyGuid}&includeLocation=true`;
+
+      const payload = {
+        startRow: 0,
+        endRow: 500,
+        rowGroupCols: [],
+        valueCols: [],
+        pivotCols: [],
+        pivotMode: false,
+        groupKeys,
+        filterModel: {},
+        sortModel: []
+      };
+
+      try {
+        const response = await fetchData(url, 'POST', auth.authKey, payload);
+        const mapped = response.map(item => ({
+          ...item,
+          subRows: item.has_child ? [] : []
+        }));
+
+        if (parentOnly || (!parentOnly && !parentId)) {
+          setContents(mapped);
+        }
+        return await mapped;
+      } catch (err) {
+        console.error(err);
+        setError(err);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [auth]
+  );
+
+  useEffect(() => {
+    const loadLocations = async () => {
+      try {
+        const projects = await fetchProjects({ parentOnly: true });
+
+        const locations = Array.isArray(projects)
+          ? [
+            ...new Map(
+              projects.map(p => {
+                const name = p.name ? `${p.name} -` : '';
+                const street = p.db_address_street || '';
+                const streetNumber = p.db_address_street_number || '';
+                const zip = p.db_address_zip || '';
+                const city = p.db_address_city || '';
+
+                const label = [name, street, streetNumber, city, zip]
+                  .filter(Boolean)
+                  .join(' ');
+
+                return [p.id, { id: p.id, label }];
+              })
+            ).values(),
+          ]
+          : [];
+
+        setAllLocations(locations); // locations: Array<{ id, label }>
+      } catch (err) {
+        console.error('Failed to fetch locations', err);
+      }
+    };
+
+    loadLocations();
+  }, [fetchProjects]);
+
+  const handleLocationChange = (e) => {
+    const value = e.target.value;
+    setTempFilters(prev => ({ ...prev, locationLabel: value }));
+
+    if (value.length >= 3) {
+      const filteredHints = allLocations.filter(loc =>
+        loc.label.toLowerCase().includes(value.toLowerCase())
+      );
+      setLocationHints(filteredHints);
+    } else {
+      setLocationHints([]);
+    }
+  };
+
+  const handleHintClick = (hint) => {
+    setTempFilters(prev => ({
+      ...prev,
+      locationLabel: hint.label, // Show label in input
+      location: hint.id          // Store ID for filtering
+    }));
+    setLocationHints([]);
+  };
 
   const onDateChange = async (newDate) => {
     setIsLoading(true);
@@ -143,26 +254,62 @@ const ViewCalendars = () => {
   const { filteredContents, datesWithData } = useMemo(() => {
     const selectedDateStr = date.toDateString();
 
-    // Filter for the selected date and other criteria
+    // Filter for the selected date and other criteria (for table)
     const filtered = contents.filter(content => {
       const contentDateStr = new Date(content.date_from).toDateString();
       const matchesDate = contentDateStr === selectedDateStr;
-      const matchesLocation = location ? content.db_address_street.toLowerCase().includes(location.toLowerCase()) : true;
-      const matchesEquipmentType = selectedEquipmentType !== 'All' ? content.project_equipment_family_id === selectedEquipmentType : true;
-      const matchesEquipmentName = selectedEquipmentName !== 'All' ? content.project_equipment_family_id === selectedEquipmentName : true;
-      const matchesArchived = includeArchived ? true : content.project_status_name !== 'Archived';
 
-      return matchesDate && matchesLocation && matchesEquipmentType && matchesEquipmentName && matchesArchived;
+      const matchesLocation = filters.location
+        ? content.project_id === filters.location // Compare by ID
+        : true;
+
+      const matchesEquipmentType =
+        selectedEquipmentType && selectedEquipmentType !== 'All'
+          ? content.project_equipment_family_id === (selectedEquipmentType.value || selectedEquipmentType)
+          : true;
+
+      const matchesEquipmentName =
+        selectedEquipmentName && selectedEquipmentName !== 'All'
+          ? content.project_equipment_family_id === (selectedEquipmentName.value || selectedEquipmentName)
+          : true;
+
+      const matchesArchived = includeArchived
+        ? true
+        : content.project_status_name !== 'Archived';
+
+      return (
+        matchesDate &&
+        matchesLocation &&
+        matchesEquipmentType &&
+        matchesEquipmentName &&
+        matchesArchived
+      );
     });
 
-    // Calculate unique dates with data points, ignoring selectedDateStr filtering
+    // Calculate unique dates with data points, IGNORING location filter
     const uniqueDatesWithData = [...new Set(
       contents
         .filter(content => {
-          const matchesLocation = location ? content.db_address_street.toLowerCase().includes(location.toLowerCase()) : true;
-          const matchesEquipmentType = selectedEquipmentType !== 'All' ? content.project_equipment_family_id === selectedEquipmentType : true;
-          const matchesEquipmentName = selectedEquipmentName !== 'All' ? content.project_equipment_family_id === selectedEquipmentName : true;
-          const matchesArchived = includeArchived ? true : content.project_status_name !== 'Archived';
+          // Filter by location if selected
+          const matchesLocation = filters.location
+            ? content.project_id === filters.location
+            : true;
+
+          // Equipment type filter
+          const matchesEquipmentType =
+            selectedEquipmentType && selectedEquipmentType !== 'All'
+              ? content.project_equipment_family_id === (selectedEquipmentType.value || selectedEquipmentType)
+              : true;
+
+          // Equipment name filter
+          const matchesEquipmentName =
+            selectedEquipmentName && selectedEquipmentName !== 'All'
+              ? content.project_equipment_family_id === (selectedEquipmentName.value || selectedEquipmentName)
+              : true;
+
+          // Archived filter
+          const matchesArchived = includeArchived
+            ? true : content.project_status_name !== 'Archived';
 
           return matchesLocation && matchesEquipmentType && matchesEquipmentName && matchesArchived;
         })
@@ -170,8 +317,7 @@ const ViewCalendars = () => {
     )];
 
     return { filteredContents: filtered, datesWithData: uniqueDatesWithData };
-  }, [contents, location, date, selectedEquipmentType, selectedEquipmentName, includeArchived]);
-
+  }, [contents, date, selectedEquipmentType, selectedEquipmentName, includeArchived, filters]);
 
   const tableInstance = useTable({ columns, data: filteredContents, initialState: { pageIndex: 0, pageSize: 12 }, }, useSortBy);
   const {
@@ -204,10 +350,13 @@ const ViewCalendars = () => {
   }
 
   const handleReset = () => {
-    setLocation('');
+    //setLocation('');
     setDate(new Date());
     setSelectedEquipmentType('All');
     setSelectedEquipmentName('All');
+    setTempFilters({ location: "", locationLabel: "" }); 
+    setFilters({ location: "", locationLabel: "" }); 
+    setLocationHints([]); 
     setIncludeArchived(false);
   };
 
@@ -229,94 +378,145 @@ const ViewCalendars = () => {
           <h2 className="flex items-center text-zinc-900 text-base font-medium leading-normal pb-6">
             {t('calendar_page_filter_label')} <Filter className="w-5 h-4 ml-4" />
           </h2>
-          <div className="mb-4">
-            <label htmlFor="location" className="block text-zinc-900 text-base font-normal leading-normal mb-2">
-              {t('calendar_page_filter_location_label')}
-            </label>
-            <input
-              type="text"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              placeholder={t('calendar_page_filter_location_placeholder')}
-              className="w-full px-2 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:border-indigo-500"
-            />
-          </div>
-          <div className="mb-4">
-            <label htmlFor="equipment-type" className="block text-zinc-900 text-base font-normal leading-normal mb-2">
-              {t('calendar_page_filter_equipment_type_label')}
-            </label>
-            <Select
-              components={animatedComponents}
-              defaultValue={equipmentTypes[0]}
-              options={equipmentTypesOptions}
-              value={equipmentTypesOptions.find(option => option.value === equipmentTypes) || null} // match by ID
-              onChange={(selected) => setSelectedEquipmentType(selected)}
-              placeholder={t("calendar_page_filter_equipment_type_select")}
-              className="w-full py-1 text-gray-500 text-base font-normal leading-normal border rounded-md"
-              styles={{
-                control: (base) => ({
-                  ...base,
-                  border: 'none',
-                  boxShadow: 'none', // also remove focus ring
-                }),
-                option: (base, state) => ({
-                  ...base,
-                  color: state.isSelected
-                    ? '#ffffff' // white text when selected
-                    : state.isFocused
-                      ? '#fff' // Tailwind blue-700 on hover
-                      : '#374151', // Tailwind gray-700 default
-                  backgroundColor: state.isSelected
-                    ? '#374151' // Tailwind blue-500
-                    : state.isFocused
-                      ? '#9CA3AF' // Tailwind blue-100
-                      : 'transparent',
-                  cursor: 'pointer',
-                }),
-              }}
-            />
-          </div>
-          <div className="mb-4">
-            <label htmlFor="equipment" className="block text-zinc-900 text-base font-normal leading-normal mb-2">
-              {t('calendar_page_filter_equipment_label')}
-            </label>
-            <Select
-              components={animatedComponents}
-              defaultValue={equipmentNames[0]}
-              options={equipmentNamesOptions}
-              value={equipmentNamesOptions.find(option => option.value === equipmentNames) || null} // match by ID
-              onChange={(selected) => setSelectedEquipmentName(selected)}
-              placeholder={t("calendar_page_filter_equipment_select")}
-              className="w-full py-1 text-gray-500 text-base font-normal leading-normal border rounded-md"
-              styles={{
-                control: (base) => ({
-                  ...base,
-                  border: 'none',
-                  boxShadow: 'none', // also remove focus ring
-                }),
-                option: (base, state) => ({
-                  ...base,
-                  color: state.isSelected
-                    ? '#ffffff' // white text when selected
-                    : state.isFocused
-                      ? '#fff' // Tailwind blue-700 on hover
-                      : '#374151', // Tailwind gray-700 default
-                  backgroundColor: state.isSelected
-                    ? '#374151' // Tailwind blue-500
-                    : state.isFocused
-                      ? '#9CA3AF' // Tailwind blue-100
-                      : 'transparent',
-                  cursor: 'pointer',
-                }),
-              }}
-            />
-          </div>
-          <button onClick={handleReset} className="w-full border border-gray-900 text-gray-900 px-4 py-2 rounded-md hover:bg-gray-200">
-            {t('calendar_page_filter_reset')}
-          </button>
+          <form
+            onSubmit={e => {
+              e.preventDefault();
+              setFilters({
+                location: tempFilters.location,
+                locationLabel: tempFilters.locationLabel,
+              });
+              setSelectedEquipmentType(tempFilters.selectedEquipmentType || 'All');
+              setSelectedEquipmentName(tempFilters.selectedEquipmentName || 'All');
+              setIncludeArchived(tempFilters.includeArchived || false);
+              setLocationHints([]);
+            }}
+            className='space-y-4'
+          >
+            <div className="relative mb-2">
+              <label htmlFor="location" className="block text-zinc-900 text-base font-normal leading-normal mb-2">
+                {t('calendar_page_filter_location_label')}
+              </label>
+              <input
+                name="location"
+                id="location"
+                type="text"
+                value={tempFilters.locationLabel}
+                onChange={handleLocationChange}
+                placeholder={t('calendar_page_filter_location_placeholder')}
+                className="w-full px-2 py-2.5 text-base font-normal leading-normal border border-gray-300 rounded-md focus:outline-none focus:border-indigo-500"
+              />
+              {locationHints.length > 0 && (
+                <ul className="absolute z-10 bg-white border mt-1 rounded-md w-full shadow-md">
+                  {locationHints.map(hint => (
+                    <li
+                      key={hint.id}
+                      onClick={() => handleHintClick(hint)}
+                      className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm text-gray-700"
+                    >
+                      {hint.label}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div className="mb-2">
+              <label htmlFor="equipment-type" className="block text-zinc-900 text-base font-normal leading-normal mb-2">
+                {t('calendar_page_filter_equipment_type_label')}
+              </label>
+              <Select
+                components={animatedComponents}
+                options={equipmentTypesOptions}
+                value={
+                  tempFilters.selectedEquipmentType === 'All'
+                    ? null
+                    : equipmentTypesOptions.find(option => option.value === (tempFilters.selectedEquipmentType?.value || tempFilters.selectedEquipmentType))
+                }
+                onChange={selected => setTempFilters(prev => ({ ...prev, selectedEquipmentType: selected }))}
+                placeholder={t("calendar_page_filter_equipment_type_select")}
+                className="w-full py-1 text-gray-500 text-base font-normal leading-normal border rounded-md"
+                styles={{
+                  control: (base) => ({
+                    ...base,
+                    border: 'none',
+                    boxShadow: 'none',
+                  }),
+                  option: (base, state) => ({
+                    ...base,
+                    color: state.isSelected
+                      ? '#ffffff'
+                      : state.isFocused
+                        ? '#fff'
+                        : '#374151',
+                    backgroundColor: state.isSelected
+                      ? '#374151'
+                      : state.isFocused
+                        ? '#9CA3AF'
+                        : 'transparent',
+                    cursor: 'pointer',
+                  }),
+                }}
+              />
+            </div>
+            <div className="mb-2">
+              <label htmlFor="equipment" className="block text-zinc-900 text-base font-normal leading-normal mb-2">
+                {t('calendar_page_filter_equipment_label')}
+              </label>
+              <Select
+                components={animatedComponents}
+                options={equipmentNamesOptions}
+                value={
+                  tempFilters.selectedEquipmentName === 'All'
+                    ? null
+                    : equipmentNamesOptions.find(option => option.value === (tempFilters.selectedEquipmentName?.value || tempFilters.selectedEquipmentName))
+                }
+                onChange={selected => setTempFilters(prev => ({ ...prev, selectedEquipmentName: selected }))}
+                placeholder={t("calendar_page_filter_equipment_select")}
+                className="w-full py-1 text-gray-500 text-base font-normal leading-normal border rounded-md"
+                styles={{
+                  control: (base) => ({
+                    ...base,
+                    border: 'none',
+                    boxShadow: 'none',
+                  }),
+                  option: (base, state) => ({
+                    ...base,
+                    color: state.isSelected
+                      ? '#ffffff'
+                      : state.isFocused
+                        ? '#fff'
+                        : '#374151',
+                    backgroundColor: state.isSelected
+                      ? '#374151'
+                      : state.isFocused
+                        ? '#9CA3AF'
+                        : 'transparent',
+                    cursor: 'pointer',
+                  }),
+                }}
+              />
+            </div>
+            {/* <div className="mb-4 flex items-center">
+              <input
+                type="checkbox"
+                id="includeArchived"
+                checked={tempFilters.includeArchived || false}
+                onChange={e => setTempFilters(prev => ({ ...prev, includeArchived: e.target.checked }))}
+                className="mr-2"
+              />
+              <label htmlFor="includeArchived" className="text-zinc-900 text-base font-normal leading-normal">
+                {t('calendar_page_filter_include_archived')}
+              </label>
+            </div> */}
+            <div className="flex gap-2">
+              <button type="button" onClick={handleReset} className="w-full border border-gray-900 text-gray-900 px-4 py-2 rounded-md hover:bg-zinc-900 hover:text-white">
+                {t('calendar_page_filter_reset')}
+              </button>
+              <button type="submit" className="w-full bg-zinc-900 text-white px-4 py-2 rounded-md hover:bg-white hover:text-zinc-900 border border-zinc-900">
+                {t('calendar_page_filter_apply')}
+              </button>
+            </div>
+          </form>
         </div>
-
-        {/* Calendar Section */}
         <div>
           <div className="flex items-center mb-1 text-zinc-800 text-sm font-normal px-4 py-2">
             <BadgeInfo className='mr-2 w-5 h-5 text-slate-300' /> {t("calendar_page_calendar_helping_text")}

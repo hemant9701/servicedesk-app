@@ -1,14 +1,17 @@
 {
-  "navbar_collapse_arrow": "Collapse",
-  "navbar_search_box": "Search",
-  "navbar_home_page_link": "Home",
-  "navbar_create_ticket_link": "Create Ticket",
-  "navbar_tickets_list_link": "Tickets",
-  "navbar_calendar_page_link": "Calendar",
-  "navbar_work_order_list_link": "Work Order (WO)",
-  "navbar_users_list_link": "Users",
-  "navbar_equipments_list_link": "Equipments",
+  "navbar_calendar_page_link": "Calendrier",
+  "navbar_collapse_arrow": "Effondrement",
+  "navbar_create_ticket_link": "Créer un ticket",
   "navbar_documents_list_link": "Documents",
+  "navbar_equipments_list_link": "Équipements",
+  "navbar_home_page_link": "Accueil",
+  "navbar_lang_en": "anglais",
+  "navbar_lang_fr": "Français",
+  "navbar_lang_nl": "Nederlands",
+  "navbar_language_label": "Sélectionnez une langue",
+  "navbar_search_box": "Rechercher",
   "navbar_support_page_link": "Support",
-  "navbar_language_label": "Select Language"
+  "navbar_tickets_list_link": "Tickets",
+  "navbar_users_list_link": "Utilisateurs",
+  "navbar_work_order_list_link": "Intervention (WO)"
 }

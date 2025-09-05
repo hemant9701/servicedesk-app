@@ -2,12 +2,10 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { fetchData } from '../services/apiService';
 import axios from 'axios';
-import JSZip from 'jszip';
-import { saveAs } from 'file-saver';
 import { ToastContainer, toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
-import { File, Eye, ArrowLeft, Circle, MapPin, Phone, Wrench, User, Calendar, ExternalLink } from "lucide-react";
+import { File, Eye, ArrowLeft, Circle, MapPin, Phone, Wrench, User, Calendar, ExternalLink, Image } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 const SingleTicket = () => {
@@ -17,7 +15,7 @@ const SingleTicket = () => {
   const [ticket, setTicket] = useState(null);
   const [ticketWorkOrder, setTicketWorkOrder] = useState();
   const [doc, setDoc] = useState([]);
-  const [file, setFile] = useState('');
+  //const [file, setFile] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('details'); // State to manage active tab
@@ -52,6 +50,16 @@ const SingleTicket = () => {
     "Completed": "bg-pink-600 text-pink-600",
   }), []);
 
+  const getTimestamp = () => {
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const hh = String(now.getHours()).padStart(2, '0');
+    const min = String(now.getMinutes()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}_${hh}${min}`;
+  };
+
   useEffect(() => {
     if (downloadMsg) {
       toast.success("Downloading!");
@@ -67,8 +75,6 @@ const SingleTicket = () => {
       }
 
       try {
-        setLoading(true);
-
         // Fetch Ticket
         const ticketEndpoint = `api/TaskView(${ticketId})`;
         const ticketData = await fetchData(ticketEndpoint, 'GET', auth.authKey);
@@ -115,7 +121,7 @@ const SingleTicket = () => {
             if (!item.id) return;
 
             const config = {
-              url: `${url}api/DbFileView/GetFileThumbnail/?id=${item.id}&maxWidth=500&maxHeight=500`,
+              url: `${url}api/DbFileView/GetFileThumbnail/?id=${item.id}&maxWidth=${item.image_width || '500'}&maxHeight=${item.image_heigth || '500'}`,
               method: "GET",
               headers: {
                 Authorization: `Basic ${authKey}`,
@@ -125,7 +131,7 @@ const SingleTicket = () => {
             };
 
             const response = await axios(config);
-            setFile(response);
+            //setFile(response);
             updatedThumbnails[item.id] = URL.createObjectURL(response.data); // Store URL in object
           })
         );
@@ -142,57 +148,61 @@ const SingleTicket = () => {
     GetFileThumbnails();
   }, [auth, doc, url, t]); // Run when `doc` changes
 
+
   const handleDownloadAll = async () => {
-    const zip = new JSZip(); // Create a new ZIP instance
-    if (doc.length === 0) return; // Ensure there is data before fetching
+    const endpoint = `${url}api/DbFileView/download/?token=${encodeURIComponent(auth.authKey)}`;
+    const selectedIds = doc.map(doc => doc.id);
 
-    const docId = doc[0]?.id; // Use the first document ID (or adjust as needed)
-    if (!docId) return;
-
-    const authKey = auth?.authKey;
-    if (!authKey) return;
+    const formData = new URLSearchParams();
+    formData.append('paraString', JSON.stringify(selectedIds));
 
     try {
-      const url = {
-        url: `api/DbFileView/GetFileThumbnail/?id=${docId}&maxWidth=256&maxHeight=256`,
-        method: 'GET',
+      const response = await axios.post(endpoint, formData.toString(), {
         headers: {
-          'Authorization': `Basic ${authKey}`,
-          'Accept': 'image/png',
+          'Content-Type': 'application/x-www-form-urlencoded',
         },
-        responseType: 'blob',
-      };
+        responseType: 'blob', // Important for binary file download
+      });
 
-      // Fetch the file content
-      const response = await fetch(url, { method: 'GET' });
-      if (!response.ok) {
-        throw new Error(`Failed to fetch file: ${file.file_name}`);
+      if (response.data.size === 0) {
+        console.warn('Empty ZIP received — skipping download.');
+        return;
       }
 
-      const blob = await response.blob();
-      const arrayBuffer = await blob.arrayBuffer();
+      // Extract filename if available
+      const timestamp = getTimestamp();
+      let filename;
+      if (selectedIds.length === 1) {
+        const originalFileName = doc[0]?.name;
 
-      // Add the file to the ZIP archive
-      zip.file(file.file_name || 'file', arrayBuffer);
+        if (originalFileName) {
+          const nameParts = originalFileName.split('.');
+          const ext = nameParts.length > 1 ? nameParts.pop() : '';
+          const baseName = nameParts.join('.') || 'file';
+
+          filename = `${baseName}_${timestamp}${ext ? `.${ext}` : ''}`;
+        } else {
+          filename = `file_${timestamp}`;
+        }
+
+      } else {
+        filename = `files_${timestamp}.zip`;
+      }
+
+      const blob = new Blob([response.data], { type: 'application/zip' });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      setDownloadMsg('Downloading...');
     } catch (error) {
-      console.error(`Error fetching file ${file.file_name}:`, error.message);
+      console.error('Download failed:', error);
+      // Optional: show toast or fallback UI
     }
-
-    // Generate the ZIP archive and trigger the download
-    zip.generateAsync({ type: 'blob' }).then((content) => {
-      const blobUrl = window.URL.createObjectURL(content);
-
-      // Create a temporary link element
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = 'files.zip'; // Name of the ZIP file
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      // Revoke the object URL to free up memory
-      window.URL.revokeObjectURL(blobUrl);
-    });
   };
 
   const toggleFileSelection = (file) => {
@@ -203,36 +213,54 @@ const SingleTicket = () => {
     );
   };
 
-  const handleDownloadSelected = async () => {
-    const zip = new JSZip();
-    if (doc.length === 0) return; // Ensure there is data before fetching
 
-    const docId = doc[0]?.id; // Use the first document ID (or adjust as needed)
-    if (!docId) return;
+  const handleDownloadSelected = async () => {
+    const endpoint = `${url}api/DbFileView/download/?token=${encodeURIComponent(auth.authKey)}`;
+    const selectedIds = selectedFiles.map(file => file.id);
+
+    const formData = new URLSearchParams();
+    formData.append('paraString', JSON.stringify(selectedIds));
 
     try {
-      await Promise.all(
-        selectedFiles.map(async (file) => {
-          const response = await fetch(
-            `api/DbFileView/GetFileThumbnail/?id=${docId}&maxWidth=256&maxHeight=256`
-          );
+      const response = await axios.post(endpoint, formData.toString(), {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        responseType: 'blob', // Important for binary file download
+      });
 
-          if (!response.ok) {
-            throw new Error(`Failed to download ${file.file_name}`);
-          } else {
-            setDownloadMsg(t('single_ticket_page_selected_documents'));
-          }
+      if (response.data.size === 0) {
+        console.warn('Empty ZIP received — skipping download.');
+        return;
+      }
 
-          const blob = await response.blob();
-          zip.file(file.file_name, blob);
-        })
-      );
 
-      const zipBlob = await zip.generateAsync({ type: 'blob' });
-      saveAs(zipBlob, 'SelectedFiles.zip');
+      // Extract filename if available
+      const timestamp = getTimestamp();
+      let filename;
+      if (selectedIds.length === 1) {
+        // Use original file name if available
+        const originalFile = selectedFiles.find(f => f.id === selectedIds[0]);
+        const baseName = originalFile?.name?.split('.').slice(0, -1).join('.') || 'file';
+        const ext = originalFile?.name?.split('.').pop() || 'zip';
+        filename = `${baseName}_${timestamp}.${ext}`;
+      } else {
+        filename = `download_${timestamp}.zip`;
+      }
+
+      const blob = new Blob([response.data], { type: 'application/zip' });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      setDownloadMsg('Downloading...');
     } catch (error) {
-      console.error('Error downloading files:', error);
-      //alert('Failed to download selected files.');
+      console.error('Download failed:', error);
+      // Optional: show toast or fallback UI
     }
   };
 
@@ -248,30 +276,30 @@ const SingleTicket = () => {
   if (error) return <div className="text-center text-red-600">{error}</div>;
 
   return (
-    <div className="w-full mx-auto p-6 bg-white">
+    <div className="w-full max-w-4xl mx-auto p-6 bg-white">
       <div className='flex'>
         {/* Back Button */}
         <button
           onClick={() => navigate(-1)} // Navigate back one step in history
-          className="flex items-center mb-4 font-semibold text-gray-800"
+          className="flex items-center mb-6 font-semibold text-zinc-900 text-base"
         >
           <ArrowLeft className="mr-2 w-5 h-5" /> {t("single_ticket_page_go_back")}
         </button>
       </div>
 
-      <div className='shadow-md rounded-lg p-12'>
-        <h2 className="capitalize text-xl font-bold mb-4">{t("single_ticket_page_reference")}: {ticket?.id2} | {ticket?.subject}</h2>
+      <div className='shadow-md rounded-lg p-8'>
+        <h2 className="capitalize text-zinc-900 text-2xl font-semibold mb-4">{t("single_ticket_page_reference")}: {ticket?.id2} | {ticket?.subject}</h2>
 
         {/* Tab Navigation */}
         <div className="flex space-x-4 mb-4">
           <button
-            className={`px-4 py-2 mr-2 font-semibold ${activeTab === 'details' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-gray-400'}`}
+            className={`px-4 py-2 mr-2 text-lg font-medium leading-7 ${activeTab === 'details' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-slate-500'}`}
             onClick={() => setActiveTab('details')}
           >
             {t("single_ticket_page_ticket_details")}
           </button>
           <button
-            className={`px-4 py-2 mr-2 font-semibold ${activeTab === 'documents' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-gray-400'}`}
+            className={`px-4 py-2 mr-2 text-lg font-medium leading-7 ${activeTab === 'documents' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-slate-500'}`}
             onClick={() => setActiveTab('documents')}
           >
             {t("single_ticket_page_documents")}
@@ -279,13 +307,12 @@ const SingleTicket = () => {
         </div>
 
         {activeTab === 'details' ? (
-
           <div className='grid grid-cols-1 md:grid-rows-3 gap-8'>
             <div className="grid grid-cols-3 gap-8 row-start-1">
-              <div className='shadow-sm border rounded-lg p-8 '>
-                <h4 className="block text-lg font-semibold">{t("single_ticket_page_location_equipment")}</h4>
+              <div className='shadow-sm border rounded-lg p-4 '>
+                <h4 className="block text-zinc-900 text-xs font-semibold leading-normal">{t("single_ticket_page_location_equipment")}</h4>
                 <hr className='my-2 w-32 border-gray-300' />
-                <ul className="list-none list-inside text-gray-400">
+                <ul className="list-none list-inside text-slate-500 text-xs font-medium">
                   {ticket?.project_db_address_street ? (<li className='flex items-center'><MapPin className='w-4 h-4 mr-2' />{ticket?.project_db_address_street}</li>) : ''}
                   {ticket?.project_db_address_zip || ticket?.project_db_address_city ? (<li className='ml-6 pb-1'>{ticket?.project_db_address_zip} {ticket?.project_db_address_city}</li>) : ''}
                   {ticket?.project_db_address_phone ? (<li className='flex items-center pb-1'><Phone className='w-4 h-4 mr-2' />{ticket?.project_db_address_phone}</li>) : ''}
@@ -308,10 +335,10 @@ const SingleTicket = () => {
                 </ul>
               </div>
 
-              <div className='shadow-sm border rounded-lg p-8 '>
-                <h4 className="text-lg font-semibold">{t("single_ticket_page_created_by")}</h4>
+              <div className='shadow-sm border rounded-lg p-4 '>
+                <h4 className="text-zinc-900 text-xs font-semibold leading-normal">{t("single_ticket_page_created_by")}</h4>
                 <hr className='my-2 w-32 border-gray-300' />
-                <ul className="list-none list-inside text-gray-400">
+                <ul className="list-none list-inside text-slate-500 text-xs font-medium">
                   <li className='flex items-center pb-1'><User className='w-4 h-4 mr-2' />{ticket?.contact_fullname}</li>
                   <li className='flex items-center'><Calendar className='w-4 h-4 mr-2' />{(new Date(ticket?.date_create).getFullYear() !== 1980) ? new Date(ticket?.date_create).toLocaleString('nl-BE', {
                     year: 'numeric',
@@ -323,36 +350,41 @@ const SingleTicket = () => {
                 </ul>
               </div>
 
-              <div className='shadow-sm border rounded-lg p-8 '>
-                <h4 className="text-lg font-semibold">{t('single_ticket_page_assigned_to')}</h4>
+              <div className='shadow-sm border rounded-lg p-4 '>
+                <h4 className="text-zinc-900 text-xs font-semibold leading-normal">{t('single_ticket_page_assigned_to')}</h4>
                 <hr className='my-2 w-32 border-gray-300' />
-                <ul className="list-none list-inside text-gray-400">
+                <ul className="list-none list-inside text-slate-500 text-xs font-medium">
                   <li className='flex items-center pb-1'><User className='w-4 h-4 mr-2' />{ticket?.assigned_to_user_fullname?.trim() ? ticket.assigned_to_user_fullname : 'Not Assigned'}</li>
-                  {ticket?.date_assigned && (<li className='flex items-center'><Calendar className='w-4 h-4 mr-2' />{(new Date(ticket?.date_assigned).getFullYear() !== 1980) ? new Date(ticket?.date_assigned).toLocaleString('nl-BE', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  }) : ' '}</li>)}
+                  {ticket?.date_assigned && new Date(ticket.date_assigned).getFullYear() !== 1980 && (
+                    <li className='flex items-center'>
+                      <Calendar className='w-4 h-4 mr-2' />
+                      {new Date(ticket.date_assigned).toLocaleString('nl-BE', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </li>
+                  )}
                 </ul>
               </div>
             </div>
 
             <div className={`grid ${ticketWorkOrder?.name ? 'grid-cols-3' : 'grid-cols-2'} gap-8 row-start-2`}>
               {/* <div className={`grid grid-cols-3 gap-8 row-start-2`}> */}
-              <div className='shadow-sm border rounded-lg p-8 '>
-                <h4 className="text-lg font-semibold">{t('single_ticket_page_severity')}</h4>
+              <div className='shadow-sm border rounded-lg p-4 '>
+                <h4 className="text-zinc-900 text-xs font-semibold leading-normal">{t('single_ticket_page_severity')}</h4>
                 <hr className='my-2 w-32 border-gray-300' />
-                <span className="text-gray-400">
+                <span className="text-slate-500 text-xs font-medium">
                   {ticket?.task_priority_name}
                 </span>
               </div>
 
-              <div className='shadow-sm border rounded-lg p-8 '>
-                <h4 className="text-lg font-semibold">{t('single_ticket_page_type_status')}</h4>
+              <div className='shadow-sm border rounded-lg p-4 '>
+                <h4 className="text-zinc-900 text-xs font-semibold leading-normal">{t('single_ticket_page_type_status')}</h4>
                 <hr className='my-2 w-32 border-gray-300' />
-                <ul className="list-none list-inside text-gray-400">
+                <ul className="list-none list-inside text-slate-500 text-xs font-medium">
                   <li className='pb-1'>
                     {ticket?.task_type_name}
                   </li>
@@ -364,10 +396,10 @@ const SingleTicket = () => {
               </div>
 
               {ticketWorkOrder?.name && (
-                <div className='shadow-sm border rounded-lg p-8 '>
-                  <h4 className="text-lg font-semibold">{t('single_ticket_page_linked_wo')}</h4>
+                <div className='shadow-sm border rounded-lg p-4 '>
+                  <h4 className="text-zinc-900 text-xs font-semibold leading-normal">{t('single_ticket_page_linked_wo')}</h4>
                   <hr className='my-2 w-32 border-gray-300' />
-                  <ul className="list-none list-inside text-gray-400">
+                  <ul className="list-none list-inside text-slate-500 text-xs font-medium">
                     <li className='flex items-center pb-1 cursor-pointer' onClick={() => navigate(`/workorder/${ticketWorkOrder?.id}`)}>{ticketWorkOrder?.id2} <ExternalLink className="ml-2 w-5 h-5" /></li>
                     <li className='flex items-center pb-1'>{ticketWorkOrder?.job_type_name}</li>
                     <li className='flex items-center pb-1'>{ticketWorkOrder?.name}</li>
@@ -376,57 +408,18 @@ const SingleTicket = () => {
             </div>
 
             <div className="row-start-3">
-              <div className='shadow-sm border rounded-lg p-8 '>
-                <h4 className="block text-lg font-semibold">{t('single_ticket_page_description')}</h4>
+              <div className='shadow-sm border rounded-lg p-4 '>
+                <h4 className="block text-zinc-900 text-xs font-semibold leading-normal">{t('single_ticket_page_description')}</h4>
                 <hr className='my-2 w-32 border-gray-300' />
                 {ticket?.remark ? (
-                  <p className="mb-4 text-gray-400">{ticket?.remark}</p>
+                  <p className="mb-4 text-slate-500 text-xs font-medium">{ticket?.remark}</p>
                 ) : (
-                  <p className="mb-4 text-gray-400">{t('single_ticket_page_no_description')}</p>
+                  <p className="mb-4 text-slate-500 text-xs font-medium">{t('single_ticket_page_no_description')}</p>
                 )}
               </div>
             </div>
           </div>
         ) : (
-          // <div className='shadow-sm border rounded-lg p-8 '>
-          //   <div className='grid grid-cols-1 md:grid-cols-4 gap-4'>
-          //     {doc?.length > 0 ? (
-          //       doc.map(item => (
-          //         <div key={item.id} className="p-4 flex flex-col items-center border rounded-lg shadow-md">
-
-          //           {item.mime_type?.startsWith("image/") ? (
-          //             <img src={fileThumbnails[item.id] || ""} alt={item.name} className="w-32 h-32 object-cover rounded-md" />
-          //           ) : (
-          //             <File className="w-32 h-32 text-gray-600" />
-          //           )}
-          //           <h6 className="font-bold">{item.name}</h6>
-
-          //           <p className="text-gray-500">{(new Date(ticket?.date_update).getFullYear() !== 1980) ? new Date(ticket?.date_update).toLocaleString('nl-BE', {
-          //             year: 'numeric',
-          //             month: '2-digit',
-          //             day: '2-digit',
-          //             hour: '2-digit',
-          //             minute: '2-digit'
-          //           }) : ''}</p>
-
-
-          //           {item.mime_type?.startsWith("image/") && (
-          //             <a href={fileThumbnails[item.id] || ""} target="_blank" rel="noopener noreferrer" className="flex items-center mt-2 text-blue-600 hover:underline">
-          //               <Eye className="w-6 h-6 mr-2 text-gray-600" /> {t('single_ticket_page_view_document')}
-          //             </a>
-          //           )
-          //           }
-          //         </div>
-          //       ))
-          //     ) : (<p className="font-semibold text-gray-400 p-2">{t('single_ticket_page_no_document')}</p>)}
-
-          //     {!fileThumbnails && (!doc || doc.length === 0) && (
-          //       <p className="font-semibold text-gray-400 p-2">{t('single_ticket_page_no_document')}</p>
-          //     )}
-
-          //   </div>
-          // </div>
-
           <div className=''>
             <ToastContainer
               position="bottom-right"
@@ -447,9 +440,17 @@ const SingleTicket = () => {
                     <div className='flex flex-col items-center'>
                       {/* Show image thumbnail if it's an image, otherwise show file icon */}
                       {item.mime_type?.startsWith("image/") ? (
-                        <img src={fileThumbnails[item.id] || ""} alt={item.name} className="w-48 h-48 object-cover rounded-md mx-auto" />
+                        fileThumbnails[item.id] ? (
+                          <img
+                            src={fileThumbnails[item.id]}
+                            alt={item.name}
+                            className="w-48 h-40 object-cover rounded-md mx-auto"
+                          />
+                        ) : (
+                          <Image className="w-40 h-40 text-gray-200 mx-auto" /> // 👈 fallback image icon
+                        )
                       ) : (
-                        <File className="w-48 h-48 text-gray-600" />
+                        <File className="w-40 h-40 text-gray-600 mx-auto" />
                       )}
                     </div>
                     <div className='flex flex-col'>
@@ -486,12 +487,12 @@ const SingleTicket = () => {
                 {selectedFiles.length !== 0 && (
                   <button
                     onClick={handleDownloadSelected}
-                    className="bg-gray-900 text-white px-2 py-1 mr-2 rounded-md hover:bg-gray-800">
+                    className="w-48 px-5 py-3 bg-zinc-800 rounded-lg flex items-center justify-center text-pink-50 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
                     {t("single_ticket_page_download_button")}
                   </button>)}
                 <button
                   onClick={handleDownloadAll}
-                  className="bg-gray-900 text-white px-2 py-1 rounded-md hover:bg-gray-800">
+                  className="w-48 px-5 py-3 ml-2 bg-zinc-800 rounded-lg flex items-center justify-center text-pink-50 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
                   {t("single_ticket_page_download_all_button")}
                 </button>
               </div>

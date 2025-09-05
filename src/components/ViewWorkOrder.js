@@ -2,11 +2,9 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { fetchData } from '../services/apiService';
 import axios from 'axios';
-import JSZip from 'jszip';
-import { saveAs } from 'file-saver';
 import { useNavigate } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
-import { File, Eye, Phone, ArrowLeft, Circle, Wrench, User, MapPin } from "lucide-react";
+import { File, Eye, Phone, ArrowLeft, Circle, Wrench, User, MapPin, Image } from "lucide-react";
 import { useAuth } from '../AuthContext';
 import { useTranslation } from "react-i18next";
 
@@ -16,7 +14,7 @@ const SingleWordOrder = () => {
   const [workOrder, setWorkOrder] = useState(null);
   const [doc, setDoc] = useState([]);
   const [sub, setSub] = useState([]);
-  const [file, setFile] = useState('');
+  //const [file, setFile] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('details'); // State to manage active tab
@@ -51,6 +49,16 @@ const SingleWordOrder = () => {
     "Cancelled": "bg-red-600 text-red-600",
     "Completed": "bg-pink-600 text-pink-600",
   }), []);
+
+  const getTimestamp = () => {
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const hh = String(now.getHours()).padStart(2, '0');
+    const min = String(now.getMinutes()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}_${hh}${min}`;
+  };
 
   useEffect(() => {
     if (downloadMsg) {
@@ -132,7 +140,7 @@ const SingleWordOrder = () => {
             };
 
             const response = await axios(config);
-            setFile(response);
+            //setFile(response);
             updatedThumbnails[item.id] = URL.createObjectURL(response.data); // Store URL in object
           })
         );
@@ -149,57 +157,154 @@ const SingleWordOrder = () => {
     GetFileThumbnails();
   }, [doc, auth, url]); // Run when `doc` changes
 
+  // const handleDownloadAll = async () => {
+  //   const zip = new JSZip(); // Create a new ZIP instance
+  //   if (doc.length === 0) return; // Ensure there is data before fetching
+
+  //   const docId = doc[0]?.id; // Use the first document ID (or adjust as needed)
+  //   if (!docId) return;
+
+  //   const authKey = auth?.authKey;
+  //   if (!authKey) return;
+
+  //   try {
+  //     const url = {
+  //       url: `api/DbFileView/GetFileThumbnail/?id=${docId}&maxWidth=256&maxHeight=256`,
+  //       method: 'GET',
+  //       headers: {
+  //         'Authorization': `Basic ${authKey}`,
+  //         'Accept': 'image/png',
+  //       },
+  //       responseType: 'blob',
+  //     };
+
+  //     // Fetch the file content
+  //     const response = await fetch(url, { method: 'GET' });
+  //     if (!response.ok) {
+  //       throw new Error(`Failed to fetch file: ${file.file_name}`);
+  //     }
+
+  //     const blob = await response.blob();
+  //     const arrayBuffer = await blob.arrayBuffer();
+
+  //     // Add the file to the ZIP archive
+  //     zip.file(file.file_name || 'file', arrayBuffer);
+  //   } catch (error) {
+  //     console.error(`Error fetching file ${file.file_name}:`, error.message);
+  //   }
+
+  //   // Generate the ZIP archive and trigger the download
+  //   zip.generateAsync({ type: 'blob' }).then((content) => {
+  //     const blobUrl = window.URL.createObjectURL(content);
+
+  //     // Create a temporary link element
+  //     const link = document.createElement('a');
+  //     link.href = blobUrl;
+  //     link.download = 'files.zip'; // Name of the ZIP file
+  //     document.body.appendChild(link);
+  //     link.click();
+  //     document.body.removeChild(link);
+
+  //     // Revoke the object URL to free up memory
+  //     window.URL.revokeObjectURL(blobUrl);
+  //   });
+  // };
+
+  // const toggleFileSelection = (file) => {
+  //   setSelectedFiles((prev) =>
+  //     prev.some((f) => f.id === file.id)
+  //       ? prev.filter((f) => f.id !== file.id)
+  //       : [...prev, file]
+  //   );
+  // };
+
+  // const handleDownloadSelected = async () => {
+  //   const zip = new JSZip();
+  //   if (doc.length === 0) return; // Ensure there is data before fetching
+
+  //   const docId = doc[0]?.id; // Use the first document ID (or adjust as needed)
+  //   if (!docId) return;
+
+  //   try {
+  //     await Promise.all(
+  //       selectedFiles.map(async (file) => {
+  //         const response = await fetch(
+  //           `api/DbFileView/GetFileThumbnail/?id=${docId}&maxWidth=256&maxHeight=256`
+  //         );
+
+  //         if (!response.ok) {
+  //           throw new Error(`Failed to download ${file.file_name}`);
+  //         } else {
+  //           setDownloadMsg(t('single_work_order_page_selected_documents'));
+  //         }
+
+  //         const blob = await response.blob();
+  //         zip.file(file.file_name, blob);
+  //       })
+  //     );
+
+  //     const zipBlob = await zip.generateAsync({ type: 'blob' });
+  //     saveAs(zipBlob, 'SelectedFiles.zip');
+  //   } catch (error) {
+  //     console.error('Error downloading files:', error);
+  //     //alert('Failed to download selected files.');
+  //   }
+  // };
+
   const handleDownloadAll = async () => {
-    const zip = new JSZip(); // Create a new ZIP instance
-    if (doc.length === 0) return; // Ensure there is data before fetching
+    const endpoint = `${url}api/DbFileView/download/?token=${encodeURIComponent(auth.authKey)}`;
+    const selectedIds = doc.map(doc => doc.id);
 
-    const docId = doc[0]?.id; // Use the first document ID (or adjust as needed)
-    if (!docId) return;
-
-    const authKey = auth?.authKey;
-    if (!authKey) return;
+    const formData = new URLSearchParams();
+    formData.append('paraString', JSON.stringify(selectedIds));
 
     try {
-      const url = {
-        url: `api/DbFileView/GetFileThumbnail/?id=${docId}&maxWidth=256&maxHeight=256`,
-        method: 'GET',
+      const response = await axios.post(endpoint, formData.toString(), {
         headers: {
-          'Authorization': `Basic ${authKey}`,
-          'Accept': 'image/png',
+          'Content-Type': 'application/x-www-form-urlencoded',
         },
-        responseType: 'blob',
-      };
+        responseType: 'blob', // Important for binary file download
+      });
 
-      // Fetch the file content
-      const response = await fetch(url, { method: 'GET' });
-      if (!response.ok) {
-        throw new Error(`Failed to fetch file: ${file.file_name}`);
+      if (response.data.size === 0) {
+        console.warn('Empty ZIP received — skipping download.');
+        return;
       }
 
-      const blob = await response.blob();
-      const arrayBuffer = await blob.arrayBuffer();
+      // Extract filename if available
+      const timestamp = getTimestamp();
+      let filename;
+      if (selectedIds.length === 1) {
+        const originalFileName = doc[0]?.name;
 
-      // Add the file to the ZIP archive
-      zip.file(file.file_name || 'file', arrayBuffer);
+        if (originalFileName) {
+          const nameParts = originalFileName.split('.');
+          const ext = nameParts.length > 1 ? nameParts.pop() : '';
+          const baseName = nameParts.join('.') || 'file';
+
+          filename = `${baseName}_${timestamp}${ext ? `.${ext}` : ''}`;
+        } else {
+          filename = `file_${timestamp}`;
+        }
+
+      } else {
+        filename = `files_${timestamp}.zip`;
+      }
+
+      const blob = new Blob([response.data], { type: 'application/zip' });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      setDownloadMsg('Downloading...');
     } catch (error) {
-      console.error(`Error fetching file ${file.file_name}:`, error.message);
+      console.error('Download failed:', error);
+      // Optional: show toast or fallback UI
     }
-
-    // Generate the ZIP archive and trigger the download
-    zip.generateAsync({ type: 'blob' }).then((content) => {
-      const blobUrl = window.URL.createObjectURL(content);
-
-      // Create a temporary link element
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = 'files.zip'; // Name of the ZIP file
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      // Revoke the object URL to free up memory
-      window.URL.revokeObjectURL(blobUrl);
-    });
   };
 
   const toggleFileSelection = (file) => {
@@ -210,36 +315,54 @@ const SingleWordOrder = () => {
     );
   };
 
-  const handleDownloadSelected = async () => {
-    const zip = new JSZip();
-    if (doc.length === 0) return; // Ensure there is data before fetching
 
-    const docId = doc[0]?.id; // Use the first document ID (or adjust as needed)
-    if (!docId) return;
+  const handleDownloadSelected = async () => {
+    const endpoint = `${url}api/DbFileView/download/?token=${encodeURIComponent(auth.authKey)}`;
+    const selectedIds = selectedFiles.map(file => file.id);
+
+    const formData = new URLSearchParams();
+    formData.append('paraString', JSON.stringify(selectedIds));
 
     try {
-      await Promise.all(
-        selectedFiles.map(async (file) => {
-          const response = await fetch(
-            `api/DbFileView/GetFileThumbnail/?id=${docId}&maxWidth=256&maxHeight=256`
-          );
+      const response = await axios.post(endpoint, formData.toString(), {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        responseType: 'blob', // Important for binary file download
+      });
 
-          if (!response.ok) {
-            throw new Error(`Failed to download ${file.file_name}`);
-          } else {
-            setDownloadMsg(t('single_work_order_page_selected_documents'));
-          }
+      if (response.data.size === 0) {
+        console.warn('Empty ZIP received — skipping download.');
+        return;
+      }
 
-          const blob = await response.blob();
-          zip.file(file.file_name, blob);
-        })
-      );
 
-      const zipBlob = await zip.generateAsync({ type: 'blob' });
-      saveAs(zipBlob, 'SelectedFiles.zip');
+      // Extract filename if available
+      const timestamp = getTimestamp();
+      let filename;
+      if (selectedIds.length === 1) {
+        // Use original file name if available
+        const originalFile = selectedFiles.find(f => f.id === selectedIds[0]);
+        const baseName = originalFile?.name?.split('.').slice(0, -1).join('.') || 'file';
+        const ext = originalFile?.name?.split('.').pop() || 'zip';
+        filename = `${baseName}_${timestamp}.${ext}`;
+      } else {
+        filename = `download_${timestamp}.zip`;
+      }
+
+      const blob = new Blob([response.data], { type: 'application/zip' });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      setDownloadMsg('Downloading...');
     } catch (error) {
-      console.error('Error downloading files:', error);
-      //alert('Failed to download selected files.');
+      console.error('Download failed:', error);
+      // Optional: show toast or fallback UI
     }
   };
 
@@ -254,29 +377,29 @@ const SingleWordOrder = () => {
   if (error) return <div className="text-center text-red-600">{error}</div>;
 
   return (
-    <div className="mx-auto w-full p-6 mt-8">
+    <div className="w-full max-w-4xl mx-auto p-6 bg-white">
       <div className='flex'>
         {/* Back Button */}
         <button
           onClick={() => navigate(-1)} // Navigate back one step in history
-          className="flex items-center mb-4 font-semibold text-gray-800"
+          className="flex items-center mb-6 font-semibold text-zinc-900 text-base"
         >
           <ArrowLeft className="mr-2 w-5 h-5" /> {t("single_work_order_page_go_back")}
         </button>
       </div>
-      <div className='shadow-md rounded-lg p-12'>
-        <h2 className="capitalize text-xl font-bold mb-4">{t("single_work_order_page_reference")}: {workOrder?.id2} | {workOrder?.name}</h2>
+      <div className='shadow-md rounded-lg p-8'>
+        <h2 className="capitalize text-zinc-900 text-2xl font-semibold mb-4">{t("single_work_order_page_reference")}: {workOrder?.id2} | {workOrder?.name}</h2>
         {/* Tab Navigation */}
         <div className="flex space-x-4 mb-4">
           <button
-            className={`py-2 px-4 font-semibold ${activeTab === 'details' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-gray-400'}`}
+            className={`px-4 py-2 mr-2 text-lg font-medium leading-7 ${activeTab === 'details' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-slate-500'}`}
             onClick={() => setActiveTab('details')}
           >
             {t("single_work_order_page_ticket_details")}
           </button>
 
           <button
-            className={`py-2 px-4 font-semibold ${activeTab === 'documents' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-gray-400'}`}
+            className={`px-4 py-2 mr-2 text-lg font-medium leading-7 ${activeTab === 'documents' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-slate-500'}`}
             onClick={() => setActiveTab('documents')}
           >
             {t("single_work_order_page_documents")}
@@ -287,8 +410,8 @@ const SingleWordOrder = () => {
           <>
             <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
               <div className='shadow-sm border rounded-lg p-4 '>
-                <h4 className="text-lg font-semibold pb-2">{t("single_work_order_page_equipment")}</h4>
-                <ul className="list-none list-inside text-gray-400">
+                <h4 className="block text-zinc-900 text-xs font-semibold leading-normal pb-2">{t("single_work_order_page_equipment")}</h4>
+                <ul className="list-none list-inside text-slate-500 text-xs font-medium">
                   <li className='flex items-center'><MapPin className='w-4 h-4 mr-2' />{workOrder?.db_address_street}</li>
                   <li className='ml-6 pb-1'>{workOrder?.db_address_zip} {workOrder?.db_address_city}</li>
                   {workOrder?.contact_mobile && (
@@ -306,8 +429,8 @@ const SingleWordOrder = () => {
               </div>
 
               <div className='shadow-sm border rounded-lg p-4 '>
-                <h4 className="text-lg font-semibold pb-2">{t("single_work_order_page_contact")}</h4>
-                <ul className="list-none list-inside text-gray-400">
+                <h4 className="block text-zinc-900 text-xs font-semibold leading-normal pb-2">{t("single_work_order_page_contact")}</h4>
+                <ul className="list-none list-inside text-slate-500 text-xs font-medium">
                   {workOrder?.contact_fullname && (
                     <li className='flex items-center'><User className='w-4 h-4 mr-2' />{workOrder?.contact_fullname}</li>
                   )}
@@ -320,8 +443,8 @@ const SingleWordOrder = () => {
               </div>
 
               <div className='shadow-sm border rounded-lg p-4 '>
-                <h4 className="text-lg font-semibold pb-2">{t("single_work_order_page_sla_info")}</h4>
-                <ul className="list-none list-inside text-gray-400">
+                <h4 className="block text-zinc-900 text-xs font-semibold leading-normal pb-2">{t("single_work_order_page_sla_info")}</h4>
+                <ul className="list-none list-inside text-slate-500 text-xs font-medium">
                   <li className='grid grid-cols-2 gap-4'>{t("single_work_order_page_response_time")} {new Date(workOrder?.dateutc_max_sla_resolution).getFullYear() !== 1980 ?? new Date(workOrder?.dateutc_max_sla_resolution).toLocaleString()}</li>
                   <li className='grid grid-cols-2 gap-4'>{t("single_work_order_page_resolution_time")} {new Date(workOrder?.dateutc_max_sla_resolution).getFullYear() !== 1980 ?? new Date(workOrder?.dateutc_max_sla_resolution).toLocaleString()}</li>
                   <li className='grid grid-cols-2 gap-4'>{t("single_work_order_page_arrival_time")} {new Date(workOrder?.dateutc_max_sla_hands_on_machine).getFullYear() !== 1980 ?? new Date(workOrder?.dateutc_max_sla_hands_on_machine).toLocaleString()}</li>
@@ -329,15 +452,15 @@ const SingleWordOrder = () => {
               </div>
 
               <div className='shadow-sm border rounded-lg p-4 '>
-                <h4 className="text-lg font-semibold pb-2">{t("single_work_order_page_priority")}</h4>
-                <ul className="list-none list-inside text-gray-400">
+                <h4 className="block text-zinc-900 text-xs font-semibold leading-normal pb-2">{t("single_work_order_page_priority")}</h4>
+                <ul className="list-none list-inside text-slate-500 text-xs font-medium">
                   <li>{workOrder?.job_priority_name}</li>
                 </ul>
               </div>
 
               <div className='shadow-sm border rounded-lg p-4 '>
-                <h4 className="text-lg font-semibold pb-2">{t("single_work_order_page_type_status")}</h4>
-                <ul className="list-none list-inside text-gray-400">
+                <h4 className="block text-zinc-900 text-xs font-semibold leading-normal pb-2">{t("single_work_order_page_type_status")}</h4>
+                <ul className="list-none list-inside text-slate-500 text-xs font-medium">
                   <li>
                     {workOrder?.job_type_name}
                   </li>
@@ -351,8 +474,8 @@ const SingleWordOrder = () => {
               </div>
 
               <div className='shadow-sm border rounded-lg p-4 '>
-                <h4 className="text-lg font-semibold pb-2">{t("single_work_order_page_total_planned_time")}</h4>
-                <ul className="list-none list-inside text-gray-400">
+                <h4 className="block text-zinc-900 text-xs font-semibold leading-normal pb-2">{t("single_work_order_page_total_planned_time")}</h4>
+                <ul className="list-none list-inside text-slate-500 text-xs font-medium">
                   <li>{Math.floor(workOrder?.total_time_planned / 60).toString().padStart(2, '0')}Hr {(workOrder?.total_time_planned % 60).toString().padStart(2, '0')}Min</li>
                 </ul>
               </div>
@@ -411,12 +534,12 @@ const SingleWordOrder = () => {
                   </table>
                 </div>
               ) : (
-                <p className="text-gray-600">{t("single_work_order_page_no_record")}</p>
+                <p className="text-slate-500 text-xs font-medium">{t("single_work_order_page_no_record")}</p>
               )}
             </div>
             <div className='shadow-sm border rounded-lg p-4 mt-4'>
-              <h4 className="text-lg font-semibold pb-2">{t("single_work_order_page_description")}</h4>
-              {workOrder?.remark ? (<p className="mb-4 text-gray-400">{workOrder?.remark}</p>) : (<p className="mb-4 text-gray-400">{t("single_work_order_page_no_description")}</p>)}
+              <h4 className="block text-zinc-900 text-xs font-semibold leading-normal pb-2">{t("single_work_order_page_description")}</h4>
+              {workOrder?.remark ? (<p className="mb-4 text-slate-500 text-xs font-medium">{workOrder?.remark}</p>) : (<p className="mb-4 text-slate-500 text-xs font-medium">{t("single_work_order_page_no_description")}</p>)}
             </div>
           </>
         ) : (
@@ -433,43 +556,29 @@ const SingleWordOrder = () => {
               pauseOnHover
               theme="colored"
             />
-            {/* {doc?.length > 0 ? (
-              doc.map(item => (
-                <div key={item.id} className="p-4 flex flex-col items-center border rounded-lg shadow-sm">
-            
-                  {item.mime_type?.startsWith("image/") ? (
-                    <img src={fileThumbnails[item.id] || ""} alt={item.name} className="w-32 h-32 object-cover rounded-md" />
-                  ) : (
-                    <File className="w-32 h-32 text-gray-600" />
-                  )}
-                  <h6 className="font-bold">{item.name}</h6>
-
-                  <p className="text-gray-500">{new Date(item.date_add).toLocaleString()}</p>
-
-                  
-                  {item.mime_type?.startsWith("image/") && (
-                    <a href={fileThumbnails[item.id] || ""} target="_blank" rel="noopener noreferrer" className="flex items-center mt-2 text-blue-600 hover:underline">
-                      <Eye className="w-6 h-6 mr-2 text-gray-600" /> {t("single_work_order_page_view_document")}
-                    </a>
-                  )
-                  }
-                </div>
-              ))
-            ) : (<p className="text-gray-600 p-4 text-center">{t("single_work_order_page_no_document")}</p>)}
-
-            {!fileThumbnails && (!doc || doc.length === 0) && (
-              <p className="text-gray-600 p-4 text-center">{t("single_work_order_page_no_document")}</p>
-            )} */}
             {doc?.length > 0 ? (
               <div className='grid grid-cols-1 md:grid-cols-4 gap-4'>
                 {doc.map(item => (
                   <div key={item.id} className="p-2 flex flex-col border rounded-lg shadow-md">
                     <div className='flex flex-col items-center'>
                       {/* Show image thumbnail if it's an image, otherwise show file icon */}
-                      {item.mime_type?.startsWith("image/") ? (
+                      {/* {item.mime_type?.startsWith("image/") ? (
                         <img src={fileThumbnails[item.id] || ""} alt={item.name} className="w-48 h-48 object-cover rounded-md mx-auto" />
                       ) : (
                         <File className="w-48 h-48 text-gray-600" />
+                      )} */}
+                      {item.mime_type?.startsWith("image/") ? (
+                        fileThumbnails[item.id] ? (
+                          <img
+                            src={fileThumbnails[item.id]}
+                            alt={item.name}
+                            className="w-48 h-40 object-cover rounded-md mx-auto"
+                          />
+                        ) : (
+                          <Image className="w-40 h-40 text-gray-200 mx-auto" /> // 👈 fallback image icon
+                        )
+                      ) : (
+                        <File className="w-40 h-40 text-gray-600 mx-auto" />
                       )}
                     </div>
                     <div className='flex flex-col'>
@@ -488,10 +597,10 @@ const SingleWordOrder = () => {
                         </label>) : null}
 
                       {/* Show "View Document" only if it's an image */}
-                      
-                        <a href={fileThumbnails[item.id] || ""} target="_blank" rel="noopener noreferrer" className="flex items-center mt-2 text-sm hover:underline">
-                          <Eye className="w-6 h-6 mr-2 text-gray-600" /> {t("single_work_order_page_view_document")}
-                        </a>
+
+                      <a href={fileThumbnails[item.id] || ""} target="_blank" rel="noopener noreferrer" className="flex items-center mt-2 text-sm hover:underline">
+                        <Eye className="w-6 h-6 mr-2 text-gray-600" /> {t("single_work_order_page_view_document")}
+                      </a>
                     </div>
                   </div>
                 ))}
@@ -506,12 +615,12 @@ const SingleWordOrder = () => {
                 {selectedFiles.length !== 0 && (
                   <button
                     onClick={handleDownloadSelected}
-                    className="bg-gray-900 text-white px-2 py-1 mr-2 rounded-md hover:bg-gray-800">
+                    className="w-48 px-5 py-3 bg-zinc-800 rounded-lg flex items-center justify-center text-pink-50 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
                     {t("single_work_order_page_download_button")}
                   </button>)}
                 <button
                   onClick={handleDownloadAll}
-                  className="bg-gray-900 text-white px-2 py-1 rounded-md hover:bg-gray-800">
+                  className="w-48 px-5 py-3 ml-2 bg-zinc-800 rounded-lg flex items-center justify-center text-pink-50 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
                   {t("single_work_order_page_download_all_button")}
                 </button>
               </div>

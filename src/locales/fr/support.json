@@ -1,6 +1,5 @@
 {
-  "home_page_create_ticket_button": "Create Ticket",
-  "home_page_view_ticket_button": "View Ticket",
-  "home_page_calendar_button": "Calendar",
-  "home_page_work_order_button": "Work Order"
+  "support_page_content": "Bienvenue dans notre application ! Nous nous engageons à offrir la meilleure expérience à nos utilisateurs.",
+  "support_page_go_back": "Revenir en arrière",
+  "support_page_title": "À propos de notre soutien"
 }

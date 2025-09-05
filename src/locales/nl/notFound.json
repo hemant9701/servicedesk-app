@@ -1,6 +1,5 @@
 {
-  "home_page_create_ticket_button": "Create Ticket",
-  "home_page_view_ticket_button": "View Ticket",
-  "home_page_calendar_button": "Calendar",
-  "home_page_work_order_button": "Work Order"
+  "not_found_page_go_home": "Startpagina",
+  "not_found_page_heading": "Pagina niet gevonden",
+  "not_found_page_subheading": "Sorry, we konden de pagina die je zoekt niet vinden."
 }

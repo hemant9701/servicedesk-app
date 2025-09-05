@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { useTable, useSortBy, usePagination } from 'react-table';
 import { fetchData } from '../services/apiService.js';
 import axios from 'axios';
@@ -25,6 +25,23 @@ const ViewDocuments = () => {
   const [viewMode, setViewMode] = useState('table');
 
   const [fileThumbnails, setFileThumbnails] = useState({});
+
+  const [allLocations, setAllLocations] = useState([]);
+  const [locationHints, setLocationHints] = useState([]);
+
+  const EmptyGuid = "00000000-0000-0000-0000-000000000000";
+
+  const [filters, setFilters] = useState({
+    location: "",
+    locationLabel: "",
+    keyword: "",
+    brand: EmptyGuid,
+    model: EmptyGuid,
+    status: EmptyGuid,
+    includeArchived: false
+  });
+
+  const [tempFilters, setTempFilters] = useState(filters);
 
   const [downloadMsg, setDownloadMsg] = useState('');
   const { t } = useTranslation('documents');
@@ -56,8 +73,6 @@ const ViewDocuments = () => {
     gridPageIndex * gridPageSize,
     gridPageIndex * gridPageSize + gridPageSize
   );
-
-
 
   const fileTypesOptions = [
     { value: "documents", label: "Documents", extentions: ["DOC", "DOCX"] },
@@ -102,7 +117,7 @@ const ViewDocuments = () => {
 
   // Search Filter states
   const [keyword, setKeyword] = useState('');
-  const [location, setLocation] = useState('');
+  //const [location, setLocation] = useState('');
   const [street, setStreet] = useState('');
   const [city, setCity] = useState('');
   const [date, setDate] = useState([uniqueDates[0]]);
@@ -121,13 +136,103 @@ const ViewDocuments = () => {
     }
   }, [downloadMsg]);
 
+  const fetchProjects = useCallback(
+    async ({ parentOnly, groupKeys = [], parentId = null }) => {
+      const url = `api/ProjectView/Search?keyword=&projectReference=&projectReferenceBackOffice=&companyID=${EmptyGuid}&equipmentModelID=${EmptyGuid}&equipmentBrandID=${EmptyGuid}&equipmentFamilyID=${EmptyGuid}&projectStatusID=${EmptyGuid}&createdFrom=1980-01-01T00:00:00.000&createdTo=1980-01-01T00:00:00.000&includesClosed=false&parentOnly=${parentOnly}&contactId=${auth.userId}&rootParentId=${EmptyGuid}&includeLocation=true`;
 
-  const fetchInstallations = async (filters) => {
+      const payload = {
+        startRow: 0,
+        endRow: 500,
+        rowGroupCols: [],
+        valueCols: [],
+        pivotCols: [],
+        pivotMode: false,
+        groupKeys,
+        filterModel: {},
+        sortModel: []
+      };
+
+      try {
+        const response = await fetchData(url, 'POST', auth.authKey, payload);
+        const mapped = response.map(item => ({
+          ...item,
+          subRows: item.has_child ? [] : []
+        }));
+        return await mapped;
+      } catch (err) {
+        console.error(err);
+        setError(err);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [auth]
+  );
+
+  useEffect(() => {
+    const loadLocations = async () => {
+      try {
+        const projects = await fetchProjects({ parentOnly: true });
+
+        const locations = Array.isArray(projects)
+          ? [
+            ...new Map(
+              projects.map(p => {
+                const name = p.name ? `${p.name} -` : '';
+                const street = p.db_address_street || '';
+                const streetNumber = p.db_address_street_number || '';
+                const zip = p.db_address_zip || '';
+                const city = p.db_address_city || '';
+
+                const label = [name, street, streetNumber, zip, city]
+                  .filter(Boolean)
+                  .join(' ');
+
+                return [p.id, { id: p.id, label }];
+              })
+            ).values(),
+          ]
+          : [];
+
+        setAllLocations(locations); // locations: Array<{ id, label }>
+      } catch (err) {
+        console.error('Failed to fetch locations', err);
+      }
+    };
+
+    loadLocations();
+  }, [fetchProjects]);
+
+  const handleLocationChange = (e) => {
+    const value = e.target.value;
+    setTempFilters(prev => ({ ...prev, locationLabel: value }));
+
+    if (value.length >= 3) {
+      const filtered = allLocations.filter(loc =>
+        loc.label.toLowerCase().includes(value.toLowerCase())
+      );
+      setLocationHints(filtered);
+    } else {
+      setLocationHints([]);
+    }
+  };
+
+  const handleHintClick = (hint) => {
+    setTempFilters(prev => ({
+      ...prev,
+      location: hint.id,         // ✅ store ID
+      locationLabel: hint.label  // show label in input
+    }));
+    setLocationHints([]);
+  };
+
+
+  const fetchDocuments = async (filters) => {
     try {
       const payload = {
         keyword: keyword,
         file_types: fileType.map((type) => type.value),
-        project_id: "00000000-0000-0000-0000-000000000000",
+        project_id: filters.location || EmptyGuid,
         db_report_type_ids: [],
         street: street || '',
         city: city || '',
@@ -215,18 +320,22 @@ const ViewDocuments = () => {
 
   // Confirm button
   const handleSearch = () => {
-    const filters = {
+    // Sync UI state
+    setFilters(tempFilters);
+
+    // Build filters object for API call
+    const filtersObj = {
       keyword,
-      location,
       street,
       city,
       date,
       fileType,
       object,
+      location: tempFilters.location, // Pass selected location ID
     };
 
     setIsLoading(true);
-    fetchInstallations(filters); // use values directly
+    fetchDocuments(filtersObj);
   };
 
   const columns = useMemo(() => [
@@ -310,7 +419,7 @@ const ViewDocuments = () => {
                   path = `/ticket//${row.original.object_id}`;
                   break;
                 case 'Equipment':
-                  path = `/installation/${row.original.object_id}`;
+                  path = `/equipment/${row.original.object_id}`;
                   break;
                 default:
                   path = ' ';
@@ -492,16 +601,15 @@ const ViewDocuments = () => {
     }
   };
 
-
   const handleReset = () => {
     setKeyword('');
-    setLocation('');
     setStreet('');
     setCity('');
     setFileType([]);
     setObject([]);
-
-    // clear results
+    setTempFilters({ location: "", locationLabel: "" }); // <-- Reset locationLabel too
+    setFilters({ location: "", locationLabel: "" });     // <-- Reset locationLabel too
+    setLocationHints([]);                                // <-- Clear locationHints
     setContacts([]);
     setFileThumbnails({});
     setError(null);
@@ -525,7 +633,7 @@ const ViewDocuments = () => {
     {
       columns,
       data: contacts,
-      initialState: { pageIndex: 0, pageSize: 12 },
+      initialState: { pageIndex: 0, pageSize: 12, sortBy: [{ id: 'object_type', desc: false }] },
     },
     useSortBy,
     usePagination
@@ -581,14 +689,31 @@ const ViewDocuments = () => {
           />
         </div>
         <div className="relative">
-          <MapPin className="absolute left-3 top-3 w-6 h-6 text-gray-500" />
-          <input
-            type="text"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            placeholder={t('documents_table_filter_location')}
-            className="w-full pl-12 pr-3.5 py-3 text-gray-500 text-base font-normal leading-normal border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
-          />
+          <div className="relative">
+            <MapPin className="absolute left-3 top-3 w-6 h-6 text-gray-500" />
+            <input
+              name="location"
+              id="location"
+              type="text"
+              value={tempFilters.locationLabel}
+              onChange={handleLocationChange}
+              placeholder={t('documents_table_filter_location')}
+              className="w-full pl-12 pr-3.5 py-3 text-gray-500 text-base font-normal leading-normal border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
+            />
+          </div>
+          {locationHints.length > 0 && (
+            <ul className="absolute z-10 bg-white border mt-1 rounded-md w-full shadow-md">
+              {locationHints.map(hint => (
+                <li
+                  key={hint.id}
+                  onClick={() => handleHintClick(hint)}
+                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm text-gray-700"
+                >
+                  {hint.label}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
         <div className="relative">
           <Milestone className="absolute left-3 top-3 w-6 h-6 text-gray-500" />
@@ -798,7 +923,7 @@ const ViewDocuments = () => {
                 </tbody>
               </table>
             </div>
-              {isLoading && <Loader className="ml-2 text-blue-600 animate-spin" />}
+            {isLoading && <Loader className="ml-2 text-blue-600 animate-spin" />}
             {/* Pagination Controls */}
             {!isLoading && contacts.length > 12 && (
               <div className="flex items-center justify-between p-2">

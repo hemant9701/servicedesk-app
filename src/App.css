@@ -158,7 +158,7 @@ abbr:where([title]) {
 
 /* Your custom circular date style */
 .react-calendar__tile.rounded-date {
-  border: 2px solid #1F272D; /* Tailwind's indigo-600 */
+  border: 1px solid #1F272D; /* Tailwind's indigo-600 */
   /* color: #6b7280; */
   border-radius: 50%; /* ensures a full circle */
 }

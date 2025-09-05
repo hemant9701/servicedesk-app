@@ -1,11 +1,16 @@
 {
-  "work_order_list_page_title": "Work Order List",
-  "work_order_list_toggle_pending_text": "Pending",
-  "work_order_list_toggle_completed_text": "Completed",
-  "work_order_list_table_heading_reference_text": "Reference",
-  "work_order_list_table_heading_planned_date_text": "Planned date",
+  "work_order_list_page_go_back": "Ga terug",
+  "work_order_list_page_helping_text": "Klik op de rij om de details van de werkorder te bekijken.",
+  "work_order_list_page_title": "Lijst met werkorders",
+  "work_order_list_table_heading_address_text": "Adres",
+  "work_order_list_table_heading_name_text": "Naam",
+  "work_order_list_table_heading_planned_date_text": "Geplande datum",
+  "work_order_list_table_heading_reference_text": "Referentie",
   "work_order_list_table_heading_status_text": "Status",
-  "work_order_list_table_heading_address_text": "Address",
-  "work_order_list_table_heading_name_text": "Name",
-  "work_order_list_table_heading_type_text": "Type"
+  "work_order_list_table_heading_type_text": "Type",
+  "work_order_list_table_pagination_of": "van",
+  "work_order_list_table_pagination_page": "Pagina",
+  "work_order_list_table_pagination_show": "Toon",
+  "work_order_list_toggle_completed_text": "Gesloten werkorders",
+  "work_order_list_toggle_pending_text": "Openstaande werkorders"
 }

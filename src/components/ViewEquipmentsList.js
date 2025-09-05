@@ -25,14 +25,14 @@ const ViewInstallations = () => {
   const { t } = useTranslation('equipmentList');
   const [expanded, setExpanded] = useState({});
 
-  // Search Filter states
-  const [location, setLocation] = useState('');
-  const [keyword, setKeyword] = useState('');
+  const [allLocations, setAllLocations] = useState([]);
+  const [locationHints, setLocationHints] = useState([]);
 
   const EmptyGuid = "00000000-0000-0000-0000-000000000000";
 
   const [filters, setFilters] = useState({
     location: "",
+    locationLabel: "",
     keyword: "",
     brand: EmptyGuid,
     model: EmptyGuid,
@@ -72,6 +72,103 @@ const ViewInstallations = () => {
     "Completed": "bg-pink-600 text-pink-600",
   }), []);
 
+  const fetchProjects = useCallback(
+    async ({ parentOnly, groupKeys = [], parentId = null }) => {
+      const url = `api/ProjectView/Search?keyword=${filters.keyword}&projectReference=&projectReferenceBackOffice=&companyID=${EmptyGuid}&equipmentModelID=${filters.model}&equipmentBrandID=${filters.brand}&equipmentFamilyID=${EmptyGuid}&projectStatusID=${filters.status}&createdFrom=1980-01-01T00:00:00.000&createdTo=1980-01-01T00:00:00.000&includesClosed=false&parentOnly=${parentOnly}&contactId=${auth.userId}&rootParentId=${EmptyGuid}&includeLocation=true`;
+
+      const payload = {
+        startRow: 0,
+        endRow: 500,
+        rowGroupCols: [],
+        valueCols: [],
+        pivotCols: [],
+        pivotMode: false,
+        groupKeys,
+        filterModel: {},
+        sortModel: []
+      };
+
+      try {
+        const response = await fetchData(url, 'POST', auth.authKey, payload);
+        const mapped = response.map(item => ({
+          ...item,
+          subRows: item.has_child ? [] : []
+        }));
+
+        if (parentOnly || (!parentOnly && !parentId)) {
+          setContacts(mapped);
+        }
+        if (!parentOnly && parentId) {
+          setSubRowsMap(prev => ({ ...prev, [parentId]: mapped }));
+        }
+        return await mapped;
+      } catch (err) {
+        console.error(err);
+        setError(err);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [auth, filters]
+  );
+
+  useEffect(() => {
+    const loadLocations = async () => {
+      try {
+        const projects = await fetchProjects({ parentOnly: true });
+
+        const locations = Array.isArray(projects)
+          ? [
+            ...new Map(
+              projects.map(p => {
+                const name = p.name ? `${p.name} -` : '';
+                const street = p.db_address_street || '';
+                const streetNumber = p.db_address_street_number || '';
+                const zip = p.db_address_zip || '';
+                const city = p.db_address_city || '';
+
+                const label = [name, street, streetNumber, city, zip]
+                  .filter(Boolean)
+                  .join(' ');
+
+                return [p.id, { id: p.id, label }];
+              })
+            ).values(),
+          ]
+          : [];
+
+        setAllLocations(locations); // locations: Array<{ id, label }>
+      } catch (err) {
+        console.error('Failed to fetch locations', err);
+      }
+    };
+
+    loadLocations();
+  }, [fetchProjects]);
+
+  const handleLocationChange = (e) => {
+    const value = e.target.value;
+    setTempFilters(prev => ({ ...prev, locationLabel: value }));
+
+    if (value.length >= 3) {
+      const filtered = allLocations.filter(loc =>
+        loc.label.toLowerCase().includes(value.toLowerCase())
+      );
+      setLocationHints(filtered);
+    } else {
+      setLocationHints([]);
+    }
+  };
+
+  const handleHintClick = (hint) => {
+    setTempFilters(prev => ({
+      ...prev,
+      location: hint.id,         // ✅ store ID
+      locationLabel: hint.label  // show label in input
+    }));
+    setLocationHints([]);
+  };
+
   useEffect(() => {
     const fetchBrands = async () => {
       try {
@@ -104,29 +201,25 @@ const ViewInstallations = () => {
     fetchModels();
   }, [auth]);
 
-  // Prepare options with default "All Brands"
-  const brandOptions = [
-    ...(Array.isArray(fetchBrands)
-      ? fetchBrands
-        .sort((a, b) => a.name.localeCompare(b.name))
-        .map((brand) => ({
-          value: brand.id,
-          label: brand.name,
-        }))
-      : []),
-  ];
+  const brandOptions = Array.isArray(fetchBrands)
+    ? fetchBrands
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map(brand => ({
+        value: brand.id,
+        label: brand.name,
+      }))
+    : [];
 
-  // Prepare options with default "All Brands"
-  const modelOptions = [
-    ...(Array.isArray(fetchModels)
-      ? fetchModels
-        .sort((a, b) => a.name.localeCompare(b.name))
-        .map((model) => ({
-          value: model.id,
-          label: model.name,
-        }))
-      : []),
-  ];
+  const modelOptions = Array.isArray(fetchModels)
+    ? fetchModels
+      .filter(model => model.equipment_brand_id === tempFilters.brand) // ✅ filter by brand
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map(model => ({
+        value: model.id,
+        label: model.name,
+      }))
+    : [];
+
 
   // Prepare options with default "All Brands"
   const statusOptions = [
@@ -139,46 +232,6 @@ const ViewInstallations = () => {
         }))
       : []),
   ];
-
-  const fetchProjects = useCallback(
-    async ({ parentOnly, groupKeys = [], parentId = null }) => {
-      const url = `api/ProjectView/Search?keyword=&projectReference=&projectReferenceBackOffice=&companyID=00000000-0000-0000-0000-000000000000&equipmentModelID=${filters.model}&equipmentBrandID=${filters.brand}&equipmentFamilyID=00000000-0000-0000-0000-000000000000&projectStatusID=${filters.status}&createdFrom=1980-01-01T00:00:00.000&createdTo=1980-01-01T00:00:00.000&includesClosed=false&parentOnly=${parentOnly}&contactId=${auth.userId}&rootParentId=00000000-0000-0000-0000-000000000000&includeLocation=true`;
-
-      const payload = {
-        startRow: 0,
-        endRow: 500,
-        rowGroupCols: [],
-        valueCols: [],
-        pivotCols: [],
-        pivotMode: false,
-        groupKeys,
-        filterModel: {},
-        sortModel: []
-      };
-
-      try {
-        const response = await fetchData(url, 'POST', auth.authKey, payload);
-        const mapped = response.map(item => ({
-          ...item,
-          subRows: item.has_child ? [] : []
-        }));
-
-        if (parentOnly || (!parentOnly && !parentId)) {
-          setContacts(mapped);
-        }
-        if (!parentOnly && parentId) {
-          setSubRowsMap(prev => ({ ...prev, [parentId]: mapped }));
-        }
-
-      } catch (err) {
-        console.error(err);
-        setError(err);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [auth, filters]
-  );
 
   useEffect(() => {
     fetchProjects({ parentOnly: true });
@@ -330,11 +383,13 @@ const ViewInstallations = () => {
   const filteredContacts = useMemo(() => {
     return contacts.filter(contact => {
       const matchesLocation = filters.location
-        ? contact.db_address_street?.toLowerCase().includes(filters.location.toLowerCase())
+        ? contact?.id === filters.location
         : true;
 
       const matchesKeyword = filters.keyword
-        ? contact.name?.toLowerCase().includes(filters.keyword.toLowerCase())
+        ? Object.values(contact || {})
+          .filter(val => typeof val === 'string') // only check string fields
+          .some(val => val.toLowerCase().includes(filters.keyword.toLowerCase()))
         : true;
 
       const matchesBrand =
@@ -469,13 +524,28 @@ const ViewInstallations = () => {
             <div className="relative">
               <MapPin className="absolute left-3 top-2.5 w-4 h-5 text-zinc-800" />
               <input
+                name="location"
+                id="location"
                 type="text"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
+                value={tempFilters.locationLabel}
+                onChange={handleLocationChange}
                 placeholder={t("equipments_list_page_filter_location")}
                 className="w-full pl-10 pr-3 py-2 border rounded-md text-gray-500 text-base font-normal focus:outline-none focus:ring-1 focus:ring-gray-400"
               />
             </div>
+            {locationHints.length > 0 && (
+              <ul className="absolute z-10 bg-white border mt-1 rounded-md w-full shadow-md">
+                {locationHints.map(hint => (
+                  <li
+                    key={hint.id}
+                    onClick={() => handleHintClick(hint)}
+                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm text-gray-700"
+                  >
+                    {hint.label}
+                  </li>
+                ))}
+              </ul>
+            )}
 
             {/* Sub-Location */}
             {/* <div className="relative">
@@ -491,9 +561,11 @@ const ViewInstallations = () => {
             <div className="relative">
               <Text className="absolute left-3 top-2.5 w-4 h-5 text-zinc-800" />
               <input
+                name='keyword'
+                id='keyword'
                 type="text"
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
+                value={tempFilters.keyword}
+                onChange={(e) => setTempFilters(prev => ({ ...prev, keyword: e.target.value }))}
                 placeholder={t("equipments_list_page_filter_keyword")}
                 className="w-full pl-10 pr-3 py-2 border rounded-md text-gray-500 text-base font-normal focus:outline-none focus:ring-1 focus:ring-gray-400"
               />
@@ -508,31 +580,6 @@ const ViewInstallations = () => {
                 value={brandOptions.find(option => option.value === tempFilters.brand) || null} // match by ID
                 onChange={(selected) => setTempFilters((prev) => ({ ...prev, brand: selected.value, }))}
                 placeholder={t("equipments_list_page_filter_brands")}
-                className="w-full pl-10 border rounded-md text-gray-500 text-base font-normal"
-                classNamePrefix="react-select"
-                styles={{
-                  control: (base) => ({
-                    ...base,
-                    border: 'none',
-                    boxShadow: 'none',
-                  }),
-                  placeholder: (base) => ({
-                    ...base,
-                    color: '#6b7280',
-                  }),
-                }}
-              />
-            </div>
-
-            {/* Status */}
-            <div className="relative">
-              <BarChart className="absolute left-3 top-2.5 w-4 h-5 text-zinc-800" />
-              <Select
-                components={animatedComponents}
-                options={statusOptions}
-                value={statusOptions.find(option => option.value === tempFilters.status) || null} // match by ID
-                onChange={(selected) => setTempFilters((prev) => ({ ...prev, status: selected.value, }))}
-                placeholder={t("equipments_list_page_filter_status")}
                 className="w-full pl-10 border rounded-md text-gray-500 text-base font-normal"
                 classNamePrefix="react-select"
                 styles={{
@@ -574,6 +621,31 @@ const ViewInstallations = () => {
               />
             </div>
 
+            {/* Status */}
+            <div className="relative">
+              <BarChart className="absolute left-3 top-2.5 w-4 h-5 text-zinc-800" />
+              <Select
+                components={animatedComponents}
+                options={statusOptions}
+                value={statusOptions.find(option => option.value === tempFilters.status) || null} // match by ID
+                onChange={(selected) => setTempFilters((prev) => ({ ...prev, status: selected.value, }))}
+                placeholder={t("equipments_list_page_filter_status")}
+                className="w-full pl-10 border rounded-md text-gray-500 text-base font-normal"
+                classNamePrefix="react-select"
+                styles={{
+                  control: (base) => ({
+                    ...base,
+                    border: 'none',
+                    boxShadow: 'none',
+                  }),
+                  placeholder: (base) => ({
+                    ...base,
+                    color: '#6b7280',
+                  }),
+                }}
+              />
+            </div>
+
             {/* Footer buttons */}
             <div className="grid grid-cols-2 gap-4 justify-between pt-2">
               <button onClick={handleReset} disabled={isLoading} className="px-5 py-3 border rounded-md text-sm text-zinc-800 hover:bg-zinc-100">
@@ -594,7 +666,7 @@ const ViewInstallations = () => {
 
         {/* Table displaying filtered data */}
         <div className="w-full overflow-x-auto">
-          <table {...getTableProps()} className="divide-y divide-gray-200 border border-gray-300">
+          <table {...getTableProps()} className="min-w-full divide-y divide-gray-200 border border-gray-300">
             <thead className="bg-white">
               {headerGroups.map(headerGroup => (
                 <tr {...headerGroup.getHeaderGroupProps()} className="bg-white">

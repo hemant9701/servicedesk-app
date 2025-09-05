@@ -3,12 +3,10 @@ import { useParams } from 'react-router-dom';
 import { fetchData } from '../services/apiService';
 import { useTable, useSortBy, usePagination } from 'react-table';
 import axios from 'axios';
-import JSZip from 'jszip';
-import { saveAs } from 'file-saver';
 import { ToastContainer, toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
-import { CalendarClock, File, Eye, ArrowLeft, ArrowUpRight, Circle, MapPin, Phone, Wrench, ArrowDown, ArrowUp, ArrowLeftToLine, ArrowRightToLine, ArrowRight } from "lucide-react";
+import { CalendarClock, File, Eye, ArrowLeft, ArrowUpRight, Circle, MapPin, Phone, Image, Wrench, ArrowDown, ArrowUp, ArrowLeftToLine, ArrowRightToLine, ArrowRight, BadgeInfo } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 const SingleInstallation = () => {
@@ -18,13 +16,15 @@ const SingleInstallation = () => {
   const [Installation, setInstallation] = useState(null);
   const [doc, setDoc] = useState([]);
   const [wordOrder, setWordOrder] = useState([]);
-  const [file, setFile] = useState('');
+  //const [file, setFile] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('details'); // State to manage active tab
   const [fileThumbnails, setFileThumbnails] = useState({});
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [downloadMsg, setDownloadMsg] = useState('');
+  const [popupData, setPopupData] = useState([]);
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
   const { t } = useTranslation('singleEquipment');
 
   const url = `https://testservicedeskapi.odysseemobile.com/`;
@@ -52,6 +52,16 @@ const SingleInstallation = () => {
     "Cancelled": "bg-red-600 text-red-600",
     "Completed": "bg-pink-600 text-pink-600",
   }), []);
+
+  const getTimestamp = () => {
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const hh = String(now.getHours()).padStart(2, '0');
+    const min = String(now.getMinutes()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}_${hh}${min}`;
+  };
 
   useEffect(() => {
     if (downloadMsg) {
@@ -111,37 +121,66 @@ const SingleInstallation = () => {
   const columns = useMemo(
     () => [
       {
-        Header: t('single_equipment_page_work_order_table_planned_date_text'), accessor: 'date_create',
-        Cell: ({ row, value }) => (
-          <span className="flex justify-between items-center">
-            {new Date(value).toLocaleDateString('nl-BE')}
-            {row.original.job_planning_count > 1 && (
-              <CalendarClock className="w-5 h-5 cursor-pointer" />
-            )}
-          </span>
-        )
-      },
-      {
         Header: t('single_equipment_page_work_order_table_reference_text'), accessor: 'id2',
         Cell: ({ row }) => (
           <div className="text-center">
-            <span className="text-gray-800 font-medium">
+            <span className="font-semibold">
               {row.original.id2}
             </span>
           </div>
         ),
       },
       {
-        Header: t('single_equipment_page_work_order_table_name_text'), accessor: 'name',
-        Cell: ({ value }) => value.length > 40 ? value.slice(0, 40) + '...' : value
+        Header: t('single_equipment_page_work_order_table_planned_date_text'),
+        accessor: 'date_create',
+        Cell: ({ row, value }) => {
+          const dateStr = value;
+          const date =
+            dateStr && new Date(dateStr).getFullYear() !== 1980
+              ? new Date(dateStr)
+              : null;
+
+          return (
+            <span className="flex justify-between items-center">
+              {date
+                ? date.toLocaleString('nl-BE', {
+                  year: '2-digit',
+                  month: '2-digit',
+                  day: '2-digit',
+                })
+                : t('NA')}
+              {row.original?.job_planning_count > 1 && (
+                <CalendarClock className="w-5 h-5 cursor-pointer ml-2" onClick={() => handleCalendarClick(row.original.id)} />
+              )}
+            </span>
+          );
+        },
       },
       {
-        Header: t('single_equipment_page_work_order_table_address_text'), accessor: 'db_address_street',
-        Cell: ({ row }) => (
-          <span>
-            {row.original.db_address_street} {row.original.db_address_city} {row.original.db_address_zip}
-          </span>
-        ),
+        Header: t('Scheduled Technician'), accessor: 'first_planning_userfullname',
+        Cell: ({ value }) => value ? '' + value : t('NA')
+      },
+      {
+        Header: t('Close Date'), accessor: 'date_closed',
+        Cell: ({ value }) => {
+          const dateStr = value;
+          const date =
+            dateStr && new Date(dateStr).getFullYear() !== 1980
+              ? new Date(dateStr)
+              : null;
+
+          return (
+            <span className="flex justify-between items-center">
+              {date
+                ? date.toLocaleString('nl-BE', {
+                  year: '2-digit',
+                  month: '2-digit',
+                  day: '2-digit',
+                })
+                : t('NA')}
+            </span>
+          );
+        },
       },
       {
         Header: t('single_equipment_page_work_order_table_type_text'), accessor: 'job_type_name',
@@ -183,7 +222,7 @@ const SingleInstallation = () => {
     {
       columns,
       data: wordOrder,
-      initialState: { pageIndex: 0, pageSize: 10 }, // Set initial page size to 10
+      initialState: { pageIndex: 0, pageSize: 12 }, // Set initial page size to 10
     },
     useSortBy,
     usePagination,
@@ -216,7 +255,7 @@ const SingleInstallation = () => {
             };
 
             const response = await axios(config);
-            setFile(response);
+            //setFile(response);
             updatedThumbnails[item.id] = URL.createObjectURL(response.data); // Store URL in object
           })
         );
@@ -233,57 +272,154 @@ const SingleInstallation = () => {
     GetFileThumbnails();
   }, [auth, doc, url]); // Run when `doc` changes
 
+  // const handleDownloadAll = async () => {
+  //   const zip = new JSZip(); // Create a new ZIP instance
+  //   if (doc.length === 0) return; // Ensure there is data before fetching
+
+  //   const docId = doc[0]?.id; // Use the first document ID (or adjust as needed)
+  //   if (!docId) return;
+
+  //   const authKey = auth?.authKey;
+  //   if (!authKey) return;
+
+  //   try {
+  //     const url = {
+  //       url: `api/DbFileView/GetFileThumbnail/?id=${docId}&maxWidth=256&maxHeight=256`,
+  //       method: 'GET',
+  //       headers: {
+  //         'Authorization': `Basic ${authKey}`,
+  //         'Accept': 'image/png',
+  //       },
+  //       responseType: 'blob',
+  //     };
+
+  //     // Fetch the file content
+  //     const response = await fetch(url, { method: 'GET' });
+  //     if (!response.ok) {
+  //       throw new Error(`Failed to fetch file: ${file.file_name}`);
+  //     }
+
+  //     const blob = await response.blob();
+  //     const arrayBuffer = await blob.arrayBuffer();
+
+  //     // Add the file to the ZIP archive
+  //     zip.file(file.file_name || 'file', arrayBuffer);
+  //   } catch (error) {
+  //     console.error(`Error fetching file ${file.file_name}:`, error.message);
+  //   }
+
+  //   // Generate the ZIP archive and trigger the download
+  //   zip.generateAsync({ type: 'blob' }).then((content) => {
+  //     const blobUrl = window.URL.createObjectURL(content);
+
+  //     // Create a temporary link element
+  //     const link = document.createElement('a');
+  //     link.href = blobUrl;
+  //     link.download = 'files.zip'; // Name of the ZIP file
+  //     document.body.appendChild(link);
+  //     link.click();
+  //     document.body.removeChild(link);
+
+  //     // Revoke the object URL to free up memory
+  //     window.URL.revokeObjectURL(blobUrl);
+  //   });
+  // };
+
+  // const toggleFileSelection = (file) => {
+  //   setSelectedFiles((prev) =>
+  //     prev.some((f) => f.id === file.id)
+  //       ? prev.filter((f) => f.id !== file.id)
+  //       : [...prev, file]
+  //   );
+  // };
+
+  // const handleDownloadSelected = async () => {
+  //   const zip = new JSZip();
+  //   if (doc.length === 0) return; // Ensure there is data before fetching
+
+  //   const docId = doc[0]?.id; // Use the first document ID (or adjust as needed)
+  //   if (!docId) return;
+
+  //   try {
+  //     await Promise.all(
+  //       selectedFiles.map(async (file) => {
+  //         const response = await fetch(
+  //           `api/DbFileView/GetFileThumbnail/?id=${docId}&maxWidth=256&maxHeight=256`
+  //         );
+
+  //         if (!response.ok) {
+  //           throw new Error(`Failed to download ${file.file_name}`);
+  //         } else {
+  //           setDownloadMsg(t('single_equipment_page_selected_documents'));
+  //         }
+
+  //         const blob = await response.blob();
+  //         zip.file(file.file_name, blob);
+  //       })
+  //     );
+
+  //     const zipBlob = await zip.generateAsync({ type: 'blob' });
+  //     saveAs(zipBlob, 'SelectedFiles.zip');
+  //   } catch (error) {
+  //     console.error('Error downloading files:', error);
+  //     //alert('Failed to download selected files.');
+  //   }
+  // };
+
   const handleDownloadAll = async () => {
-    const zip = new JSZip(); // Create a new ZIP instance
-    if (doc.length === 0) return; // Ensure there is data before fetching
+    const endpoint = `${url}api/DbFileView/download/?token=${encodeURIComponent(auth.authKey)}`;
+    const selectedIds = doc.map(doc => doc.id);
 
-    const docId = doc[0]?.id; // Use the first document ID (or adjust as needed)
-    if (!docId) return;
-
-    const authKey = auth?.authKey;
-    if (!authKey) return;
+    const formData = new URLSearchParams();
+    formData.append('paraString', JSON.stringify(selectedIds));
 
     try {
-      const url = {
-        url: `api/DbFileView/GetFileThumbnail/?id=${docId}&maxWidth=256&maxHeight=256`,
-        method: 'GET',
+      const response = await axios.post(endpoint, formData.toString(), {
         headers: {
-          'Authorization': `Basic ${authKey}`,
-          'Accept': 'image/png',
+          'Content-Type': 'application/x-www-form-urlencoded',
         },
-        responseType: 'blob',
-      };
+        responseType: 'blob', // Important for binary file download
+      });
 
-      // Fetch the file content
-      const response = await fetch(url, { method: 'GET' });
-      if (!response.ok) {
-        throw new Error(`Failed to fetch file: ${file.file_name}`);
+      if (response.data.size === 0) {
+        console.warn('Empty ZIP received — skipping download.');
+        return;
       }
 
-      const blob = await response.blob();
-      const arrayBuffer = await blob.arrayBuffer();
+      // Extract filename if available
+      const timestamp = getTimestamp();
+      let filename;
+      if (selectedIds.length === 1) {
+        const originalFileName = doc[0]?.name;
 
-      // Add the file to the ZIP archive
-      zip.file(file.file_name || 'file', arrayBuffer);
+        if (originalFileName) {
+          const nameParts = originalFileName.split('.');
+          const ext = nameParts.length > 1 ? nameParts.pop() : '';
+          const baseName = nameParts.join('.') || 'file';
+
+          filename = `${baseName}_${timestamp}${ext ? `.${ext}` : ''}`;
+        } else {
+          filename = `file_${timestamp}`;
+        }
+
+      } else {
+        filename = `files_${timestamp}.zip`;
+      }
+
+      const blob = new Blob([response.data], { type: 'application/zip' });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      setDownloadMsg('Downloading...');
     } catch (error) {
-      console.error(`Error fetching file ${file.file_name}:`, error.message);
+      console.error('Download failed:', error);
+      // Optional: show toast or fallback UI
     }
-
-    // Generate the ZIP archive and trigger the download
-    zip.generateAsync({ type: 'blob' }).then((content) => {
-      const blobUrl = window.URL.createObjectURL(content);
-
-      // Create a temporary link element
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = 'files.zip'; // Name of the ZIP file
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      // Revoke the object URL to free up memory
-      window.URL.revokeObjectURL(blobUrl);
-    });
   };
 
   const toggleFileSelection = (file) => {
@@ -294,36 +430,64 @@ const SingleInstallation = () => {
     );
   };
 
-  const handleDownloadSelected = async () => {
-    const zip = new JSZip();
-    if (doc.length === 0) return; // Ensure there is data before fetching
 
-    const docId = doc[0]?.id; // Use the first document ID (or adjust as needed)
-    if (!docId) return;
+  const handleDownloadSelected = async () => {
+    const endpoint = `${url}api/DbFileView/download/?token=${encodeURIComponent(auth.authKey)}`;
+    const selectedIds = selectedFiles.map(file => file.id);
+
+    const formData = new URLSearchParams();
+    formData.append('paraString', JSON.stringify(selectedIds));
 
     try {
-      await Promise.all(
-        selectedFiles.map(async (file) => {
-          const response = await fetch(
-            `api/DbFileView/GetFileThumbnail/?id=${docId}&maxWidth=256&maxHeight=256`
-          );
+      const response = await axios.post(endpoint, formData.toString(), {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        responseType: 'blob', // Important for binary file download
+      });
 
-          if (!response.ok) {
-            throw new Error(`Failed to download ${file.file_name}`);
-          } else {
-            setDownloadMsg(t('single_equipment_page_selected_documents'));
-          }
+      if (response.data.size === 0) {
+        console.warn('Empty ZIP received — skipping download.');
+        return;
+      }
 
-          const blob = await response.blob();
-          zip.file(file.file_name, blob);
-        })
-      );
 
-      const zipBlob = await zip.generateAsync({ type: 'blob' });
-      saveAs(zipBlob, 'SelectedFiles.zip');
+      // Extract filename if available
+      const timestamp = getTimestamp();
+      let filename;
+      if (selectedIds.length === 1) {
+        // Use original file name if available
+        const originalFile = selectedFiles.find(f => f.id === selectedIds[0]);
+        const baseName = originalFile?.name?.split('.').slice(0, -1).join('.') || 'file';
+        const ext = originalFile?.name?.split('.').pop() || 'zip';
+        filename = `${baseName}_${timestamp}.${ext}`;
+      } else {
+        filename = `download_${timestamp}.zip`;
+      }
+
+      const blob = new Blob([response.data], { type: 'application/zip' });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      setDownloadMsg('Downloading...');
     } catch (error) {
-      console.error('Error downloading files:', error);
-      //alert('Failed to download selected files.');
+      console.error('Download failed:', error);
+      // Optional: show toast or fallback UI
+    }
+  };
+
+  const handleCalendarClick = async (rowData) => {
+    try {
+      const response = await fetchData(`api/JobPlanningView?$filter=jobs_id eq ${rowData}&$orderby=date_from`);
+      setPopupData(response.value);
+      setIsPopupOpen(true);
+    } catch (error) {
+      console.error('Failed to fetch planning data:', error);
     }
   };
 
@@ -357,49 +521,49 @@ const SingleInstallation = () => {
         {/* Back Button */}
         <button
           onClick={() => navigate(-1)} // Navigate back one step in history
-          className="flex items-center mb-4 font-semibold text-gray-800"
+          className="flex items-center mb-6 font-semibold text-zinc-900 text-base"
         >
           <ArrowLeft className="mr-2 w-5 h-5" /> {t("single_equipment_page_go_back")}
         </button>
       </div>
 
       <div className='shadow-md rounded-lg'>
-        <h2 className="capitalize text-xl font-bold mb-4 pt-12 px-12">{t("single_equipment_page_reference")}: {Installation?.id2} | {Installation?.name}</h2>
+        <h2 className="px-8 pt-8 capitalize text-zinc-900 text-2xl font-semibold mb-4">{t("single_equipment_page_reference")}: {Installation?.id2} | {Installation?.name}</h2>
 
         {/* Tab Navigation */}
-        <div className="flex space-x-4 mb-8 px-12">
+        <div className="flex space-x-4 mb-8 px-8">
           <button
-            className={`text-lg py-2 px-4 font-semibold ${activeTab === 'details' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-gray-400 hover:text-gray-900'}`}
+            className={`px-4 py-2 mr-2 text-lg font-medium leading-7 ${activeTab === 'details' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-slate-500'}`}
             onClick={() => setActiveTab('details')}
           >
             {t("single_equipment_page_ticket_details")}
           </button>
           <button
-            className={`text-lg py-2 px-4 font-semibold ${activeTab === 'documents' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-gray-400 hover:text-gray-900'}`}
+            className={`px-4 py-2 mr-2 text-lg font-medium leading-7 ${activeTab === 'documents' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-slate-500'}`}
             onClick={() => setActiveTab('documents')}
           >
             {t("single_equipment_page_documents")}
           </button>
           <button
-            className={`text-lg py-2 px-4 font-semibold ${activeTab === 'wordOrder' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-gray-400 hover:text-gray-900'}`}
+            className={`px-4 py-2 mr-2 text-lg font-medium leading-7 ${activeTab === 'wordOrder' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-slate-500'}`}
             onClick={() => setActiveTab('wordOrder')}
           >
             {t("single_equipment_page_work_orders")}
           </button>
-          <button
-            className={`text-lg py-2 px-4 font-semibold ${activeTab === 'contractEntitlements' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-gray-400 hover:text-gray-900'}`}
+          {/* <button
+            className={`px-4 py-2 mr-2 text-lg font-medium leading-7 ${activeTab === 'contractEntitlements' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-slate-500'}`}
             onClick={() => setActiveTab('contractEntitlements')}
           >
             {t("single_equipment_page_contract_entitlements")}
-          </button>
+          </button> */}
         </div>
 
         {activeTab === 'details' ? (
           <div className='grid grid-cols-1 md:grid-cols-3 gap-4 px-12 pb-12'>
             <div className='shadow-sm border rounded-lg p-4 '>
-              <h4 className="text-lg font-semibold">{t("single_equipment_page_equipment")}</h4>
+              <h4 className="block text-zinc-900 text-xs font-semibold leading-normal">{t("single_equipment_page_equipment")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
-              <ul className="list-none list-inside text-gray-400">
+              <ul className="list-none list-inside text-slate-500 text-xs font-medium">
                 <li className='flex items-center'><Wrench className='w-4 h-4 mr-2' />{Installation?.name}</li>
                 <li className='ml-6 pb-1'>{Installation?.equipment_family_name}</li>
                 <li className='ml-6 pb-1'>{Installation?.equipment_brand_name}</li>
@@ -408,9 +572,9 @@ const SingleInstallation = () => {
             </div>
 
             <div className='shadow-sm border rounded-lg p-4 '>
-              <h4 className="text-lg font-semibold">{t("single_equipment_page_type_status")}</h4>
+              <h4 className="block text-zinc-900 text-xs font-semibold leading-normal">{t("single_equipment_page_type_status")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
-              <ul className="list-none list-inside text-gray-400">
+              <ul className="list-none list-inside text-slate-500 text-xs font-medium">
                 <li>{Installation?.equipment_family_name}</li>
                 <li className='mt-2.5'>
                   <span className={`pe-3 px-2 pb-1 pt-0.5 rounded-full ${statusColors[Installation?.project_status_name] || "bg-gray-200 text-gray-800"}`}>
@@ -422,9 +586,9 @@ const SingleInstallation = () => {
             </div>
 
             <div className='shadow-sm border rounded-lg p-4 '>
-              <h4 className="text-lg font-semibold">{t("single_equipment_page_properties")}</h4>
+              <h4 className="block text-zinc-900 text-xs font-semibold leading-normal">{t("single_equipment_page_properties")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
-              <ul className="list-none list-inside text-gray-400 ">
+              <ul className="list-none list-inside text-slate-500 text-xs font-medium">
                 <li className='grid grid-cols-2 gap-4'>{t("single_equipment_page_barcode")}: <span className='font-semibold text-gray-700'>{Installation?.barcode}</span></li>
                 <li className='grid grid-cols-2 gap-4'>{t("single_equipment_page_serial_number")}: <span className='font-semibold text-gray-700'>{Installation?.serial_number}</span></li>
                 <li className='grid grid-cols-2 gap-4'>{t("single_equipment_page_our_ref")}: <span className='font-semibold text-gray-700'>{Installation?.customer_reference}</span></li>
@@ -433,17 +597,17 @@ const SingleInstallation = () => {
             </div>
 
             <div className='md:col-span-3 shadow-sm border rounded-lg p-4 '>
-              <h4 className="text-lg font-semibold">{t("single_equipment_page_shutdown_consequence")}</h4>
+              <h4 className="block text-zinc-900 text-xs font-semibold leading-normal">{t("single_equipment_page_shutdown_consequence")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
-              <ul className="list-none list-inside text-gray-400">
+              <ul className="list-none list-inside text-slate-500 text-xs font-medium">
                 <li>{Installation?.shutdown_consequence}</li>
               </ul>
             </div>
 
             <div className='shadow-sm border rounded-lg p-4 '>
-              <h4 className="text-lg font-semibold">{t("single_equipment_page_location")}</h4>
+              <h4 className="block text-zinc-900 text-xs font-semibold leading-normal">{t("single_equipment_page_location")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
-              <ul className="list-none list-inside text-gray-400">
+              <ul className="list-none list-inside text-slate-500 text-xs font-medium">
                 <li className='flex items-center'><MapPin className='w-4 h-4 mr-2' />{Installation?.company_name}</li>
                 <li className='ml-6 pb-1'>{Installation?.db_address_street}</li>
                 <li className='ml-6 pb-1'>{Installation?.db_address_zip} {Installation?.db_address_city}</li>
@@ -453,17 +617,17 @@ const SingleInstallation = () => {
             </div>
 
             <div className='shadow-sm border rounded-lg p-4 '>
-              <h4 className="text-lg font-semibold">{t("single_equipment_page_extra_location_info")}</h4>
+              <h4 className="block text-zinc-900 text-xs font-semibold leading-normal">{t("single_equipment_page_extra_location_info")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
-              <ul className="list-none list-inside text-gray-400">
+              <ul className="list-none list-inside text-slate-500 text-xs font-medium">
                 <li>{Installation?.total_time_planned}</li>
               </ul>
             </div>
 
             <div className='shadow-sm border rounded-lg p-4 '>
-              <h4 className="text-lg font-semibold">{t("single_equipment_page_company_address")}</h4>
+              <h4 className="block text-zinc-900 text-xs font-semibold leading-normal">{t("single_equipment_page_company_address")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
-              <ul className="list-none list-inside text-gray-400">
+              <ul className="list-none list-inside text-slate-500 text-xs font-medium">
                 <li className='flex items-center'><MapPin className='w-4 h-4 mr-2' />{Installation?.db_address_street}</li>
                 <li className='ml-6 pb-1'>{Installation?.db_address_zip} {Installation?.db_address_city}</li>
                 {Installation?.contact_mobile &&
@@ -494,9 +658,17 @@ const SingleInstallation = () => {
                     <div className='flex flex-col items-center'>
                       {/* Show image thumbnail if it's an image, otherwise show file icon */}
                       {item.mime_type?.startsWith("image/") ? (
-                        <img src={fileThumbnails[item.id] || ""} alt={item.name} className="w-48 h-40 object-cover rounded-md mx-auto" />
+                        fileThumbnails[item.id] ? (
+                          <img
+                            src={fileThumbnails[item.id]}
+                            alt={item.name}
+                            className="w-48 h-40 object-cover rounded-md mx-auto"
+                          />
+                        ) : (
+                          <Image className="w-40 h-40 text-gray-200 mx-auto" /> // 👈 fallback image icon
+                        )
                       ) : (
-                        <File className="w-32 h-32 text-gray-600" />
+                        <File className="w-40 h-40 text-gray-600 mx-auto" />
                       )}
                     </div>
                     <div className='flex flex-col'>
@@ -534,12 +706,12 @@ const SingleInstallation = () => {
                 {selectedFiles.length !== 0 && (
                   <button
                     onClick={handleDownloadSelected}
-                    className="bg-gray-900 text-white px-2 py-1 mr-2 rounded-md hover:bg-gray-800">
+                    className="w-48 px-5 py-3 bg-zinc-800 rounded-lg flex items-center justify-center text-pink-50 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
                     {t("single_equipment_page_download_button")}
                   </button>)}
                 <button
                   onClick={handleDownloadAll}
-                  className="bg-gray-900 text-white px-2 py-1 rounded-md hover:bg-gray-800">
+                  className="w-48 px-5 py-3 ml-2 bg-zinc-800 rounded-lg flex items-center justify-center text-pink-50 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
                   {t("single_equipment_page_download_all_button")}
                 </button>
               </div>
@@ -547,14 +719,60 @@ const SingleInstallation = () => {
           </div>
         ) : activeTab === 'wordOrder' ? (
           <>
+            {isPopupOpen && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+                <div className="w-96 relative p-4 bg-white rounded-lg shadow-md border">
+                  <h4 className='text-lg font-semibold border-b-2 border-gray-200 pb-2 mb-2'>{t("single_equipment_page_work_order_list_table_planned_date_technician")}</h4>
+                  <button onClick={() => setIsPopupOpen(false)} className="px-1.5 absolute -top-1 -right-1 bg-gray-700 text-white rounded-full text-sm hover:bg-gray-800">
+                    x</button>
+                  <div className="flex gap-8">
+                    <div>
+                      {Array.from(
+                        new Set(
+                          popupData?.map(item =>
+                            new Date(item.date_from).toLocaleDateString("nl-BE", {
+                              year: "2-digit",
+                              month: "2-digit",
+                              day: "2-digit",
+                            })
+                          )
+                        )
+                      ).map((date, index) => (
+                        <div key={index} className="text-gray-500 py-2">
+                          {date}
+                        </div>
+                      ))}
+                    </div>
+                    <div>
+                      {popupData?.map?.(item => (
+                        <div key={item.id} className='flex gap-4 text-gray-500'>
+                          <span className='py-2'>
+                            {new Date(item.date_from).toLocaleTimeString("nl-BE", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                          <span className='py-2'>
+                            {item.user_firstname + ' ' + item.user_lastname}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="overflow-x-auto">
+              <div className="flex items-center mb-1 text-zinc-800 text-sm font-normal px-4 py-2">
+                <BadgeInfo className='mr-2 w-5 h-5 text-slate-300' /> {t("single_equipment_page_helping_text")}
+              </div>
               <table {...getTableProps()} className="min-w-full divide-y divide-gray-200 border border-gray-300">
                 <thead className="bg-gray-100">
                   {headerGroups.map(headerGroup => (
                     <tr {...headerGroup.getHeaderGroupProps()} className="bg-white divide-x divide-gray-300">
                       {headerGroup.headers.map(column => (
                         <th {...column.getHeaderProps(column.getSortByToggleProps())}
-                          className="p-2 text-left text-sm font-semibold text-gray-400">
+                          className="p-2 whitespace-nowrap text-left text-slate-500 text-xs font-medium leading-none">
                           {column.render("Header")}
                           {column.isSorted ? (
                             column.isSortedDesc ? (
@@ -576,13 +794,12 @@ const SingleInstallation = () => {
                         {row.cells.map((cell, index) => (
                           <td
                             {...cell.getCellProps()}
-                            className={`px-2 py-2 text-sm text-gray-800 ${index !== 0 ? 'cursor-pointer' : ''}`}
-                            onClick={index !== 0 ? () => navigate(`/workorder/${row.original.id}`) : undefined}
+                            className={`self-stretch p-2 text-xs font-normal text-zinc-900 ${index !== 1 ? 'cursor-pointer' : ''}`}
+                            onClick={index !== 1 ? () => navigate(`/workorder/${row.original.id}`) : undefined}
                           >
                             {cell.render('Cell')}
                           </td>
                         ))}
-
                       </tr>
                     );
                   })}
@@ -590,27 +807,27 @@ const SingleInstallation = () => {
               </table>
             </div>
             {/* Pagination Controls - Only show if filteredWorkOrder exceed pageSize (10) */}
-            {wordOrder.length > 10 && (
-              <div className="flex items-center justify-between p-4">
-                <span className="text-sm text-gray-700">
+            {wordOrder.length > 12 && (
+              <div className="flex items-center justify-between px-4 py-2">
+                <span className="text-xs text-slate-700">
                   {t("single_equipment_page_work_order_list_table_pagination_page")} {pageIndex + 1} {t("single_equipment_page_work_order_list_table_pagination_of")} {pageOptions.length}
                 </span>
                 <div>
-                  <button onClick={() => gotoPage(0)} disabled={!canPreviousPage} className="py-1 px-2 md:py-1 md:px-3 mr-1 text-gray-900 rounded-md border border-gray-900 disabled:border-gray-700">
+                  <button onClick={() => gotoPage(0)} disabled={!canPreviousPage} className="py-0.5 px-1 md:px-2 mr-1 text-slate-700 rounded-md border border-slate-700 disabled:border-gray-700">
                     <ArrowLeftToLine className="w-4" />
                   </button>
-                  <button onClick={() => previousPage()} disabled={!canPreviousPage} className="py-1 px-2 md:py-1 md:px-3 mr-1 text-gray-900 rounded-md border border-gray-900 disabled:border-gray-700">
+                  <button onClick={() => previousPage()} disabled={!canPreviousPage} className="py-0.5 px-1 md:px-2 mr-1 text-slate-700 rounded-md border border-slate-700 disabled:border-gray-700">
                     <ArrowLeft className="w-4" />
                   </button>
-                  <button onClick={() => nextPage()} disabled={!canNextPage} className="py-1 px-2 md:py-1 md:px-3 mr-1 text-gray-900 rounded-md border border-gray-900 disabled:border-gray-700">
+                  <button onClick={() => nextPage()} disabled={!canNextPage} className="py-0.5 px-1 md:px-2 mr-1 text-slate-700 rounded-md border border-slate-700 disabled:border-gray-700">
                     <ArrowRight className="w-4" />
                   </button>
-                  <button onClick={() => gotoPage(pageOptions.length - 1)} disabled={!canNextPage} className="py-1 px-2 md:py-1 md:px-3 mr-1 text-gray-900 rounded-md border border-gray-900 disabled:border-gray-700">
+                  <button onClick={() => gotoPage(pageOptions.length - 1)} disabled={!canNextPage} className="py-0.5 px-1 md:px-2 mr-1 text-slate-700 rounded-md border border-slate-700 disabled:border-gray-700">
                     <ArrowRightToLine className="w-4" />
                   </button>
                 </div>
-                <select value={pageSize} onChange={e => setPageSize(Number(e.target.value))} className="ml-1 p-1 md:p-1 border border-gray-300 rounded-md max-w-32">
-                  {[10, 20, 30, 50].map(size => (
+                <select value={pageSize} onChange={e => setPageSize(Number(e.target.value))} className="ml-1 p-1 md:p-1 text-xs text-slate-700 border border-slate-700 rounded-md max-w-32">
+                  {[12, 24, 36, 48].map(size => (
                     <option key={size} value={size}>
                       {t("single_equipment_page_work_order_list_table_pagination_show")} {size}
                     </option>
@@ -688,7 +905,7 @@ const SingleInstallation = () => {
                   </div>
 
                   <div className='shadow-sm border rounded-lg p-4 '>
-                    <h4 className="text-lg font-semibold">{t("Service Model - 176")}</h4>
+                    <h4 className="text-lg font-semibold">Service Model - 176</h4>
                     <hr className='my-2 w-32 border-gray-300' />
                     <ul className="list-none list-inside text-gray-400 flex flex-col gap-y-2">
                       <li>{t("Monthly Inspection")}</li>
@@ -700,7 +917,7 @@ const SingleInstallation = () => {
                   </div>
 
                   <div className='shadow-sm border rounded-lg p-4 '>
-                    <h4 className="text-lg font-semibold">{("Service Model - 166")}</h4>
+                    <h4 className="text-lg font-semibold">Service Model - 166</h4>
                     <hr className='my-2 w-32 border-gray-300' />
                     <ul className="list-none list-inside text-gray-400 flex flex-col gap-y-2">
                       <li>{t("Monthly Inspection")}</li>
