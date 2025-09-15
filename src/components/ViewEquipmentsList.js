@@ -20,6 +20,7 @@ const ViewInstallations = () => {
   const [subRowsMap, setSubRowsMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [renderedSubRows, setRenderedSubRows] = useState({});
   const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { t } = useTranslation('equipmentList');
@@ -212,14 +213,17 @@ const ViewInstallations = () => {
 
   const modelOptions = Array.isArray(fetchModels)
     ? fetchModels
-      .filter(model => model.equipment_brand_id === tempFilters.brand) // ✅ filter by brand
+      .filter(model =>
+        tempFilters.brand !== EmptyGuid
+          ? model.equipment_brand_id === tempFilters.brand
+          : true
+      )
       .sort((a, b) => a.name.localeCompare(b.name))
       .map(model => ({
         value: model.id,
         label: model.name,
       }))
     : [];
-
 
   // Prepare options with default "All Brands"
   const statusOptions = [
@@ -435,6 +439,15 @@ const ViewInstallations = () => {
     useExpanded
   );
 
+  useEffect(() => {
+    Object.keys(expanded).forEach(id => {
+      if (expanded[id] && subRowsMap[id] && !renderedSubRows[id]) {
+        setRenderedSubRows(prev => ({ ...prev, [id]: true }));
+      }
+    });
+  }, [expanded, subRowsMap, renderedSubRows]);
+
+
   const renderRows = (data, depth = 0) => {
     return data.map(row => (
       <React.Fragment key={row.id}>
@@ -463,7 +476,18 @@ const ViewInstallations = () => {
             );
           })}
         </tr>
-        {expanded[row.id] && subRowsMap[row.id] && renderRows(subRowsMap[row.id], depth + 1)}
+        {/* {expanded[row.id] && subRowsMap[row.id] && renderRows(subRowsMap[row.id], depth + 1)} */}
+        {
+          expanded[row.id] && subRowsMap[row.id] && (
+            <>
+              {renderRows(subRowsMap[row.id], depth + 1)}
+              {renderedSubRows[row.id] !== true && setRenderedSubRows(prev => ({ ...prev, [row.id]: true }))}
+            </>
+          )
+        }
+        {expanded[row.id] && !renderedSubRows[row.id] && (
+          <Loader className="ml-2 text-blue-600 animate-spin" />
+        )}
       </React.Fragment>
     ));
   };
@@ -509,7 +533,7 @@ const ViewInstallations = () => {
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="relative w-80 p-4 bg-white rounded-lg shadow-md border space-y-4">
-            <button onClick={() => setIsModalOpen(false)} className="absolute -top-1 -right-1 bg-white text-zinc-800 text-base font-medium leading-normal border border-zinc-800 px-2 rounded-full">
+            <button onClick={() => { setIsModalOpen(false); setTempFilters(clearedFilters) }} className="absolute -top-1 -right-1 bg-white text-zinc-800 text-base font-medium leading-normal border border-zinc-800 px-2 rounded-full">
               x
             </button>
             {/* Header */}
@@ -668,21 +692,30 @@ const ViewInstallations = () => {
         <div className="w-full overflow-x-auto">
           <table {...getTableProps()} className="min-w-full divide-y divide-gray-200 border border-gray-300">
             <thead className="bg-white">
-              {headerGroups.map(headerGroup => (
-                <tr {...headerGroup.getHeaderGroupProps()} className="bg-white">
-                  {headerGroup.headers.map((column, index) => (
-                    <th {...column.getHeaderProps(column.getSortByToggleProps())}
-                      className={`px-2 py-3 text-left whitespace-nowrap text-slate-500 text-xs font-medium leading-none ${index !== 0 ? 'border-r border-gray-300' : ''}`}>
-                      {column.render('Header')}
-                      {column.isSorted ? (
-                        column.isSortedDesc ? (
-                          <ArrowUp className="inline w-4 h-4 ml-1" />
-                        ) : (
-                          <ArrowDown className="inline w-4 h-4 ml-1" />
-                        )
-                      ) : null}
-                    </th>
-                  ))}
+              {headerGroups.map((headerGroup, headerIndex) => (
+                <tr {...headerGroup.getHeaderGroupProps()} key={headerIndex} className="bg-white">
+                  {headerGroup.headers.map((column, index) => {
+                    const sortProps = column.getSortByToggleProps();
+                    const headerProps = column.getHeaderProps(sortProps);
+                    const { key, ...restHeaderProps } = headerProps;
+
+                    return (
+                      <th
+                        key={column.id || column.accessor}
+                        {...restHeaderProps}
+                        className={`px-2 py-3 text-left whitespace-nowrap text-slate-500 text-xs font-medium leading-none ${index !== 0 ? 'border-r border-gray-300' : ''}`}
+                      >
+                        {column.render('Header')}
+                        {column.isSorted ? (
+                          column.isSortedDesc ? (
+                            <ArrowUp className="inline w-4 h-4 ml-1" />
+                          ) : (
+                            <ArrowDown className="inline w-4 h-4 ml-1" />
+                          )
+                        ) : null}
+                      </th>
+                    );
+                  })}
                 </tr>
               ))}
             </thead>

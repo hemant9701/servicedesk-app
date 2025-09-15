@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import { fetchData } from '../services/apiService';
-import axios from 'axios';
+import { fetchDocuments } from '../services/apiServiceDocuments';
+import { downloadFiles } from "../services/apiServiceDownloads";
 import { ToastContainer, toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
@@ -50,16 +50,6 @@ const SingleTicket = () => {
     "Completed": "bg-pink-600 text-pink-600",
   }), []);
 
-  const getTimestamp = () => {
-    const now = new Date();
-    const yyyy = now.getFullYear();
-    const mm = String(now.getMonth() + 1).padStart(2, '0');
-    const dd = String(now.getDate()).padStart(2, '0');
-    const hh = String(now.getHours()).padStart(2, '0');
-    const min = String(now.getMinutes()).padStart(2, '0');
-    return `${yyyy}-${mm}-${dd}_${hh}${min}`;
-  };
-
   useEffect(() => {
     if (downloadMsg) {
       toast.success("Downloading!");
@@ -77,20 +67,20 @@ const SingleTicket = () => {
       try {
         // Fetch Ticket
         const ticketEndpoint = `api/TaskView(${ticketId})`;
-        const ticketData = await fetchData(ticketEndpoint, 'GET', auth.authKey);
+        const ticketData = await fetchDocuments(ticketEndpoint, 'GET', auth.authKey);
         setTicket(ticketData);
 
         // Fetch Work Order if available
         if (ticketData?.to_id_in_table) {
           const workOrderId = ticketData.to_id_in_table;
           const workOrderEndpoint = `api/JobsView(${workOrderId})`;
-          const workOrderData = await fetchData(workOrderEndpoint, 'GET', auth.authKey);
+          const workOrderData = await fetchDocuments(workOrderEndpoint, 'GET', auth.authKey);
           setTicketWorkOrder(workOrderData);
         }
 
         // Fetch Ticket Documents
         const docEndpoint = `api/DbFileView?$filter=db_table_name+eq+%27task%27+and+id_in_table+eq+${ticketId}`;
-        const docData = await fetchData(docEndpoint, 'GET', auth.authKey);
+        const docData = await fetchDocuments(docEndpoint, 'GET', auth.authKey);
         setDoc(docData.value || []);
       } catch (err) {
         console.error("Error fetching ticket/work order/docs:", err);
@@ -107,36 +97,34 @@ const SingleTicket = () => {
   useEffect(() => {
     const GetFileThumbnails = async () => {
       try {
-        if (doc.length === 0) return; // Ensure there is data before fetching
+        if (!doc || doc.length === 0) return; // Ensure there is data
 
         const authKey = auth?.authKey;
         if (!authKey) return;
 
-        // Create a copy of the thumbnails object
         const updatedThumbnails = {};
 
-        // Fetch thumbnails for all documents in the array
         await Promise.all(
           doc.map(async (item) => {
             if (!item.id) return;
 
-            const config = {
-              url: `${url}api/DbFileView/GetFileThumbnail/?id=${item.id}&maxWidth=${item.image_width || '500'}&maxHeight=${item.image_heigth || '500'}`,
-              method: "GET",
-              headers: {
-                Authorization: `Basic ${authKey}`,
-                Accept: "image/png",
-              },
-              responseType: "blob",
-            };
+            const endpoint = `api/DbFileView/GetFileThumbnail/?id=${item.id}&maxWidth=${item.image_width || '500'}&maxHeight=${item.image_heigth || '500'}`;
 
-            const response = await axios(config);
-            //setFile(response);
-            updatedThumbnails[item.id] = URL.createObjectURL(response.data); // Store URL in object
+            // 👇 Use fetchDocuments with "image/png"
+            const response = await fetchDocuments(
+              endpoint,
+              "GET",
+              authKey,
+              null,
+              "image/png"
+            );
+
+            // fetchDocuments returns blob for non-json responses
+            updatedThumbnails[item.id] = URL.createObjectURL(response);
           })
         );
 
-        setFileThumbnails(updatedThumbnails); // Update state with all fetched thumbnails
+        setFileThumbnails(updatedThumbnails);
       } catch (err) {
         console.error("Error fetching thumbnails:", err);
         setError(t("single_ticket_page_err_failed_to_fetch_thumbnail"));
@@ -145,64 +133,30 @@ const SingleTicket = () => {
       }
     };
 
-    GetFileThumbnails();
-  }, [auth, doc, url, t]); // Run when `doc` changes
+    if (activeTab === "documents") {
+      GetFileThumbnails();
+    }
+  }, [auth, doc, url, t, activeTab]); // Run when `doc` changes
 
 
   const handleDownloadAll = async () => {
-    const endpoint = `${url}api/DbFileView/download/?token=${encodeURIComponent(auth.authKey)}`;
-    const selectedIds = doc.map(doc => doc.id);
+    await downloadFiles(url, auth.authKey, doc.map(d => d.id));
+    setDownloadMsg("Downloading all files...");
+  };
 
-    const formData = new URLSearchParams();
-    formData.append('paraString', JSON.stringify(selectedIds));
+  const handleDownloadSelected = async () => {
+    const ids = selectedFiles.map(f => f.id);
 
-    try {
-      const response = await axios.post(endpoint, formData.toString(), {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        responseType: 'blob', // Important for binary file download
-      });
-
-      if (response.data.size === 0) {
-        console.warn('Empty ZIP received — skipping download.');
-        return;
+    let fallbackName = "download.zip";
+    if (ids.length === 1) {
+      const file = selectedFiles.find(f => f.id === ids[0]);
+      if (file?.name) {
+        fallbackName = file.name; // keep original filename if possible
       }
-
-      // Extract filename if available
-      const timestamp = getTimestamp();
-      let filename;
-      if (selectedIds.length === 1) {
-        const originalFileName = doc[0]?.name;
-
-        if (originalFileName) {
-          const nameParts = originalFileName.split('.');
-          const ext = nameParts.length > 1 ? nameParts.pop() : '';
-          const baseName = nameParts.join('.') || 'file';
-
-          filename = `${baseName}_${timestamp}${ext ? `.${ext}` : ''}`;
-        } else {
-          filename = `file_${timestamp}`;
-        }
-
-      } else {
-        filename = `files_${timestamp}.zip`;
-      }
-
-      const blob = new Blob([response.data], { type: 'application/zip' });
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = downloadUrl;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(downloadUrl);
-      setDownloadMsg('Downloading...');
-    } catch (error) {
-      console.error('Download failed:', error);
-      // Optional: show toast or fallback UI
     }
+
+    await downloadFiles(url, auth.authKey, ids, fallbackName);
+    setDownloadMsg("Downloading selected files...");
   };
 
   const toggleFileSelection = (file) => {
@@ -211,57 +165,6 @@ const SingleTicket = () => {
         ? prev.filter((f) => f.id !== file.id)
         : [...prev, file]
     );
-  };
-
-
-  const handleDownloadSelected = async () => {
-    const endpoint = `${url}api/DbFileView/download/?token=${encodeURIComponent(auth.authKey)}`;
-    const selectedIds = selectedFiles.map(file => file.id);
-
-    const formData = new URLSearchParams();
-    formData.append('paraString', JSON.stringify(selectedIds));
-
-    try {
-      const response = await axios.post(endpoint, formData.toString(), {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        responseType: 'blob', // Important for binary file download
-      });
-
-      if (response.data.size === 0) {
-        console.warn('Empty ZIP received — skipping download.');
-        return;
-      }
-
-
-      // Extract filename if available
-      const timestamp = getTimestamp();
-      let filename;
-      if (selectedIds.length === 1) {
-        // Use original file name if available
-        const originalFile = selectedFiles.find(f => f.id === selectedIds[0]);
-        const baseName = originalFile?.name?.split('.').slice(0, -1).join('.') || 'file';
-        const ext = originalFile?.name?.split('.').pop() || 'zip';
-        filename = `${baseName}_${timestamp}.${ext}`;
-      } else {
-        filename = `download_${timestamp}.zip`;
-      }
-
-      const blob = new Blob([response.data], { type: 'application/zip' });
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = downloadUrl;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(downloadUrl);
-      setDownloadMsg('Downloading...');
-    } catch (error) {
-      console.error('Download failed:', error);
-      // Optional: show toast or fallback UI
-    }
   };
 
 

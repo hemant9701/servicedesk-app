@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { useTable, useSortBy } from 'react-table';
-import { fetchData } from '../services/apiService.js';
+import { fetchDocuments } from '../services/apiServiceDocuments';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import { useAuth } from '../AuthContext';
@@ -66,7 +66,7 @@ const ViewCalendars = () => {
       };
 
       try {
-        const response = await fetchData(url, 'POST', auth.authKey, payload);
+        const response = await fetchDocuments(url, 'POST', auth.authKey, payload);
         const mapped = response.map(item => ({
           ...item,
           subRows: item.has_child ? [] : []
@@ -160,7 +160,7 @@ const ViewCalendars = () => {
       const url = `api/JobPlanningView?$filter=${encodedQuery}`;
 
       try {
-        const response = await fetchData(url, 'GET', auth.authKey);
+        const response = await fetchDocuments(url, 'GET', auth.authKey);
         setContents(response.value);
         setLoading(false);
       } catch (err) {
@@ -178,7 +178,7 @@ const ViewCalendars = () => {
   useEffect(() => {
     const fetchEquiName = async () => {
       try {
-        const resname = await fetchData('api/ProjectView?$filter=root_parent_id+ne+00000000-0000-0000-0000-000000000000', 'GET', auth.authKey);
+        const resname = await fetchDocuments('api/ProjectView?$filter=root_parent_id+ne+00000000-0000-0000-0000-000000000000', 'GET', auth.authKey);
         setEquipmentNames(resname.value);
       } catch (err) {
         setError(err);
@@ -188,7 +188,7 @@ const ViewCalendars = () => {
 
     const fetchJobsType = async () => {
       try {
-        const restype = await fetchData('api/EquipmentFamily', 'GET', auth.authKey);
+        const restype = await fetchDocuments('api/EquipmentFamily', 'GET', auth.authKey);
         setEquipmentTypes(restype.value);
       } catch (err) {
         setError(err);

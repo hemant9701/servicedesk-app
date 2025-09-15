@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { NotebookPen, Ticket, CalendarDays, FileText } from "lucide-react";
 import { Link } from 'react-router-dom';
-import { fetchData } from '../services/apiService.js';
+import { fetchDocuments } from '../services/apiServiceDocuments';
 import { useAuth } from '../AuthContext';
 import { useTranslation } from "react-i18next";
 
@@ -23,7 +23,7 @@ const Home = () => {
   useEffect(() => {
     const fetchContactCount = async () => {
       try {
-        const response = await fetchData('api/TaskView/CountOpen', 'GET', auth.authKey);
+        const response = await fetchDocuments('api/TaskView/CountOpen', 'GET', auth.authKey);
         setContactCount(response); // Sets the count from the API response
         setLoading(false);
       } catch (err) {

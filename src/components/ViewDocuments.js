@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { useTable, useSortBy, usePagination } from 'react-table';
-import { fetchData } from '../services/apiService.js';
+import { fetchDocuments } from '../services/apiServiceDocuments.js';
+import { downloadFiles } from "../services/apiServiceDownloads";
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -153,7 +154,7 @@ const ViewDocuments = () => {
       };
 
       try {
-        const response = await fetchData(url, 'POST', auth.authKey, payload);
+        const response = await fetchDocuments(url, 'POST', auth.authKey, payload);
         const mapped = response.map(item => ({
           ...item,
           subRows: item.has_child ? [] : []
@@ -227,7 +228,7 @@ const ViewDocuments = () => {
   };
 
 
-  const fetchDocuments = async (filters) => {
+  const fetchDocumentsData = async (filters) => {
     try {
       const payload = {
         keyword: keyword,
@@ -266,7 +267,7 @@ const ViewDocuments = () => {
           sortModel: []
         }
       };
-      const response = await fetchData(`api/DbFileView/Search`, 'POST', auth.authKey, payload);
+      const response = await fetchDocuments(`api/DbFileView/Search`, 'POST', auth.authKey, payload);
       setContacts(response || []);
     } catch (err) {
       setError(err);
@@ -289,23 +290,43 @@ const ViewDocuments = () => {
 
         await Promise.all(
           contacts.map(async (item) => {
-            if (!item.id || (item.mime_type !== 'image/jpeg' && item.mime_type !== 'image/png')) return;
-            //if (item.id === '0c72ecbc-489a-4995-92ff-e84ee1448474' || item.id === '970ad1e0-e616-4c22-a2a0-38b71ee9a87b') return;
+            if (!item.id) return;
 
-            const config = {
-              url: `${url}api/DbFileView/GetFileThumbnail/?id=${item.id}&maxWidth=${item.image_width || '500'}&maxHeight=${item.image_heigth || '500'}`,
-              method: "GET",
-              headers: {
-                Authorization: `Basic ${authKey}`,
-                Accept: "image/png",
-              },
-              responseType: "blob",
-            };
+            const endpoint = `api/DbFileView/GetFileThumbnail/?id=${item.id}&maxWidth=${item.image_width || '500'}&maxHeight=${item.image_heigth || '500'}`;
 
-            const response = await axios(config);
-            updatedThumbnails[item.id] = URL.createObjectURL(response.data);
+            // 👇 Use fetchDocuments with "image/png"
+            const response = await fetchDocuments(
+              endpoint,
+              "GET",
+              authKey,
+              null,
+              "image/png"
+            );
+
+            // fetchDocuments returns blob for non-json responses
+            updatedThumbnails[item.id] = URL.createObjectURL(response);
           })
         );
+
+        // await Promise.all(
+        //   contacts.map(async (item) => {
+        //     if (!item.id || (item.mime_type !== 'image/jpeg' && item.mime_type !== 'image/png')) return;
+        //     //if (item.id === '0c72ecbc-489a-4995-92ff-e84ee1448474' || item.id === '970ad1e0-e616-4c22-a2a0-38b71ee9a87b') return;
+
+        //     const config = {
+        //       url: `${url}api/DbFileView/GetFileThumbnail/?id=${item.id}&maxWidth=${item.image_width || '500'}&maxHeight=${item.image_heigth || '500'}`,
+        //       method: "GET",
+        //       headers: {
+        //         Authorization: `Basic ${authKey}`,
+        //         Accept: "image/png",
+        //       },
+        //       responseType: "blob",
+        //     };
+
+        //     const response = await axios(config);
+        //     updatedThumbnails[item.id] = URL.createObjectURL(response.data);
+        //   })
+        // );
 
         setFileThumbnails(updatedThumbnails);
       } catch (err) {
@@ -335,7 +356,7 @@ const ViewDocuments = () => {
     };
 
     setIsLoading(true);
-    fetchDocuments(filtersObj);
+    fetchDocumentsData(filtersObj);
   };
 
   const columns = useMemo(() => [
@@ -551,54 +572,20 @@ const ViewDocuments = () => {
     }
   };
 
+
   const handleDownloadSelected = async () => {
-    const endpoint = `${url}api/DbFileView/download/?token=${encodeURIComponent(auth.authKey)}`;
-    const selectedIds = selectedFiles.map(file => file.id);
+    const ids = selectedFiles.map(f => f.id);
 
-    const formData = new URLSearchParams();
-    formData.append('paraString', JSON.stringify(selectedIds));
-
-    try {
-      const response = await axios.post(endpoint, formData.toString(), {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        responseType: 'blob', // Important for binary file download
-      });
-
-      if (response.data.size === 0) {
-        console.warn('Empty ZIP received — skipping download.');
-        return;
+    let fallbackName = "download.zip";
+    if (ids.length === 1) {
+      const file = selectedFiles.find(f => f.id === ids[0]);
+      if (file?.name) {
+        fallbackName = file.name; // keep original filename if possible
       }
-
-
-      // Extract filename if available
-      const timestamp = getTimestamp();
-      let filename;
-      if (selectedIds.length === 1) {
-        // Use original file name if available
-        const originalFile = selectedFiles.find(f => f.id === selectedIds[0]);
-        const baseName = originalFile?.name?.split('.').slice(0, -1).join('.') || 'file';
-        const ext = originalFile?.name?.split('.').pop() || 'zip';
-        filename = `${baseName}_${timestamp}.${ext}`;
-      } else {
-        filename = `download_${timestamp}.zip`;
-      }
-
-      const blob = new Blob([response.data], { type: 'application/zip' });
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = downloadUrl;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(downloadUrl);
-      setDownloadMsg('Downloading...');
-    } catch (error) {
-      console.error('Download failed:', error);
-      // Optional: show toast or fallback UI
     }
+
+    await downloadFiles(url, auth.authKey, ids, fallbackName);
+    setDownloadMsg("Downloading selected files...");
   };
 
   const handleReset = () => {

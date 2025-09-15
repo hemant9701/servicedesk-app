@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { useTable, useSortBy, usePagination } from 'react-table';
 import { fetchData } from '../services/apiService.js';
 import { useNavigate } from 'react-router-dom';
-import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight, ArrowLeftToLine, ArrowRightToLine, BadgeInfo, Circle, CalendarClock } from 'lucide-react';
+import { Loader, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, ArrowLeftToLine, ArrowRightToLine, BadgeInfo, Circle, CalendarClock } from 'lucide-react';
 import { useAuth } from '../AuthContext';
 import { useTranslation } from "react-i18next";
 
@@ -13,6 +13,7 @@ const ViewWorkOrderList = () => {
   const [popupData, setPopupData] = useState([]);
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [isCompleted, setIsCompleted] = useState(false);
   const [error, setError] = useState(null);
   const [selectedTab, setSelectedTab] = useState('open');
@@ -42,36 +43,42 @@ const ViewWorkOrderList = () => {
     "Completed": "bg-pink-600 text-pink-600",
   }), []);
 
+  let startRow = 0;
+  let endRow = 500;
+
   useEffect(() => {
-    const fetchWorkOrder = async (completedStatus) => {
+    const fetchWorkOrder = async (completedStatus, startRow = 0, endRow = 500) => {
+      setIsLoading(true); // Trigger loading immediately on tab switch
       try {
-        //const response = await fetchData('https://v1servicedeskapi.wello.solutions/api/JobsView/', 'GET');
         const endpoint = `api/JobsView/Search`;
         const payload = {
-          "is_get_completed": completedStatus,
-          "query_object": {
-            "startRow": 0,
-            "endRow": 1500,
-            "rowGroupCols": [],
-            "valueCols": [],
-            "pivotCols": [],
-            "pivotMode": false,
-            "groupKeys": [],
-            "filterModel": {},
-            "sortModel": []
+          is_get_completed: completedStatus,
+          query_object: {
+            startRow: startRow,
+            endRow: endRow,
+            rowGroupCols: [],
+            valueCols: [],
+            pivotCols: [],
+            pivotMode: false,
+            groupKeys: [],
+            filterModel: {},
+            sortModel: []
           }
         };
         const response = await fetchData(endpoint, 'POST', auth.authKey, payload);
-        setJobs(response);
-        setLoading(false);
+        if (response) {
+          setJobs(response);
+          setLoading(false);
+        }
       } catch (err) {
         setError(err);
-        setLoading(false);
+      } finally {
+        setIsLoading(false);
       }
     };
 
     fetchWorkOrder(isCompleted);
-  }, [isCompleted, auth]);
+  }, [isCompleted, startRow, endRow, auth]);
 
   const handleCalendarClick = async (rowData) => {
     try {
@@ -191,36 +198,36 @@ const ViewWorkOrderList = () => {
               x</button>
             <div className="flex gap-8">
               <div>
-              {Array.from(
-                new Set(
-                  popupData?.map(item =>
-                    new Date(item.date_from).toLocaleDateString("nl-BE", {
-                      year: "2-digit",
-                      month: "2-digit",
-                      day: "2-digit",
-                    })
+                {Array.from(
+                  new Set(
+                    popupData?.map(item =>
+                      new Date(item.date_from).toLocaleDateString("nl-BE", {
+                        year: "2-digit",
+                        month: "2-digit",
+                        day: "2-digit",
+                      })
+                    )
                   )
-                )
-              ).map((date, index) => (
-                <div key={index} className="text-gray-500 py-2">
-                  {date}
-                </div>
-              ))}
+                ).map((date, index) => (
+                  <div key={index} className="text-gray-500 py-2">
+                    {date}
+                  </div>
+                ))}
               </div>
               <div>
-              {popupData?.map?.(item => (
-                <div key={item.id} className='flex gap-4 text-gray-500'>
-                  <span className='py-2'>
-                    {new Date(item.date_from).toLocaleTimeString("nl-BE", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </span>
-                  <span className='py-2'>
-                    {item.user_firstname + ' ' + item.user_lastname}
-                  </span>
-                </div>
-              ))}
+                {popupData?.map?.(item => (
+                  <div key={item.id} className='flex gap-4 text-gray-500'>
+                    <span className='py-2'>
+                      {new Date(item.date_from).toLocaleTimeString("nl-BE", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                    <span className='py-2'>
+                      {item.user_firstname + ' ' + item.user_lastname}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -270,46 +277,61 @@ const ViewWorkOrderList = () => {
             <thead className="bg-gray-100">
               {headerGroups.map(headerGroup => (
                 <tr {...headerGroup.getHeaderGroupProps()} className="bg-white divide-x divide-gray-300">
-                  {headerGroup.headers.map(column => (
-                    <th {...column.getHeaderProps(column.getSortByToggleProps())}
-                      className="p-2 whitespace-nowrap text-slate-500 text-xs font-medium leading-none">
-                      {column.render("Header")}
-                      {column.isSorted ? (
-                        column.isSortedDesc ? (
-                          <ArrowDown className="inline w-4 h-4 ml-1" />
-                        ) : (
-                          <ArrowUp className="inline w-4 h-4 ml-1" />
-                        )
-                      ) : null}
-                    </th>
-                  ))}
+                  {headerGroup.headers.map((column, index) => {
+                    const sortProps = column.getSortByToggleProps();
+                    const headerProps = column.getHeaderProps(sortProps);
+                    const { key, ...restHeaderProps } = headerProps;
+
+                    return (
+                      <th
+                        key={column.id || column.accessor}
+                        {...restHeaderProps}
+                        className={`px-2 py-3 text-left whitespace-nowrap text-slate-500 text-xs font-medium leading-none ${index !== 0 ? 'border-r border-gray-300' : ''}`}
+                      >
+                        {column.render('Header')}
+                        {column.isSorted ? (
+                          column.isSortedDesc ? (
+                            <ArrowUp className="inline w-4 h-4 ml-1" />
+                          ) : (
+                            <ArrowDown className="inline w-4 h-4 ml-1" />
+                          )
+                        ) : null}
+                      </th>
+                    );
+                  })}
                 </tr>
               ))}
             </thead>
             <tbody {...getTableBodyProps()} className="bg-white divide-y divide-gray-200">
-              {!loading && page.map(row => { // Change from rows to page
-                prepareRow(row);
-                return (
-                  <tr {...row.getRowProps()} className="hover:bg-gray-200">
-                    {row.cells.map((cell, index) => (
-                      <td
-                        {...cell.getCellProps()}
-                        className={`self-stretch px-1 py-2 text-xs font-normal text-zinc-900 ${index !== 0 ? 'cursor-pointer' : ''}`}
-                        onClick={index !== 0 ? () => navigate(`/workorder/${row.original.id}`) : undefined}
-                      >
-                        {cell.render('Cell')}
-                      </td>
-                    ))}
+              {!isLoading &&
+                page.map((row) => {
+                  prepareRow(row);
+                  return (
+                    <tr key={row.id} {...row.getRowProps()} className="hover:bg-gray-200">
+                      {row.cells.map((cell, index) => {
+                        const cellProps = {
+                          ...cell.getCellProps(),
+                          className: `self-stretch px-1 py-2 text-xs font-normal text-zinc-900 ${index !== 0 ? 'cursor-pointer' : ''}`,
+                          onClick: index !== 0 ? () => navigate(`/workorder/${row.original.id}`) : undefined
+                        };
 
-                  </tr>
-                );
-              })}
+                        return (
+                          <td key={row.original.id || row.original.accessor} {...cellProps}>
+                            {cell.render('Cell')}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })}
             </tbody>
           </table>
         </div>
 
+        {isLoading && <Loader size='36' className="m-2 text-blue-600 animate-spin" />}
+
         {/* Pagination Controls - Only show if filteredWorkOrder exceed pageSize (10) */}
-        {jobs.length > 12 && (
+        {!isLoading && jobs.length > 12 && (
           <div className="flex items-center justify-between p-4">
             <span className="text-xs text-slate-700">
               {t("work_order_list_table_pagination_page")} {pageIndex + 1} {t("work_order_list_table_pagination_of")} {pageOptions.length}
@@ -324,7 +346,7 @@ const ViewWorkOrderList = () => {
               <button onClick={() => nextPage()} disabled={!canNextPage} className="py-0.5 px-1 md:px-2 mr-1 text-slate-700 rounded-md border border-slate-700 disabled:border-gray-700">
                 <ArrowRight className="w-4" />
               </button>
-              <button onClick={() => gotoPage(pageOptions.length - 1)} disabled={!canNextPage} className="py-0.5 px-1 md:px-2 mr-1 text-slate-700 rounded-md border border-slate-700 disabled:border-gray-700">
+              <button onClick={() => { gotoPage(pageOptions.length - 1) }} disabled={!canNextPage} className="py-0.5 px-1 md:px-2 mr-1 text-slate-700 rounded-md border border-slate-700 disabled:border-gray-700">
                 <ArrowRightToLine className="w-4" />
               </button>
             </div>

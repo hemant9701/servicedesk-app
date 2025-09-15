@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import { fetchData } from '../services/apiService';
-import axios from 'axios';
+import { fetchDocuments } from '../services/apiServiceDocuments';
+import { downloadFiles } from "../services/apiServiceDownloads";
 import { useNavigate } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import { File, Eye, Phone, ArrowLeft, Circle, Wrench, User, MapPin, Image } from "lucide-react";
@@ -50,16 +50,6 @@ const SingleWordOrder = () => {
     "Completed": "bg-pink-600 text-pink-600",
   }), []);
 
-  const getTimestamp = () => {
-    const now = new Date();
-    const yyyy = now.getFullYear();
-    const mm = String(now.getMonth() + 1).padStart(2, '0');
-    const dd = String(now.getDate()).padStart(2, '0');
-    const hh = String(now.getHours()).padStart(2, '0');
-    const min = String(now.getMinutes()).padStart(2, '0');
-    return `${yyyy}-${mm}-${dd}_${hh}${min}`;
-  };
-
   useEffect(() => {
     if (downloadMsg) {
       toast.success("Downloading!");
@@ -76,7 +66,7 @@ const SingleWordOrder = () => {
         }
 
         const endpoint = `api/JobsView(${workOrderId})`;
-        const data = await fetchData(endpoint, 'GET', auth.authKey);
+        const data = await fetchDocuments(endpoint, 'GET', auth.authKey);
         setWorkOrder(data);
         setLoading(false);
       } catch (err) {
@@ -89,7 +79,7 @@ const SingleWordOrder = () => {
     const getworkOrderDoc = async () => {
       try {
         const endpoint_1 = `api/DbFileView?$filter=db_table_name+eq+%27jobs%27+and+id_in_table+eq+${workOrderId}`;
-        const data_1 = await fetchData(endpoint_1, 'GET', auth.authKey);
+        const data_1 = await fetchDocuments(endpoint_1, 'GET', auth.authKey);
         setDoc(data_1.value);
       } catch (err) {
         console.error("Error fetching documents:", err);
@@ -100,7 +90,7 @@ const SingleWordOrder = () => {
     const getworkOrderSub = async () => {
       try {
         const endpoint_2 = `api/JobsView?$filter=root_parent_id+eq+${workOrderId}+and+has_child+eq+false&$orderby=id2%20desc`;
-        const data_2 = await fetchData(endpoint_2, 'GET', auth.authKey);
+        const data_2 = await fetchDocuments(endpoint_2, 'GET', auth.authKey);
         setSub(data_2.value);
       } catch (err) {
         console.error("Error fetching documents:", err);
@@ -113,15 +103,15 @@ const SingleWordOrder = () => {
     getworkOrderSub();
   }, [workOrderId, auth]);
 
+
   useEffect(() => {
     const GetFileThumbnails = async () => {
       try {
-        if (doc.length === 0) return; // Ensure there is data before fetching
+        if (!doc || doc.length === 0) return; // Ensure there is data
 
-        const authKey = auth.authKey;
+        const authKey = auth?.authKey;
         if (!authKey) return;
 
-        // Create a copy of the thumbnails object
         const updatedThumbnails = {};
 
         // Fetch thumbnails for all documents in the array
@@ -129,23 +119,16 @@ const SingleWordOrder = () => {
           doc.map(async (item) => {
             if (!item.id) return;
 
-            const config = {
-              url: `${url}api/DbFileView/GetFileThumbnail/?id=${item.id}&maxWidth=500&maxHeight=500`,
-              method: "GET",
-              headers: {
-                Authorization: `Basic ${authKey}`,
-                Accept: "image/png",
-              },
-              responseType: "blob",
-            };
+            const endpoint = `api/DbFileView/GetFileThumbnail/?id=${item.id}&maxWidth=500&maxHeight=500`;
 
-            const response = await axios(config);
-            //setFile(response);
-            updatedThumbnails[item.id] = URL.createObjectURL(response.data); // Store URL in object
+            // ✅ Use fetchDocuments (returns blob when accept="image/png")
+            const blob = await fetchDocuments(endpoint, "GET", authKey, null, "image/png");
+
+            updatedThumbnails[item.id] = URL.createObjectURL(blob); // Store URL in object
           })
         );
 
-        setFileThumbnails(updatedThumbnails); // Update state with all fetched thumbnails
+        setFileThumbnails(updatedThumbnails);
       } catch (err) {
         console.error("Error fetching thumbnails:", err);
         setError("single_work_order_page_err_failed_to_fetch_thumbnail");
@@ -154,157 +137,30 @@ const SingleWordOrder = () => {
       }
     };
 
-    GetFileThumbnails();
-  }, [doc, auth, url]); // Run when `doc` changes
+    if (activeTab === "documents") {
+      GetFileThumbnails();
+    }
+  }, [doc, auth, activeTab]);
 
-  // const handleDownloadAll = async () => {
-  //   const zip = new JSZip(); // Create a new ZIP instance
-  //   if (doc.length === 0) return; // Ensure there is data before fetching
-
-  //   const docId = doc[0]?.id; // Use the first document ID (or adjust as needed)
-  //   if (!docId) return;
-
-  //   const authKey = auth?.authKey;
-  //   if (!authKey) return;
-
-  //   try {
-  //     const url = {
-  //       url: `api/DbFileView/GetFileThumbnail/?id=${docId}&maxWidth=256&maxHeight=256`,
-  //       method: 'GET',
-  //       headers: {
-  //         'Authorization': `Basic ${authKey}`,
-  //         'Accept': 'image/png',
-  //       },
-  //       responseType: 'blob',
-  //     };
-
-  //     // Fetch the file content
-  //     const response = await fetch(url, { method: 'GET' });
-  //     if (!response.ok) {
-  //       throw new Error(`Failed to fetch file: ${file.file_name}`);
-  //     }
-
-  //     const blob = await response.blob();
-  //     const arrayBuffer = await blob.arrayBuffer();
-
-  //     // Add the file to the ZIP archive
-  //     zip.file(file.file_name || 'file', arrayBuffer);
-  //   } catch (error) {
-  //     console.error(`Error fetching file ${file.file_name}:`, error.message);
-  //   }
-
-  //   // Generate the ZIP archive and trigger the download
-  //   zip.generateAsync({ type: 'blob' }).then((content) => {
-  //     const blobUrl = window.URL.createObjectURL(content);
-
-  //     // Create a temporary link element
-  //     const link = document.createElement('a');
-  //     link.href = blobUrl;
-  //     link.download = 'files.zip'; // Name of the ZIP file
-  //     document.body.appendChild(link);
-  //     link.click();
-  //     document.body.removeChild(link);
-
-  //     // Revoke the object URL to free up memory
-  //     window.URL.revokeObjectURL(blobUrl);
-  //   });
-  // };
-
-  // const toggleFileSelection = (file) => {
-  //   setSelectedFiles((prev) =>
-  //     prev.some((f) => f.id === file.id)
-  //       ? prev.filter((f) => f.id !== file.id)
-  //       : [...prev, file]
-  //   );
-  // };
-
-  // const handleDownloadSelected = async () => {
-  //   const zip = new JSZip();
-  //   if (doc.length === 0) return; // Ensure there is data before fetching
-
-  //   const docId = doc[0]?.id; // Use the first document ID (or adjust as needed)
-  //   if (!docId) return;
-
-  //   try {
-  //     await Promise.all(
-  //       selectedFiles.map(async (file) => {
-  //         const response = await fetch(
-  //           `api/DbFileView/GetFileThumbnail/?id=${docId}&maxWidth=256&maxHeight=256`
-  //         );
-
-  //         if (!response.ok) {
-  //           throw new Error(`Failed to download ${file.file_name}`);
-  //         } else {
-  //           setDownloadMsg(t('single_work_order_page_selected_documents'));
-  //         }
-
-  //         const blob = await response.blob();
-  //         zip.file(file.file_name, blob);
-  //       })
-  //     );
-
-  //     const zipBlob = await zip.generateAsync({ type: 'blob' });
-  //     saveAs(zipBlob, 'SelectedFiles.zip');
-  //   } catch (error) {
-  //     console.error('Error downloading files:', error);
-  //     //alert('Failed to download selected files.');
-  //   }
-  // };
 
   const handleDownloadAll = async () => {
-    const endpoint = `${url}api/DbFileView/download/?token=${encodeURIComponent(auth.authKey)}`;
-    const selectedIds = doc.map(doc => doc.id);
+    await downloadFiles(url, auth.authKey, doc.map(d => d.id));
+    setDownloadMsg("Downloading all files...");
+  };
 
-    const formData = new URLSearchParams();
-    formData.append('paraString', JSON.stringify(selectedIds));
+  const handleDownloadSelected = async () => {
+    const ids = selectedFiles.map(f => f.id);
 
-    try {
-      const response = await axios.post(endpoint, formData.toString(), {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        responseType: 'blob', // Important for binary file download
-      });
-
-      if (response.data.size === 0) {
-        console.warn('Empty ZIP received — skipping download.');
-        return;
+    let fallbackName = "download.zip";
+    if (ids.length === 1) {
+      const file = selectedFiles.find(f => f.id === ids[0]);
+      if (file?.name) {
+        fallbackName = file.name; // keep original filename if possible
       }
-
-      // Extract filename if available
-      const timestamp = getTimestamp();
-      let filename;
-      if (selectedIds.length === 1) {
-        const originalFileName = doc[0]?.name;
-
-        if (originalFileName) {
-          const nameParts = originalFileName.split('.');
-          const ext = nameParts.length > 1 ? nameParts.pop() : '';
-          const baseName = nameParts.join('.') || 'file';
-
-          filename = `${baseName}_${timestamp}${ext ? `.${ext}` : ''}`;
-        } else {
-          filename = `file_${timestamp}`;
-        }
-
-      } else {
-        filename = `files_${timestamp}.zip`;
-      }
-
-      const blob = new Blob([response.data], { type: 'application/zip' });
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = downloadUrl;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(downloadUrl);
-      setDownloadMsg('Downloading...');
-    } catch (error) {
-      console.error('Download failed:', error);
-      // Optional: show toast or fallback UI
     }
+
+    await downloadFiles(url, auth.authKey, ids, fallbackName);
+    setDownloadMsg("Downloading selected files...");
   };
 
   const toggleFileSelection = (file) => {
@@ -313,57 +169,6 @@ const SingleWordOrder = () => {
         ? prev.filter((f) => f.id !== file.id)
         : [...prev, file]
     );
-  };
-
-
-  const handleDownloadSelected = async () => {
-    const endpoint = `${url}api/DbFileView/download/?token=${encodeURIComponent(auth.authKey)}`;
-    const selectedIds = selectedFiles.map(file => file.id);
-
-    const formData = new URLSearchParams();
-    formData.append('paraString', JSON.stringify(selectedIds));
-
-    try {
-      const response = await axios.post(endpoint, formData.toString(), {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        responseType: 'blob', // Important for binary file download
-      });
-
-      if (response.data.size === 0) {
-        console.warn('Empty ZIP received — skipping download.');
-        return;
-      }
-
-
-      // Extract filename if available
-      const timestamp = getTimestamp();
-      let filename;
-      if (selectedIds.length === 1) {
-        // Use original file name if available
-        const originalFile = selectedFiles.find(f => f.id === selectedIds[0]);
-        const baseName = originalFile?.name?.split('.').slice(0, -1).join('.') || 'file';
-        const ext = originalFile?.name?.split('.').pop() || 'zip';
-        filename = `${baseName}_${timestamp}.${ext}`;
-      } else {
-        filename = `download_${timestamp}.zip`;
-      }
-
-      const blob = new Blob([response.data], { type: 'application/zip' });
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = downloadUrl;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(downloadUrl);
-      setDownloadMsg('Downloading...');
-    } catch (error) {
-      console.error('Download failed:', error);
-      // Optional: show toast or fallback UI
-    }
   };
 
   if (loading) {

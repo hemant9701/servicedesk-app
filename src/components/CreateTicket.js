@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { useTable, useSortBy, useExpanded } from 'react-table';
-import { fetchData } from '../services/apiService.js';
+import { fetchDocuments } from '../services/apiServiceDocuments';
 import Calendar from 'react-calendar'
 import 'react-calendar/dist/Calendar.css'
 import { useAuth } from '../AuthContext';
@@ -23,6 +23,7 @@ const CreateTicket = () => {
   const [loading, setLoading] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [subRowsMap, setSubRowsMap] = useState({});
+  const [renderedSubRows, setRenderedSubRows] = useState({});
   const [error, setError] = useState(null);
   const [selectedRow, setSelectedRow] = useState(null);
   const [step, setStep] = useState(0);
@@ -105,7 +106,7 @@ const CreateTicket = () => {
       };
 
       try {
-        const response = await fetchData(url, 'POST', auth.authKey, payload);
+        const response = await fetchDocuments(url, 'POST', auth.authKey, payload);
         const mapped = response.map(item => ({
           ...item,
           subRows: item.has_child ? [] : []
@@ -199,7 +200,7 @@ const CreateTicket = () => {
   useEffect(() => {
     const fetchBrands = async () => {
       try {
-        const resbrands = await fetchData('api/EquipmentBrand', 'GET', auth.authKey);
+        const resbrands = await fetchDocuments('api/EquipmentBrand', 'GET', auth.authKey);
         setFetchBrands(resbrands.value);
       } catch (err) {
         setError(err);
@@ -208,7 +209,7 @@ const CreateTicket = () => {
 
     const fetchModels = async () => {
       try {
-        const resmodels = await fetchData('api/EquipmentModel', 'GET', auth.authKey);
+        const resmodels = await fetchDocuments('api/EquipmentModel', 'GET', auth.authKey);
         setFetchModels(resmodels.value);
       } catch (err) {
         setError(err);
@@ -217,7 +218,7 @@ const CreateTicket = () => {
 
     const fetchStatuses = async () => {
       try {
-        const restatuses = await fetchData('api/ProjectStatus', 'GET', auth.authKey);
+        const restatuses = await fetchDocuments('api/ProjectStatus', 'GET', auth.authKey);
         setFetchStatuses(restatuses.value);
       } catch (err) {
         setError(err);
@@ -239,7 +240,11 @@ const CreateTicket = () => {
 
   const modelOptions = Array.isArray(fetchModels)
     ? fetchModels
-      .filter(model => model.equipment_brand_id === tempFilters.brand) // ✅ filter by brand
+      .filter(model =>
+        tempFilters.brand !== EmptyGuid
+          ? model.equipment_brand_id === tempFilters.brand
+          : true
+      )
       .sort((a, b) => a.name.localeCompare(b.name))
       .map(model => ({
         value: model.id,
@@ -247,6 +252,7 @@ const CreateTicket = () => {
       }))
     : [];
 
+  // Prepare options with default "All Brands"
   const statusOptions = [
     ...(Array.isArray(fetchStatuses)
       ? fetchStatuses
@@ -296,6 +302,13 @@ const CreateTicket = () => {
     "Low": "text-green-800 ",
   }), []);
 
+  const syncTicketFiles = (updatedFiles) => {
+    setTicketDetails((prevDetails) => ({
+      ...prevDetails,
+      file: updatedFiles,
+    }));
+  };
+
   const handleFileChange = (event) => {
     const newFiles = Array.from(event.target.files);
 
@@ -307,12 +320,12 @@ const CreateTicket = () => {
       return true;
     });
 
-    setFiles((prevFiles) => [...prevFiles, ...validFiles]); // Append only valid files
-
-    setTicketDetails((prevDetails) => ({
-      ...prevDetails,
-      file: prevDetails.file ? [...prevDetails.file, ...validFiles] : validFiles, // Store files in ticketDetails
-    }));
+    // Update files state
+    setFiles((prevFiles) => {
+      const updatedFiles = [...prevFiles, ...validFiles];
+      syncTicketFiles(updatedFiles);
+      return updatedFiles;
+    });
 
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
@@ -320,7 +333,11 @@ const CreateTicket = () => {
   };
 
   const removeFile = (index) => {
-    setFiles(files.filter((_, i) => i !== index));
+    setFiles((prevFiles) => {
+      const updatedFiles = prevFiles.filter((file) => file.name !== index.name);
+      syncTicketFiles(updatedFiles);
+      return updatedFiles;
+    });
   };
 
   useEffect(() => {
@@ -452,7 +469,7 @@ const CreateTicket = () => {
   useEffect(() => {
     const taskType = async () => {
       try {
-        const data = await fetchData('api/TaskType?$orderby=is_default,sequence', 'GET', auth.authKey);
+        const data = await fetchDocuments('api/TaskType?$orderby=is_default,sequence', 'GET', auth.authKey);
         setTicketTypes(data.value);
       } catch (err) {
         setError(err);
@@ -461,7 +478,7 @@ const CreateTicket = () => {
 
     const taskSeverity = async () => {
       try {
-        const data = await fetchData('api/TaskPriority?$orderby=is_default,sequence', 'GET', auth.authKey);
+        const data = await fetchDocuments('api/TaskPriority?$orderby=is_default,sequence', 'GET', auth.authKey);
         setSeverities(data.value);
       } catch (err) {
         setError(err);
@@ -470,7 +487,7 @@ const CreateTicket = () => {
 
     const fetchUserID = async () => {
       try {
-        const responseUser = await fetchData(`api/Contact?$filter=e_login+eq+'${encodeURIComponent(auth.authEmail)}'`, 'GET', auth.authKey);
+        const responseUser = await fetchDocuments(`api/Contact?$filter=e_login+eq+'${encodeURIComponent(auth.authEmail)}'`, 'GET', auth.authKey);
         setUserID(responseUser.value[0]);
       } catch (err) {
         setError(err);
@@ -590,6 +607,14 @@ const CreateTicket = () => {
     useExpanded
   );
 
+  useEffect(() => {
+    Object.keys(expanded).forEach(id => {
+      if (expanded[id] && subRowsMap[id] && !renderedSubRows[id]) {
+        setRenderedSubRows(prev => ({ ...prev, [id]: true }));
+      }
+    });
+  }, [expanded, subRowsMap, renderedSubRows]);
+
   const renderRows = (data, depth = 0) => {
     return data.map(row => (
       <React.Fragment key={row.id}>
@@ -618,7 +643,15 @@ const CreateTicket = () => {
             );
           })}
         </tr>
-        {expanded[row.id] && subRowsMap[row.id] && renderRows(subRowsMap[row.id], depth + 1)}
+        {expanded[row.id] && subRowsMap[row.id] && (
+          <>
+            {renderRows(subRowsMap[row.id], depth + 1)}
+            {renderedSubRows[row.id] !== true && setRenderedSubRows(prev => ({ ...prev, [row.id]: true }))}
+          </>
+        )}
+        {expanded[row.id] && !renderedSubRows[row.id] && (
+          <Loader className="ml-2 text-blue-600 animate-spin" />
+        )}
       </React.Fragment>
     ));
   };
@@ -659,7 +692,7 @@ const CreateTicket = () => {
     };
 
     try {
-      const response = await fetchData('api/Task', 'POST', auth.authKey, payloadData);
+      const response = await fetchDocuments('api/Task', 'POST', auth.authKey, payloadData);
 
       if (response) {
         await postImage(response.id, response.id2);
@@ -692,7 +725,7 @@ const CreateTicket = () => {
       });
 
       if (imagePayload) {
-        await fetchData(
+        await fetchDocuments(
           `api/dbfile/add?db_table_id=448260E5-7A17-4381-A254-0B1D8FE53947&id_in_table=${ticketId}&description=Uploaded by Service Desk - ${ticketId2}`,
           'POST', auth.authKey, imagePayload
         );
@@ -788,7 +821,7 @@ const CreateTicket = () => {
             {isModalOpen && (
               <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
                 <div className="relative w-80 p-4 bg-white rounded-lg shadow-md border space-y-4">
-                  <button onClick={() => setIsModalOpen(false)} className="absolute -top-1 -right-1 bg-white text-zinc-800 text-base font-medium leading-normal border border-zinc-800 px-2 rounded-full">
+                  <button onClick={() => { setIsModalOpen(false); setTempFilters(clearedFilters) }} className="absolute -top-1 -right-1 bg-white text-zinc-800 text-base font-medium leading-normal border border-zinc-800 px-2 rounded-full">
                     x
                   </button>
                   {/* Header */}
@@ -952,19 +985,28 @@ const CreateTicket = () => {
                 <thead className="bg-white">
                   {headerGroups.map((headerGroup, headerIndex) => (
                     <tr {...headerGroup.getHeaderGroupProps()} key={headerIndex} className="bg-white">
-                      {headerGroup.headers.map((column, index) => (
-                        <th {...column.getHeaderProps(column.getSortByToggleProps())}
-                          className={`px-2 py-3 text-left whitespace-nowrap text-slate-500 text-xs font-medium leading-none ${index !== 0 ? 'border-r border-gray-300' : ''}`}>
-                          {column.render('Header')}
-                          {column.isSorted ? (
-                            column.isSortedDesc ? (
-                              <ArrowUp className="inline w-4 h-4 ml-1" />
-                            ) : (
-                              <ArrowDown className="inline w-4 h-4 ml-1" />
-                            )
-                          ) : null}
-                        </th>
-                      ))}
+                      {headerGroup.headers.map((column, index) => {
+                        const sortProps = column.getSortByToggleProps();
+                        const headerProps = column.getHeaderProps(sortProps);
+                        const { key, ...restHeaderProps } = headerProps;
+
+                        return (
+                          <th
+                            key={column.id || column.accessor}
+                            {...restHeaderProps}
+                            className={`px-2 py-3 text-left whitespace-nowrap text-slate-500 text-xs font-medium leading-none ${index !== 0 ? 'border-r border-gray-300' : ''}`}
+                          >
+                            {column.render('Header')}
+                            {column.isSorted ? (
+                              column.isSortedDesc ? (
+                                <ArrowUp className="inline w-4 h-4 ml-1" />
+                              ) : (
+                                <ArrowDown className="inline w-4 h-4 ml-1" />
+                              )
+                            ) : null}
+                          </th>
+                        );
+                      })}
                     </tr>
                   ))}
                 </thead>
@@ -1027,7 +1069,6 @@ const CreateTicket = () => {
                     onChange={(e) => handleInputChange('ticketType', e.target.value)}
                     className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-md text-gray-500 text-base font-normal leading-normal"
                     required
-                    classNamePrefix="react-select"
                     styles={{
                       control: (base) => ({
                         ...base,
@@ -1127,7 +1168,7 @@ const CreateTicket = () => {
             <div className="mb-4">
               {/* File Thumbnails Grid */}
               {files.length > 0 && (
-                <div className="mt-2 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                <div className="mt-2 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
                   {files.map((file, index) => {
                     const fileURL = URL.createObjectURL(file);
                     const isImage = file.type.startsWith("image/");
@@ -1138,19 +1179,29 @@ const CreateTicket = () => {
                         {/* Thumbnail */}
                         {isImage ? (
                           <div>
-                            <img src={fileURL} alt="Preview" className="w-32 h-32 object-cover rounded-md overflow-hidden" />
-                            <p className="mt-2 text-sm text-gray-800">{file.name}</p>
+                            <img
+                              src={fileURL}
+                              alt="Preview"
+                              className="w-32 h-32 object-cover rounded-md overflow-hidden"
+                              onLoad={() => URL.revokeObjectURL(fileURL)} // ✅ revoke after load
+                            />
+                            <p className="mt-2 text-sm break-words whitespace-normal text-gray-800">{file.name}</p>
                           </div>
                         ) : (
-                          <div className="">
-                            {isPDF ? <FileText className="w-32 h-32 text-gray-600 object-cover rounded-md overflow-hidden" /> : <File className="w-32 h-32 text-gray-600 object-cover rounded-md overflow-hidden" />}
-                            <p className="mt-2 text-sm text-gray-800">{file.name}</p>
+                          <div>
+                            {isPDF ? (
+                              <FileText className="w-32 h-32 text-gray-600" />
+                            ) : (
+                              <File className="w-32 h-32 text-gray-600" />
+                            )}
+                            <p className="mt-2 text-sm break-words whitespace-normal text-gray-800">{file.name}</p>
                           </div>
                         )}
 
                         {/* Remove Icon */}
                         <button
-                          onClick={() => removeFile(index)}
+                          type='button'
+                          onClick={() => removeFile(file)}
                           className="absolute top-1 right-1 bg-white p-1 rounded-full opacity-80 hover:opacity-100 transition-opacity shadow-md"
                         >
                           <XCircle className="w-5 h-5 text-red-600" />
@@ -1160,11 +1211,10 @@ const CreateTicket = () => {
                   })}
                 </div>
               )}
-
             </div>
 
             <div className="mt-4 flex justify-end">
-              <button onClick={() => setStep(0)} className="w-48 px-5 py-3 border border-2 bg-white rounded-lg flex items-center justify-center text-zinc-800 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
+              <button type='button' onClick={() => setStep(0)} className="w-48 px-5 py-3 border border-2 bg-white rounded-lg flex items-center justify-center text-zinc-800 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
                 {t('create_ticket_popup_button_back')}
               </button>
               <button type="submit" className="w-48 px-5 py-3 ml-2 bg-zinc-800 rounded-lg flex items-center justify-center text-pink-50 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
@@ -1216,6 +1266,7 @@ const CreateTicket = () => {
                       {timeSlots.map((time) => (
                         <li key={time}>
                           <button
+                            type='button'
                             onClick={() => {
                               setSelectedTime(time);
                               setIsOpen(false);
@@ -1243,7 +1294,7 @@ const CreateTicket = () => {
 
             {/* Navigation Buttons */}
             <div className="mt-4 flex justify-end">
-              <button onClick={() => setStep(1)} className="w-48 px-5 py-3 border border-2 bg-white rounded-lg flex items-center justify-center text-zinc-800 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
+              <button type='button' onClick={() => setStep(1)} className="w-48 px-5 py-3 border border-2 bg-white rounded-lg flex items-center justify-center text-zinc-800 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
                 {t('create_ticket_popup_button_back')}
               </button>
               <button type="submit" className="w-48 px-5 py-3 ml-2 bg-zinc-800 rounded-lg flex items-center justify-center text-pink-50 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
@@ -1272,10 +1323,10 @@ const CreateTicket = () => {
                 <p className='px-2'>{t("create_ticket_popup_text")}</p>
                 {/* Footer buttons */}
                 <div className="flex justify-between pt-2">
-                  <button onClick={() => navigate(`/`)} className="px-4 py-2 border border-2 bg-white rounded-lg flex items-center justify-center text-zinc-800 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
+                  <button type='button' onClick={() => navigate(`/`)} className="px-4 py-2 border border-2 bg-white rounded-lg flex items-center justify-center text-zinc-800 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
                     {t('create_ticket_popup_button_back_home')}
                   </button>
-                  <button onClick={() => navigate(`/ticket/${responseId}`)} className="px-4 py-2 ml-2 bg-zinc-800 rounded-lg flex items-center justify-center text-pink-50 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
+                  <button type='button' onClick={() => navigate(`/ticket/${responseId}`)} className="px-4 py-2 ml-2 bg-zinc-800 rounded-lg flex items-center justify-center text-pink-50 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
                     {t('create_ticket_popup_button_view_ticket')}
                   </button>
                 </div>
@@ -1353,7 +1404,7 @@ const CreateTicket = () => {
               <h4 className="text-zinc-900 text-xs font-semibold leading-normal my-2">{t("create_ticket_step-4_files_uploaded")}</h4>
 
               {/* File Thumbnails Grid */}
-              <div className="mt-2 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 min-h-8">
+              <div className="mt-2 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 min-h-8">
                 {ticketDetails?.file && ticketDetails.file.map((file, index) => {
                   const fileURL = URL.createObjectURL(file);
                   const isImage = file.type.startsWith("image/");
@@ -1365,12 +1416,12 @@ const CreateTicket = () => {
                       {isImage ? (
                         <div>
                           <img src={fileURL} alt="Preview" className="w-32 h-32 object-cover rounded-md overflow-hidden" />
-                          <p className="mt-2 text-sm text-gray-800">{file.name}</p>
+                          <p className="mt-2 text-sm break-words whitespace-normal text-gray-800">{file.name}</p>
                         </div>
                       ) : (
                         <div className="">
                           {isPDF ? <FileText className="w-32 h-32 text-gray-600 object-cover rounded-md overflow-hidden" /> : <File className="w-32 h-32 text-gray-600 object-cover rounded-md overflow-hidden" />}
-                          <p className="mt-2 text-sm text-gray-800">{file.name}</p>
+                          <p className="mt-2 text-sm break-words whitespace-normal text-gray-800">{file.name}</p>
                         </div>
                       )}
                     </div>
@@ -1381,7 +1432,7 @@ const CreateTicket = () => {
             </div>
           </div>
           <div className="mt-4 flex justify-end">
-            <button onClick={() => setStep(2)} className="w-48 px-5 py-3 border border-2 bg-white rounded-lg flex items-center justify-center text-zinc-800 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
+            <button type='button' onClick={() => setStep(2)} className="w-48 px-5 py-3 border border-2 bg-white rounded-lg flex items-center justify-center text-zinc-800 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
               {t('create_ticket_popup_button_back')}
             </button>
             <button onClick={handleSubmitTicket} className="w-48 px-5 py-3 ml-2 bg-zinc-800 rounded-lg flex items-center justify-center text-pink-50 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
