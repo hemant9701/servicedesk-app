@@ -203,7 +203,7 @@ const SingleWordOrder = () => {
   if (error) return <div className="text-center text-red-600">{error}</div>;
 
   return (
-    <div className="mx-auto w-full p-6 bg-white">
+    <div className="mx-auto w-full p-1 md:p-4 bg-white">
       <div className='flex'>
         {/* Back Button */}
         <button
@@ -219,26 +219,26 @@ const SingleWordOrder = () => {
           <ArrowLeft className="mr-2 w-5 h-5" /> {t("single_work_order_page_go_back")}
         </button>
       </div>
-      <div className='shadow-md rounded-lg p-8'>
-        <h2 className="capitalize text-zinc-900 text-2xl font-semibold mb-4">{t("single_work_order_page_reference")}: {workOrder?.id2} | {workOrder?.name}</h2>
+      <div className='shadow-md rounded-lg p-2 md:p-8'>
+        <h2 className="capitalize text-zinc-900 text-lg md:text-2xl font-semibold mb-4">{t("single_work_order_page_reference")}: {workOrder?.id2} | {workOrder?.name}</h2>
         {/* Tab Navigation */}
         <div className="flex space-x-4 mb-4">
           <button
-            className={`px-4 py-2 mr-2 text-lg font-medium leading-7 ${activeTab === 'details' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-slate-500'}`}
+            className={`px-2 md:px-4 py-2 mr-2 text-md md:text-lg font-medium leading-7 ${activeTab === 'details' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-slate-500'}`}
             onClick={() => setActiveTab('details')}
           >
             {t("single_work_order_page_ticket_details")}
           </button>
 
           <button
-            className={`px-4 py-2 mr-2 text-lg font-medium leading-7 ${activeTab === 'documents' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-slate-500'}`}
+            className={`px-2 md:px-4 py-2 mr-2 text-md md:text-lg font-medium leading-7 ${activeTab === 'documents' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-slate-500'}`}
             onClick={() => setActiveTab('documents')}
           >
             {t("single_work_order_page_documents")}
           </button>
           {workOrder?.has_child && (
             <button
-              className={`px-4 py-2 mr-2 text-lg font-medium leading-7 ${activeTab === 'sub-wo' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-slate-500'}`}
+              className={`px-2 md:px-4 py-2 mr-2 text-md md:text-lg font-medium leading-7 ${activeTab === 'sub-wo' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-slate-500'}`}
               onClick={() => setActiveTab('sub-wo')}
             >
               {t("Sub-WO List")}

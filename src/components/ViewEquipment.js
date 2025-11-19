@@ -487,7 +487,7 @@ const SingleInstallation = () => {
   // };
 
   return (
-    <div className="mx-auto w-full p-6 bg-white">
+    <div className="mx-auto w-full p-1 md:p-4 bg-white">
       <div className='flex'>
         {/* Back Button */}
         <button
@@ -506,30 +506,30 @@ const SingleInstallation = () => {
       </div>
 
       <div className='shadow-md rounded-lg'>
-        <h2 className="px-8 pt-8 capitalize text-zinc-900 text-2xl font-semibold mb-4">{t("single_equipment_page_reference")}: {installation?.id2} | {installation?.name}</h2>
+        <h2 className="px-2 pt-2 md:px-8 md:pt-8 capitalize text-zinc-900 text-2xl font-semibold mb-4">{t("single_equipment_page_reference")}: {installation?.id2} | {installation?.name}</h2>
 
         {/* Tab Navigation */}
-        <div className="flex space-x-4 mb-8 px-8">
+        <div className="flex flex-col md:flex-row md:space-x-4 mb-8 px-2 md:px-8">
           <button
-            className={`px-4 py-2 mr-2 text-lg font-medium leading-7 ${activeTab === 'details' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-slate-500'}`}
+            className={`px-2 md:px-4 py-2 md:mr-2 text-lg font-medium leading-7 ${activeTab === 'details' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-slate-500'}`}
             onClick={() => setActiveTab('details')}
           >
             {t("single_equipment_page_ticket_details")}
           </button>
           <button
-            className={`px-4 py-2 mr-2 text-lg font-medium leading-7 ${activeTab === 'documents' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-slate-500'}`}
+            className={`px-2 md:px-4 py-2 md:mr-2 text-lg font-medium leading-7 ${activeTab === 'documents' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-slate-500'}`}
             onClick={() => setActiveTab('documents')}
           >
             {t("single_equipment_page_documents")}
           </button>
           <button
-            className={`px-4 py-2 mr-2 text-lg font-medium leading-7 ${activeTab === 'wordOrder' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-slate-500'}`}
+            className={`px-2 md:px-4 py-2 md:mr-2 text-lg font-medium leading-7 ${activeTab === 'wordOrder' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-slate-500'}`}
             onClick={() => setActiveTab('wordOrder')}
           >
             {t("single_equipment_page_work_orders")}
           </button>
           <button
-            className={`px-4 py-2 mr-2 text-lg font-medium leading-7 ${activeTab === 'contractEntitlements' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-slate-500'}`}
+            className={`px-2 md:px-4 py-2 mr-2 text-lg font-medium leading-7 ${activeTab === 'contractEntitlements' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-slate-500'}`}
             onClick={() => setActiveTab('contractEntitlements')}
           >
             {t("single_equipment_page_contract_entitlements")}
@@ -537,7 +537,7 @@ const SingleInstallation = () => {
         </div>
 
         {activeTab === 'details' ? (
-          <div className='grid grid-cols-1 md:grid-cols-3 gap-4 px-12 pb-12'>
+          <div className='grid grid-cols-1 md:grid-cols-3 gap-4 md:px-12 md:pb-12'>
             <div className='shadow-sm border rounded-lg p-4 '>
               <h4 className="block text-zinc-900 text-xs font-semibold leading-normal">{t("single_equipment_page_equipment")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
@@ -915,12 +915,12 @@ const SingleInstallation = () => {
             )}
           </>
         ) : (
-          <div className='grid grid-cols-1 md:grid-cols-3 gap-4 px-12 pb-12'>
+          <div className='grid grid-cols-1 md:grid-cols-3 gap-4 px-2 md:px-12 pb-12'>
             <div className='md:col-span-3 shadow-sm border rounded-lg p-4 '>
               <h4 className="block text-zinc-900 text-sm font-semibold leading-normal">{t("single_equipment_page_contract_warranty_information")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
               <ul className="list-none list-inside text-slate-500 text-xs font-medium">
-                <li className='grid grid-cols-3 gap-1'>{t("single_equipment_page_contract_build_date")}
+                <li className='grid grid-cols-2 md:grid-cols-3 items-end gap-1'>{t("single_equipment_page_contract_build_date")}:
                   <span className='font-semibold'>
                     {installation?.date_built &&
                       new Date(installation?.date_built).getFullYear() !== 1980
@@ -932,7 +932,7 @@ const SingleInstallation = () => {
                       : "N/A"}
                   </span>
                 </li>
-                <li className='grid grid-cols-3 gap-1'>{t("single_equipment_page_contract_commissioning_date")}
+                <li className='grid grid-cols-2 md:grid-cols-3 items-end gap-1'>{t("single_equipment_page_contract_commissioning_date")}:
                   <span className='font-semibold'>
                     {installation?.date_start_production &&
                       new Date(installation?.date_start_production).getFullYear() !== 1980
@@ -944,7 +944,7 @@ const SingleInstallation = () => {
                       : "N/A"}
                   </span>
                 </li>
-                <li className='grid grid-cols-3 gap-1'>{t("single_equipment_page_contract_warranty_date")}
+                <li className='grid grid-cols-2 md:grid-cols-3 items-end gap-1'>{t("single_equipment_page_contract_warranty_date")}:
                   <span className='font-semibold'>
                     {installation?.warranty_date_until &&
                       new Date(installation?.warranty_date_until).getFullYear() !== 1980
@@ -956,7 +956,7 @@ const SingleInstallation = () => {
                       : "N/A"}
                   </span>
                 </li>
-                <li className='grid grid-cols-3 gap-1'>{t("single_equipment_page_contract_parts_warranty_date")}
+                <li className='grid grid-cols-2 md:grid-cols-3 items-end gap-1'>{t("single_equipment_page_contract_parts_warranty_date")}:
                   <span className='font-semibold'>
                     {installation?.replacement_date &&
                       new Date(installation?.replacement_date).getFullYear() !== 1980

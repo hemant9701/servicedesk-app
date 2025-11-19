@@ -836,7 +836,7 @@ const CreateTicket = () => {
 
       {/* Step Indicator Bar */}
       <div className='w-full border-b-2 mb-4 border-gray-200'>
-        <div className="mx-auto w-9/12 relative mb-16 mx-4">
+        <div className="mx-auto w-10/12 md:w-9/12 relative mb-16 mx-4">
           {/* Progress Line Background */}
           <div className="absolute w-full top-5 h-1 bg-gray-300 z-0" />
 
@@ -865,7 +865,7 @@ const CreateTicket = () => {
                     ? <Check className='w-6 h-6' />
                     : <Circle className='w-4 h-4 bg-white rounded-full text-white' />
                   }
-                  <p className='mt-2 text-slate-700 text-base font-medium absolute top-12 w-max'>
+                  <p className='text-xs md:text-md mt-2 text-slate-700 text-base font-medium absolute top-12 md:w-max'>
                     {item.label}
                   </p>
                 </div>
@@ -1141,7 +1141,7 @@ const CreateTicket = () => {
           </div>
           <form onSubmit={(e) => { e.preventDefault(); setStep(2); }}>
             <div className="mb-8">
-              <div className="flex flex-row gap-8">
+              <div className="flex flex-row gap-2 md:gap-8">
                 <div className="relative basis-1/2">
                   <TicketX className="absolute left-3 top-2.5 w-5 h-5 text-gray-500" />
                   <select
@@ -1322,7 +1322,7 @@ const CreateTicket = () => {
       )}
 
       {step === 2 && (
-        <div className="mt-4 p-6 w-full max-w-2xl mx-auto">
+        <div className="mt-4 p-2 md:p-6 w-full max-w-2xl mx-auto">
           <h2 className="text-zinc-900 text-xl font-semibold mb-4">{t("create_ticket_page_step-3_title")}</h2>
           <div className="text-zinc-900 text-sm text-base font-normal mb-8">{t("create_ticket_page_step-3_subtitle")}</div>
 
@@ -1522,7 +1522,7 @@ const CreateTicket = () => {
               </ul>
             </div>
 
-            <div className='col-span-3 shadow-sm border bg-white rounded-lg p-4 '>
+            <div className='md:col-span-3 shadow-sm border bg-white rounded-lg p-4 '>
               <h4 className='text-zinc-900 text-xs font-semibold leading-normal'>{t("create_ticket_step-4_description")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
               <ul className="text-sm list-none list-inside text-slate-500 text-xs font-medium min-h-24">
@@ -1530,7 +1530,7 @@ const CreateTicket = () => {
               </ul>
 
             </div>
-            <div className='col-span-3 shadow-sm border bg-white rounded-lg p-4 '>
+            <div className='md:col-span-3 shadow-sm border bg-white rounded-lg p-4 '>
               <h4 className="text-zinc-900 text-xs font-semibold leading-normal my-2">{t("create_ticket_step-4_files_uploaded")}</h4>
 
               {/* File Thumbnails Grid */}

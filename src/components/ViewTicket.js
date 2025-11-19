@@ -226,7 +226,7 @@ const SingleTicket = () => {
   if (error) return <div className="text-center text-red-600">{error}</div>;
 
   return (
-    <div className="mx-auto w-full p-6 bg-white">
+    <div className="mx-auto w-full p-1 md:p-4 bg-white">
       <div className='flex'>
         {/* Back Button */}
         <button
@@ -243,19 +243,19 @@ const SingleTicket = () => {
         </button>
       </div>
 
-      <div className='shadow-md rounded-lg p-8'>
-        <h2 className="capitalize text-zinc-900 text-2xl font-semibold mb-4">{t("single_ticket_page_reference")}: {ticket?.id2} | {ticket?.subject}</h2>
+      <div className='shadow-md rounded-lg p-2 md:p-8'>
+        <h2 className="capitalize text-zinc-900 text-lg md:text-2xl font-semibold mb-4">{t("single_ticket_page_reference")}: {ticket?.id2} | {ticket?.subject}</h2>
 
         {/* Tab Navigation */}
         <div className="flex space-x-4 mb-4">
           <button
-            className={`px-4 py-2 mr-2 text-lg font-medium leading-7 ${activeTab === 'details' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-slate-500'}`}
+            className={`px-2 md:px-4 py-2 mr-2 text-md md:text-lg font-medium leading-7 ${activeTab === 'details' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-slate-500'}`}
             onClick={() => setActiveTab('details')}
           >
             {t("single_ticket_page_ticket_details")}
           </button>
           <button
-            className={`px-4 py-2 mr-2 text-lg font-medium leading-7 ${activeTab === 'documents' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-slate-500'}`}
+            className={`px-2 md:px-4 py-2 mr-2 text-md md:text-lg font-medium leading-7 ${activeTab === 'documents' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-slate-500'}`}
             onClick={() => setActiveTab('documents')}
           >
             {t("single_ticket_page_documents")}
@@ -264,7 +264,7 @@ const SingleTicket = () => {
 
         {activeTab === 'details' ? (
           <div className='grid grid-cols-1 md:grid-rows-3 gap-8'>
-            <div className="grid grid-cols-3 gap-8 row-start-1">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 row-start-1">
               <div className='shadow-sm border rounded-lg p-4 '>
                 <h4 className="block text-zinc-900 text-xs font-semibold leading-normal">{t("single_ticket_page_location_equipment")}</h4>
                 <hr className='my-2 w-32 border-gray-300' />
@@ -300,6 +300,7 @@ const SingleTicket = () => {
                     <Calendar className='w-4 h-4 mr-2' />
                     {(new Date(ticket?.date_create).getFullYear() !== 1980) ?
                       new Date(ticket?.date_create).toLocaleString('en-GB', {
+                        timeZone: 'UTC',
                         year: 'numeric',
                         month: '2-digit',
                         day: '2-digit',
@@ -334,7 +335,7 @@ const SingleTicket = () => {
               </div>
             </div>
 
-            <div className={`grid ${ticketWorkOrder?.name ? 'grid-cols-3' : 'grid-cols-2'} gap-8 row-start-2`}>
+            <div className={`grid grid-cols-1 ${ticketWorkOrder?.name ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-8 row-start-2`}>
               {/* <div className={`grid grid-cols-3 gap-8 row-start-2`}> */}
               <div className='shadow-sm border rounded-lg p-4 '>
                 <h4 className="text-zinc-900 text-xs font-semibold leading-normal">{t('single_ticket_page_severity')}</h4>

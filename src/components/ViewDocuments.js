@@ -812,10 +812,10 @@ const ViewDocuments = () => {
           </div>
         </div>
         <div className="flex items-end gap-x-2">
-          <button onClick={handleReset} className="min-w-48 px-5 py-3 border border-zinc-900 rounded-md text-sm text-gray-700 hover:bg-zinc-800 hover:text-white">
+          <button onClick={handleReset} className="w-[50%] md:min-w-48 px-5 py-3 border border-zinc-900 rounded-md text-sm text-gray-700 hover:bg-zinc-800 hover:text-white">
             {t("documents_table_filter_reset_button")}
           </button>
-          <button onClick={handleSearch} className="min-w-48 px-5 py-3 border border-zinc-900 rounded-md text-sm text-white bg-zinc-800 hover:text-gray-900 hover:bg-white">
+          <button onClick={handleSearch} className="w-[50%] md:min-w-48 px-5 py-3 border border-zinc-900 rounded-md text-sm text-white bg-zinc-800 hover:text-gray-900 hover:bg-white">
             {t("documents_table_filter_apply_button")}
           </button>
         </div>
@@ -833,7 +833,7 @@ const ViewDocuments = () => {
             selectedFiles.length !== 0 && (
               <button
                 onClick={handleDownloadSelected}
-                className="min-w-48 px-5 py-3 bg-zinc-800 rounded-lg flex items-center justify-center text-pink-50 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]"
+                className="md:min-w-48 px-2 md:px-5 py-3 bg-zinc-800 rounded-lg flex items-center justify-center text-pink-50 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]"
               >
                 {t("documents_table_download_button")} <Download className="ml-2 w-6 h-5" />
               </button>
@@ -841,7 +841,7 @@ const ViewDocuments = () => {
           )}
           <button
             onClick={handleDownloadAll}
-            className="min-w-48 px-5 py-3 bg-zinc-800 rounded-lg flex items-center justify-center text-pink-50 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]"
+            className="md:min-w-48 px-2 md:px-5 py-3 bg-zinc-800 rounded-lg flex items-center justify-center text-pink-50 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]"
           >
             {t("documents_table_downloadall_button")} <Download className="ml-2 w-6 h-5" />
           </button>
