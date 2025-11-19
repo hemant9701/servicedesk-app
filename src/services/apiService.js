@@ -1,10 +1,10 @@
 import axios from 'axios';
-const auth = JSON.parse(sessionStorage.getItem('auth'))?.authKey;
-const WELLO_API_URL = 'https://testservicedeskapi.odysseemobile.com';
+const auth = JSON.parse(sessionStorage.getItem('auth'));
+const WELLO_API_URL = process.env.REACT_APP_API_URL || 'https://servicedeskapi.odysseemobile.com';
 
 
-export const fetchData = async (endpoint, method = 'GET', authKey = auth, data = null, accept= 'application/json') => {
-  //const authKey = auth.authKey;
+export const fetchData = async (endpoint, method = 'GET', data = null, accept= 'application/json') => {
+  const authKey = auth.authKey;
   try {
     if (!WELLO_API_URL) {
       throw new Error("WELLO_API_URL is not defined in environment variables.");

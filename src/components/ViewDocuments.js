@@ -292,49 +292,33 @@ const ViewDocuments = () => {
           contacts.map(async (item) => {
             if (!item.id) return;
 
-            const endpoint = `api/DbFileView/GetFileThumbnail/?id=${item.id}&maxWidth=${item.image_width || '500'}&maxHeight=${item.image_heigth || '500'}`;
+            try {
+              const endpoint = `api/DbFileView/GetFileThumbnail/?id=${item.id}&maxWidth=${item.image_width || '500'}&maxHeight=${item.image_heigth || '500'}`;
 
-            // 👇 Use fetchDocuments with "image/png"
-            const response = await fetchDocuments(
-              endpoint,
-              "GET",
-              authKey,
-              null,
-              "image/png"
-            );
+              const response = await fetchDocuments(
+                endpoint,
+                "GET",
+                authKey,
+                null,
+                "image/png"
+              );
 
-            // fetchDocuments returns blob for non-json responses
-            updatedThumbnails[item.id] = URL.createObjectURL(response);
+              updatedThumbnails[item.id] = URL.createObjectURL(response);
+            } catch (err) {
+              console.warn(`Failed to load thumbnail for ${item.id}:`, err);
+              // Skip just this item, but continue others
+            }
           })
         );
 
-        // await Promise.all(
-        //   contacts.map(async (item) => {
-        //     if (!item.id || (item.mime_type !== 'image/jpeg' && item.mime_type !== 'image/png')) return;
-        //     //if (item.id === '0c72ecbc-489a-4995-92ff-e84ee1448474' || item.id === '970ad1e0-e616-4c22-a2a0-38b71ee9a87b') return;
-
-        //     const config = {
-        //       url: `${url}api/DbFileView/GetFileThumbnail/?id=${item.id}&maxWidth=${item.image_width || '500'}&maxHeight=${item.image_heigth || '500'}`,
-        //       method: "GET",
-        //       headers: {
-        //         Authorization: `Basic ${authKey}`,
-        //         Accept: "image/png",
-        //       },
-        //       responseType: "blob",
-        //     };
-
-        //     const response = await axios(config);
-        //     updatedThumbnails[item.id] = URL.createObjectURL(response.data);
-        //   })
-        // );
-
         setFileThumbnails(updatedThumbnails);
       } catch (err) {
-        setError("Failed to fetch thumbnails.");
+        console.error("Error fetching thumbnails:", err);
       } finally {
         setLoading(false);
       }
     };
+
 
     GetFileThumbnails();
   }, [contacts, auth, url, viewMode]); // 👈 Add viewMode to dependencies
@@ -391,7 +375,7 @@ const ViewDocuments = () => {
 
         return (
           <div className='flex justify-around items-center'>
-            <span>Select All</span>
+            <span>{t("documents_table_heading_select_all_text")}</span>
             <input
               className='w-4 h-4 rounded-sm'
               type="checkbox"
@@ -483,7 +467,7 @@ const ViewDocuments = () => {
       Header: t('documents_table_heading_upload_when_text'), accessor: 'date_add',
       Cell: ({ row }) =>
         row.original.file_name && new Date(row.original.date_add).getFullYear() !== 1980
-          ? new Date(row.original.date_add).toLocaleString('nl-BE', {
+          ? new Date(row.original.date_add).toLocaleString("en-GB", {
             year: 'numeric',
             month: '2-digit',
             day: '2-digit',
@@ -828,11 +812,11 @@ const ViewDocuments = () => {
           </div>
         </div>
         <div className="flex items-end gap-x-2">
-          <button onClick={handleReset} className="w-48 px-5 py-3 border border-zinc-900 rounded-md text-sm text-gray-700 hover:bg-zinc-800 hover:text-white">
+          <button onClick={handleReset} className="min-w-48 px-5 py-3 border border-zinc-900 rounded-md text-sm text-gray-700 hover:bg-zinc-800 hover:text-white">
             {t("documents_table_filter_reset_button")}
           </button>
-          <button onClick={handleSearch} className="w-48 px-5 py-3 border border-zinc-900 rounded-md text-sm text-white bg-zinc-800 hover:text-gray-900 hover:bg-white">
-            {t("Confirm")}
+          <button onClick={handleSearch} className="min-w-48 px-5 py-3 border border-zinc-900 rounded-md text-sm text-white bg-zinc-800 hover:text-gray-900 hover:bg-white">
+            {t("documents_table_filter_apply_button")}
           </button>
         </div>
       </div>
@@ -849,7 +833,7 @@ const ViewDocuments = () => {
             selectedFiles.length !== 0 && (
               <button
                 onClick={handleDownloadSelected}
-                className="w-48 px-5 py-3 bg-zinc-800 rounded-lg flex items-center justify-center text-pink-50 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]"
+                className="min-w-48 px-5 py-3 bg-zinc-800 rounded-lg flex items-center justify-center text-pink-50 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]"
               >
                 {t("documents_table_download_button")} <Download className="ml-2 w-6 h-5" />
               </button>
@@ -857,7 +841,7 @@ const ViewDocuments = () => {
           )}
           <button
             onClick={handleDownloadAll}
-            className="w-48 px-5 py-3 bg-zinc-800 rounded-lg flex items-center justify-center text-pink-50 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]"
+            className="min-w-48 px-5 py-3 bg-zinc-800 rounded-lg flex items-center justify-center text-pink-50 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]"
           >
             {t("documents_table_downloadall_button")} <Download className="ml-2 w-6 h-5" />
           </button>
@@ -872,37 +856,56 @@ const ViewDocuments = () => {
             <div className="overflow-x-hidden">
               <table {...getTableProps()} className="min-w-full divide-y divide-gray-200 border border-gray-300">
                 <thead className="bg-white">
-                  {headerGroups.map(headerGroup => (
-                    <tr {...headerGroup.getHeaderGroupProps()} className="divide-x divide-gray-300">
-                      {headerGroup.headers.map(column => (
-                        <th
-                          {...column.getHeaderProps(column.getSortByToggleProps())}
-                          className="p-2 whitespace-nowrap text-left text-slate-500 text-xs font-medium leading-none"
-                        >
-                          {column.render('Header')}
-                          {column.isSorted ? (
-                            column.isSortedDesc ? (
-                              <ArrowDown className="inline w-4 h-4 ml-1" />
-                            ) : (
-                              <ArrowUp className="inline w-4 h-4 ml-1" />
-                            )
-                          ) : null}
-                        </th>
-                      ))}
-                    </tr>
-                  ))}
+                  {headerGroups.map((headerGroup, hgIdx) => {
+                    const headerGroupProps = headerGroup.getHeaderGroupProps();
+                    const { key: headerGroupKey, ...restHeaderGroupProps } = headerGroupProps;
+                    return (
+                      <tr key={headerGroupKey || hgIdx} {...restHeaderGroupProps} className="divide-x divide-gray-300">
+                        {headerGroup.headers.map((column, colIdx) => {
+                          const headerProps = column.getHeaderProps(column.getSortByToggleProps());
+                          const { key: headerKey, ...restHeaderProps } = headerProps;
+                          return (
+                            <th
+                              key={headerKey || colIdx}
+                              {...restHeaderProps}
+                              className="p-2 whitespace-nowrap text-left text-slate-500 text-xs font-medium leading-none"
+                            >
+                              {column.render('Header')}
+                              {column.isSorted ? (
+                                column.isSortedDesc ? (
+                                  <ArrowDown className="inline w-4 h-4 ml-1" />
+                                ) : (
+                                  <ArrowUp className="inline w-4 h-4 ml-1" />
+                                )
+                              ) : null}
+                            </th>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
                 </thead>
                 <tbody {...getTableBodyProps()} className="bg-white divide-y divide-gray-200">
-                  {page.map(row => {
+                  {page.map((row, rowIdx) => {
                     prepareRow(row);
+                    const rowProps = row.getRowProps();
+                    const { key: rowKey, ...restRowProps } = rowProps;
                     return (
                       !isLoading && (
-                        <tr {...row.getRowProps()} key={row.original.id} className="cursor-pointer hover:bg-gray-200">
-                          {row.cells.map((cell, index) => (
-                            <td {...cell.getCellProps()} className={`self-stretch px-1 py-2 text-xs font-normal text-zinc-900 ${index === 0 ? 'text-center' : ''}`}>
-                              {cell.render('Cell')}
-                            </td>
-                          ))}
+                        <tr key={rowKey || row.original.id || rowIdx} {...restRowProps} className="cursor-pointer hover:bg-gray-200">
+                          {row.cells.map((cell, cellIdx) => {
+                            const cellProps = cell.getCellProps();
+                            const { key: cellKey, ...restCellProps } = cellProps;
+                            return (
+                              <td
+                                key={cellKey || cellIdx}
+                                {...restCellProps}
+                                className={`self-stretch px-1 py-2 text-xs font-normal text-zinc-900 ${cellIdx === 0 ? 'text-center' : ''}`}
+                              >
+                                {cell.render('Cell')}
+                              </td>
+                            );
+                          })}
                         </tr>
                       )
                     );
@@ -958,14 +961,22 @@ const ViewDocuments = () => {
                           className="w-48 h-40 object-cover rounded-md mx-auto"
                         />
                       ) : (
-                        <Image className="w-48 h-40 text-gray-200 mx-auto" /> // 👈 fallback image icon
+                        <div className="relative w-40 h-40 flex items-center justify-center mx-auto bg-gray-100 rounded-md">
+                          {/* Loading overlay */}
+                          <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-70 z-10">
+                            <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-gray-500"></div>
+                          </div>
+
+                          {/* Fallback icon */}
+                          <Image className="w-20 h-20 text-gray-300" />
+                        </div>
                       )
                     ) : (
                       <File className="w-48 h-40 text-gray-600 mx-auto" />
                     )}
 
                     <h4 className="text-gray-500 text-sm py-1 break-words">{item.name}</h4>
-                    <p className="text-gray-500 text-sm">{new Date(item.date_add).toLocaleString()}</p>
+                    <p className="text-gray-500 text-sm">{new Date(item.date_add).toLocaleString("en-GB")}</p>
 
                     {item.file_name && (
                       <label className="mt-2 flex space-x-2 items-start text-sm">

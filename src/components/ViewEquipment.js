@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { fetchDocuments } from '../services/apiServiceDocuments';
 import { downloadFiles } from "../services/apiServiceDownloads";
@@ -6,14 +6,16 @@ import { useTable, useSortBy, usePagination } from 'react-table';
 import { ToastContainer, toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
-import { CalendarClock, File, Eye, ArrowLeft, ArrowUpRight, Circle, MapPin, Phone, Image, Wrench, ArrowDown, ArrowUp, ArrowLeftToLine, ArrowRightToLine, ArrowRight, BadgeInfo } from "lucide-react";
+import { CalendarClock, File, FileText, Loader, Eye, ArrowLeft, ArrowUpRight, ArrowDownLeft, Circle, MapPin, Phone, Image, Wrench, ArrowDown, ArrowUp, ArrowLeftToLine, ArrowRightToLine, ArrowRight, BadgeInfo } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 const SingleInstallation = () => {
   const navigate = useNavigate();
   const { auth } = useAuth();
   const { InstallationId } = useParams();
-  const [Installation, setInstallation] = useState(null);
+  const [installation, setInstallation] = useState(null);
+  const [rootParentDetails, setRootParentDetails] = useState(null);
+  const [contractDetails, setContractDetails] = useState(null);
   const [doc, setDoc] = useState([]);
   const [wordOrder, setWordOrder] = useState([]);
   //const [file, setFile] = useState('');
@@ -23,11 +25,21 @@ const SingleInstallation = () => {
   const [fileThumbnails, setFileThumbnails] = useState({});
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [downloadMsg, setDownloadMsg] = useState('');
-  const [popupData, setPopupData] = useState([]);
-  const [isPopupOpen, setIsPopupOpen] = useState(false);
+
+  const [expandedRowId, setExpandedRowId] = useState(null);
+  const [activeSection, setActiveSection] = useState(null); // 'popup' | 'remarks'
+  const [popupDataMap, setPopupDataMap] = useState({});
+  const [remarksDataMap, setRemarksDataMap] = useState({});
+  const [loadingMap, setLoadingMap] = useState({});
+
+  const [isCorrectiveExpanded, setCorrectiveExpanded] = useState(false);
+  const [expandedPreventives, setExpandedPreventives] = useState({});
+
+  const STORAGE_KEY = `SingleInstallationState_${InstallationId || 'global'}`;
+
   const { t } = useTranslation('singleEquipment');
 
-  const url = `https://testservicedeskapi.odysseemobile.com/`;
+  const url = `https://servicedeskapi.wello.solutions/`;
 
   const statusColors = useMemo(() => ({
     "In progress": "bg-yellow-100 text-yellow-600",
@@ -59,26 +71,41 @@ const SingleInstallation = () => {
     }
   }, [downloadMsg]);
 
+
   useEffect(() => {
-    const getInstallationDetails = async () => {
+    const getInstallationAndRootParentDetails = async () => {
       try {
         if (!InstallationId) {
-          setError('single_equipment_page_err_no_ticket_id');
+          setError("single_equipment_page_err_no_ticket_id");
           setLoading(false);
           return;
         }
 
-        const endpoint = `api/ProjectView(${InstallationId})`;
-        const data = await fetchDocuments(endpoint, 'GET', auth.authKey);
-        setInstallation(data);
-        setLoading(false);
+        setLoading(true);
+
+        // 1️⃣ Fetch Installation Details
+        const installationEndpoint = `api/ProjectView(${InstallationId})`;
+        const installationData = await fetchDocuments(installationEndpoint, "GET", auth.authKey);
+        setInstallation(installationData);
+
+        // 2️⃣ Fetch Root Parent Details (only if available)
+        if (installationData?.root_parent_id) {
+          const rootParentEndpoint = `api/ProjectView(${installationData.root_parent_id})`;
+          const rootParentData = await fetchDocuments(rootParentEndpoint, "GET", auth.authKey);
+          setRootParentDetails(rootParentData);
+        }
       } catch (err) {
-        console.error("Error fetching Installation details:", err);
-        setError('single_equipment_page_err_failed_to_fetch_installation_details');
+        console.error("Error fetching installation or root parent details:", err);
+        setError("single_equipment_page_err_failed_to_fetch_installation_details");
+      } finally {
         setLoading(false);
       }
     };
 
+    getInstallationAndRootParentDetails();
+  }, [auth.authKey, InstallationId]);
+
+  useEffect(() => {
     const getInstallationDoc = async () => {
       try {
         const endpoint_1 = `api/DbFileView?$filter=db_table_name+eq+%27project%27+and+id_in_table+eq+${InstallationId}`;
@@ -89,10 +116,16 @@ const SingleInstallation = () => {
         setError('single_equipment_page_err_failed_to_fetch_document');
       }
     };
+    if (InstallationId) {
+      getInstallationDoc();
+    }
+  }, [auth, InstallationId]);
 
+  useEffect(() => {
     const getInstallationSub = async () => {
       try {
-        const endpoint_2 = `api/JobsView/SearchAllJobsLinkToProject`;
+        const endpoint_2 = `api/JobsView/SearchAllJobsOfLocation`;
+        //const endpoint_2 = `api/JobsView/SearchAllJobsLinkToProject`;
         const payload = { "project_id": `${InstallationId}`, "year": null, "query_object": { "startRow": 0, "endRow": 500, "rowGroupCols": [], "valueCols": [], "pivotCols": [], "pivotMode": false, "groupKeys": [], "filterModel": {}, "sortModel": [] } }
         const data_2 = await fetchDocuments(endpoint_2, 'POST', auth.authKey, payload);
         setWordOrder(data_2);
@@ -102,11 +135,76 @@ const SingleInstallation = () => {
         setError('single_equipment_page_err_failed_to_fetch_document');
       }
     };
-
-    getInstallationDetails();
-    getInstallationDoc();
-    getInstallationSub();
+    if (InstallationId) {
+      getInstallationSub();
+    }
   }, [auth, InstallationId]);
+
+  useEffect(() => {
+    const getContractDetails = async () => {
+      try {
+        const endpoint = `api/ContractView/ContractEntitlementsByProject?projectId=${installation.id}`;
+        const data = await fetchDocuments(endpoint, 'GET', auth.authKey);
+        setContractDetails(data);
+        setLoading(false);
+      } catch (err) {
+        console.error("Error fetching Installation details:", err);
+        setError('single_equipment_page_err_failed_to_fetch_contract_details');
+        setLoading(false);
+      }
+    };
+    if (installation?.id) {
+      getContractDetails();
+    }
+  }, [auth, installation?.id]);
+
+
+  // Funtions for fetching data on icon click
+  const handleCalendarClick = useCallback(async (rowId) => {
+    // if same row clicked again, toggle collapse
+    if (expandedRowId === rowId && activeSection === "popup") {
+      setExpandedRowId(null);
+      setActiveSection(null);
+      return;
+    }
+
+    setExpandedRowId(rowId);
+    setActiveSection("popup");
+
+    // if cached, don’t refetch
+    if (popupDataMap[rowId]) return;
+
+    setLoadingMap(prev => ({ ...prev, [rowId]: true }));
+    try {
+      const response = await fetchDocuments(`api/JobPlanningView?$filter=jobs_id eq ${rowId}&$orderby=date_from`);
+      const res = response.value;
+      setPopupDataMap(prev => ({ ...prev, [rowId]: res }));
+    } finally {
+      setLoadingMap(prev => ({ ...prev, [rowId]: false }));
+    }
+  }, [expandedRowId, activeSection, popupDataMap]);
+
+  const handleRemarksClick = useCallback(async (rowId) => {
+    if (expandedRowId === rowId && activeSection === "remarks") {
+      setExpandedRowId(null);
+      setActiveSection(null);
+      return;
+    }
+
+    setExpandedRowId(rowId);
+    setActiveSection("remarks");
+
+    if (remarksDataMap[rowId]) return;
+
+    setLoadingMap(prev => ({ ...prev, [rowId]: true }));
+    try {
+      const response = await fetchDocuments(`api/JobsView/GetAllTechnicianRemarksOfJob?jobs_id=${rowId}`);
+      const res = response;
+      setRemarksDataMap(prev => ({ ...prev, [rowId]: res }));
+    } finally {
+      setLoadingMap(prev => ({ ...prev, [rowId]: false }));
+    }
+  }, [expandedRowId, activeSection, remarksDataMap]);
 
   const columns = useMemo(
     () => [
@@ -124,34 +222,45 @@ const SingleInstallation = () => {
         Header: t('single_equipment_page_work_order_table_planned_date_text'),
         accessor: 'date_create',
         Cell: ({ row, value }) => {
-          const dateStr = value;
-          const date =
-            dateStr && new Date(dateStr).getFullYear() !== 1980
-              ? new Date(dateStr)
-              : null;
+          const displayDate =
+            new Date(value).getFullYear() !== 1980
+              ? new Date(value).toLocaleDateString(undefined)
+              : ' ';
+
+          const showCalendarIcon = row.original.job_planning_count > 1;
+          const showFileIcon = row.original.nb_notes > 0;
 
           return (
-            <span className="flex justify-between items-center">
-              {date
-                ? date.toLocaleString('nl-BE', {
-                  year: '2-digit',
-                  month: '2-digit',
-                  day: '2-digit',
-                })
-                : t('NA')}
-              {row.original?.job_planning_count > 1 && (
-                <CalendarClock className="w-5 h-5 cursor-pointer ml-2" onClick={() => handleCalendarClick(row.original.id)} />
-              )}
+            <span className="flex justify-between items-center gap-2" >
+              <span>{displayDate}</span>
+              < span className="flex gap-2 justify-end">
+                {showCalendarIcon && (
+                  <CalendarClock
+                    className="w-5 h-5 cursor-pointer"
+                    onClick={() => handleCalendarClick(row.original.id)
+                    }
+                  />
+                )
+                }
+                {
+                  showFileIcon && (
+                    <FileText
+                      className="w-5 h-5 cursor-pointer"
+                      onClick={() => handleRemarksClick(row.original.id)
+                      }
+                    />
+                  )}
+              </span>
             </span>
           );
         },
       },
       {
-        Header: t('Scheduled Technician'), accessor: 'first_planning_userfullname',
+        Header: t('single_equipment_page_work_order_table_scheduled_technician_text'), accessor: 'first_planning_userfullname',
         Cell: ({ value }) => value ? '' + value : t('NA')
       },
       {
-        Header: t('Close Date'), accessor: 'date_closed',
+        Header: t('single_equipment_page_work_order_table_close_date_text'), accessor: 'date_closed',
         Cell: ({ value }) => {
           const dateStr = value;
           const date =
@@ -162,7 +271,7 @@ const SingleInstallation = () => {
           return (
             <span className="flex justify-between items-center">
               {date
-                ? date.toLocaleString('nl-BE', {
+                ? date.toLocaleString(undefined, {
                   year: '2-digit',
                   month: '2-digit',
                   day: '2-digit',
@@ -190,7 +299,7 @@ const SingleInstallation = () => {
         ),
       },
     ],
-    [statusColors, statusDotColors, t]
+    [statusColors, statusDotColors, handleCalendarClick, handleRemarksClick, t]
   );
 
   // Create table instance with pagination
@@ -218,27 +327,81 @@ const SingleInstallation = () => {
     usePagination,
   );
 
+  // Restore small UI state on mount (tab, selected files, expanded rows)
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw);
+      if (saved.activeTab) setActiveTab(saved.activeTab);
+      if (Array.isArray(saved.selectedFiles)) setSelectedFiles(saved.selectedFiles);
+      if (saved.expandedRowId) setExpandedRowId(saved.expandedRowId);
+      if (saved.isCorrectiveExpanded) setCorrectiveExpanded(saved.isCorrectiveExpanded);
+      if (saved.expandedPreventives) setExpandedPreventives(saved.expandedPreventives);
+    } catch (e) {
+      // ignore parse/storage errors
+    }
+  }, [STORAGE_KEY]);
+
+  // Restore pagination (when table hooks available)
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw);
+      if (typeof saved.pageIndex !== 'undefined' && typeof gotoPage === 'function') {
+        gotoPage(Number(saved.pageIndex) || 0);
+      }
+      if (typeof saved.pageSize !== 'undefined' && typeof setPageSize === 'function') {
+        setPageSize(Number(saved.pageSize) || 12);
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, [gotoPage, setPageSize, STORAGE_KEY]);
+
+  // Persist UI + pagination state
+  useEffect(() => {
+    try {
+      const toSave = {
+        activeTab,
+        selectedFiles,
+        expandedRowId,
+        expandedPreventives,
+        pageIndex,
+        pageSize,
+      };
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+    } catch (e) {
+      // ignore storage errors
+    }
+  }, [activeTab, selectedFiles, expandedRowId, expandedPreventives, pageIndex, pageSize, STORAGE_KEY]);
+
   useEffect(() => {
     const GetFileThumbnails = async () => {
       try {
-        if (!doc || doc.length === 0) return; // Ensure there is data
+        if (!doc || doc.length === 0) return;
 
         const authKey = auth?.authKey;
         if (!authKey) return;
 
         const updatedThumbnails = {};
 
-        // Fetch thumbnails for all documents in the array
         await Promise.all(
           doc.map(async (item) => {
             if (!item.id) return;
 
-            const endpoint = `api/DbFileView/GetFileThumbnail/?id=${item.id}&maxWidth=500&maxHeight=500`;
+            try {
+              const endpoint = `api/DbFileView/GetFileThumbnail/?id=${item.id}&maxWidth=500&maxHeight=500`;
 
-            // ✅ Use fetchDocuments (returns blob when accept="image/png")
-            const blob = await fetchDocuments(endpoint, "GET", authKey, null, "image/png");
+              // fetchDocuments returns blob when accept = "image/png"
+              const blob = await fetchDocuments(endpoint, "GET", authKey, null, "image/png");
 
-            updatedThumbnails[item.id] = URL.createObjectURL(blob); // Store URL in object
+              updatedThumbnails[item.id] = URL.createObjectURL(blob);
+            } catch (err) {
+              console.warn(`Failed to fetch thumbnail for ${item.id}:`, err);
+              // Skip just this item; do not throw to keep Promise.all alive
+            }
           })
         );
 
@@ -256,99 +419,6 @@ const SingleInstallation = () => {
     }
   }, [doc, auth, activeTab]);
 
-  // const handleDownloadAll = async () => {
-  //   const zip = new JSZip(); // Create a new ZIP instance
-  //   if (doc.length === 0) return; // Ensure there is data before fetching
-
-  //   const docId = doc[0]?.id; // Use the first document ID (or adjust as needed)
-  //   if (!docId) return;
-
-  //   const authKey = auth?.authKey;
-  //   if (!authKey) return;
-
-  //   try {
-  //     const url = {
-  //       url: `api/DbFileView/GetFileThumbnail/?id=${docId}&maxWidth=256&maxHeight=256`,
-  //       method: 'GET',
-  //       headers: {
-  //         'Authorization': `Basic ${authKey}`,
-  //         'Accept': 'image/png',
-  //       },
-  //       responseType: 'blob',
-  //     };
-
-  //     // Fetch the file content
-  //     const response = await fetch(url, { method: 'GET' });
-  //     if (!response.ok) {
-  //       throw new Error(`Failed to fetch file: ${file.file_name}`);
-  //     }
-
-  //     const blob = await response.blob();
-  //     const arrayBuffer = await blob.arrayBuffer();
-
-  //     // Add the file to the ZIP archive
-  //     zip.file(file.file_name || 'file', arrayBuffer);
-  //   } catch (error) {
-  //     console.error(`Error fetching file ${file.file_name}:`, error.message);
-  //   }
-
-  //   // Generate the ZIP archive and trigger the download
-  //   zip.generateAsync({ type: 'blob' }).then((content) => {
-  //     const blobUrl = window.URL.createObjectURL(content);
-
-  //     // Create a temporary link element
-  //     const link = document.createElement('a');
-  //     link.href = blobUrl;
-  //     link.download = 'files.zip'; // Name of the ZIP file
-  //     document.body.appendChild(link);
-  //     link.click();
-  //     document.body.removeChild(link);
-
-  //     // Revoke the object URL to free up memory
-  //     window.URL.revokeObjectURL(blobUrl);
-  //   });
-  // };
-
-  // const toggleFileSelection = (file) => {
-  //   setSelectedFiles((prev) =>
-  //     prev.some((f) => f.id === file.id)
-  //       ? prev.filter((f) => f.id !== file.id)
-  //       : [...prev, file]
-  //   );
-  // };
-
-  // const handleDownloadSelected = async () => {
-  //   const zip = new JSZip();
-  //   if (doc.length === 0) return; // Ensure there is data before fetching
-
-  //   const docId = doc[0]?.id; // Use the first document ID (or adjust as needed)
-  //   if (!docId) return;
-
-  //   try {
-  //     await Promise.all(
-  //       selectedFiles.map(async (file) => {
-  //         const response = await fetch(
-  //           `api/DbFileView/GetFileThumbnail/?id=${docId}&maxWidth=256&maxHeight=256`
-  //         );
-
-  //         if (!response.ok) {
-  //           throw new Error(`Failed to download ${file.file_name}`);
-  //         } else {
-  //           setDownloadMsg(t('single_equipment_page_selected_documents'));
-  //         }
-
-  //         const blob = await response.blob();
-  //         zip.file(file.file_name, blob);
-  //       })
-  //     );
-
-  //     const zipBlob = await zip.generateAsync({ type: 'blob' });
-  //     saveAs(zipBlob, 'SelectedFiles.zip');
-  //   } catch (error) {
-  //     console.error('Error downloading files:', error);
-  //     //alert('Failed to download selected files.');
-  //   }
-  // };
 
   const handleDownloadAll = async () => {
     await downloadFiles(url, auth.authKey, doc.map(d => d.id));
@@ -378,16 +448,19 @@ const SingleInstallation = () => {
     );
   };
 
-
-  const handleCalendarClick = async (rowData) => {
-    try {
-      const response = await fetchDocuments(`api/JobPlanningView?$filter=jobs_id eq ${rowData}&$orderby=date_from`);
-      setPopupData(response.value);
-      setIsPopupOpen(true);
-    } catch (error) {
-      console.error('Failed to fetch planning data:', error);
-    }
+  const toggleCorrectiveExpand = () => {
+    setCorrectiveExpanded(prev => !prev);
   };
+
+
+
+  const toggleExpand = (index) => {
+    setExpandedPreventives((prev) => ({
+      ...prev,
+      [index]: !prev[index],
+    }));
+  };
+
 
   if (loading) {
     return <div className="flex w-full items-center justify-center h-screen">
@@ -418,15 +491,22 @@ const SingleInstallation = () => {
       <div className='flex'>
         {/* Back Button */}
         <button
-          onClick={() => navigate(-1)} // Navigate back one step in history
+          onClick={() => {
+            if (activeTab !== 'details') {
+              setActiveTab('details');
+            } else {
+              navigate(-1);
+            }
+          }}
           className="flex items-center mb-6 font-semibold text-zinc-900 text-base"
         >
-          <ArrowLeft className="mr-2 w-5 h-5" /> {t("single_equipment_page_go_back")}
+          <ArrowLeft className="mr-2 w-5 h-5" />
+          {t("single_equipment_page_go_back")}
         </button>
       </div>
 
       <div className='shadow-md rounded-lg'>
-        <h2 className="px-8 pt-8 capitalize text-zinc-900 text-2xl font-semibold mb-4">{t("single_equipment_page_reference")}: {Installation?.id2} | {Installation?.name}</h2>
+        <h2 className="px-8 pt-8 capitalize text-zinc-900 text-2xl font-semibold mb-4">{t("single_equipment_page_reference")}: {installation?.id2} | {installation?.name}</h2>
 
         {/* Tab Navigation */}
         <div className="flex space-x-4 mb-8 px-8">
@@ -448,12 +528,12 @@ const SingleInstallation = () => {
           >
             {t("single_equipment_page_work_orders")}
           </button>
-          {/* <button
+          <button
             className={`px-4 py-2 mr-2 text-lg font-medium leading-7 ${activeTab === 'contractEntitlements' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-slate-500'}`}
             onClick={() => setActiveTab('contractEntitlements')}
           >
             {t("single_equipment_page_contract_entitlements")}
-          </button> */}
+          </button>
         </div>
 
         {activeTab === 'details' ? (
@@ -462,10 +542,10 @@ const SingleInstallation = () => {
               <h4 className="block text-zinc-900 text-xs font-semibold leading-normal">{t("single_equipment_page_equipment")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
               <ul className="list-none list-inside text-slate-500 text-xs font-medium">
-                <li className='flex items-center'><Wrench className='w-4 h-4 mr-2' />{Installation?.name}</li>
-                <li className='ml-6 pb-1'>{Installation?.equipment_family_name}</li>
-                <li className='ml-6 pb-1'>{Installation?.equipment_brand_name}</li>
-                <li className='ml-6 pb-1'>{Installation?.equipment_model_name}</li>
+                <li className='flex items-center'><Wrench className='w-4 h-4 mr-2' />{installation?.name}</li>
+                <li className='ml-6 pb-1'>{installation?.equipment_family_name}</li>
+                <li className='ml-6 pb-1'>{installation?.equipment_brand_name}</li>
+                <li className='ml-6 pb-1'>{installation?.equipment_model_name}</li>
               </ul>
             </div>
 
@@ -473,11 +553,11 @@ const SingleInstallation = () => {
               <h4 className="block text-zinc-900 text-xs font-semibold leading-normal">{t("single_equipment_page_type_status")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
               <ul className="list-none list-inside text-slate-500 text-xs font-medium">
-                <li>{Installation?.equipment_family_name}</li>
+                <li>{installation?.equipment_family_name}</li>
                 <li className='mt-2.5'>
-                  <span className={`pe-3 px-2 pb-1 pt-0.5 rounded-full ${statusColors[Installation?.project_status_name] || "bg-gray-200 text-gray-800"}`}>
-                    <Circle className={`inline w-2 h-2 mr-1 rounded-full ${statusDotColors[Installation?.project_status_name] || "bg-gray-800 text-gray-800"}`} />
-                    {Installation?.project_status_name}
+                  <span className={`pe-3 px-2 pb-1 pt-0.5 rounded-full ${statusColors[installation?.project_status_name] || "bg-gray-200 text-gray-800"}`}>
+                    <Circle className={`inline w-2 h-2 mr-1 rounded-full ${statusDotColors[installation?.project_status_name] || "bg-gray-800 text-gray-800"}`} />
+                    {installation?.project_status_name}
                   </span>
                 </li>
               </ul>
@@ -487,10 +567,10 @@ const SingleInstallation = () => {
               <h4 className="block text-zinc-900 text-xs font-semibold leading-normal">{t("single_equipment_page_properties")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
               <ul className="list-none list-inside text-slate-500 text-xs font-medium">
-                <li className='grid grid-cols-2 gap-4'>{t("single_equipment_page_barcode")}: <span className='font-semibold text-gray-700'>{Installation?.barcode}</span></li>
-                <li className='grid grid-cols-2 gap-4'>{t("single_equipment_page_serial_number")}: <span className='font-semibold text-gray-700'>{Installation?.serial_number}</span></li>
-                <li className='grid grid-cols-2 gap-4'>{t("single_equipment_page_our_ref")}: <span className='font-semibold text-gray-700'>{Installation?.customer_reference}</span></li>
-                <li className='grid grid-cols-2 gap-4'>{t("single_equipment_page_supplier_ref")}: <span className='font-semibold text-gray-700'>{Installation?.id2}</span></li>
+                <li className='grid grid-cols-2 gap-4'>{t("single_equipment_page_barcode")}: <span className='font-semibold text-gray-700'>{installation?.barcode}</span></li>
+                <li className='grid grid-cols-2 gap-4'>{t("single_equipment_page_serial_number")}: <span className='font-semibold text-gray-700'>{installation?.serial_number}</span></li>
+                <li className='grid grid-cols-2 gap-4'>{t("single_equipment_page_our_ref")}: <span className='font-semibold text-gray-700'>{installation?.customer_reference}</span></li>
+                <li className='grid grid-cols-2 gap-4'>{t("single_equipment_page_supplier_ref")}: <span className='font-semibold text-gray-700'>{installation?.id2}</span></li>
               </ul>
             </div>
 
@@ -498,27 +578,46 @@ const SingleInstallation = () => {
               <h4 className="block text-zinc-900 text-xs font-semibold leading-normal">{t("single_equipment_page_shutdown_consequence")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
               <ul className="list-none list-inside text-slate-500 text-xs font-medium">
-                <li>{Installation?.shutdown_consequence}</li>
+                <li>{installation?.shutdown_consequence}</li>
               </ul>
             </div>
 
-            <div className='shadow-sm border rounded-lg p-4 '>
-              <h4 className="block text-zinc-900 text-xs font-semibold leading-normal">{t("single_equipment_page_location")}</h4>
-              <hr className='my-2 w-32 border-gray-300' />
-              <ul className="list-none list-inside text-slate-500 text-xs font-medium">
-                <li className='flex items-center'><MapPin className='w-4 h-4 mr-2' />{Installation?.company_name}</li>
-                <li className='ml-6 pb-1'>{Installation?.db_address_street}</li>
-                <li className='ml-6 pb-1'>{Installation?.db_address_zip} {Installation?.db_address_city}</li>
-                {Installation?.contact_mobile &&
-                  <li className='flex items-center'><Phone className="w-4 h-4 mr-1" />{Installation?.contact_mobile}</li>}
-              </ul>
-            </div>
+            {(rootParentDetails?.name || installation?.company_name) && (
+              <div className='shadow-sm border rounded-lg p-4'>
+                <h4 className="block text-zinc-900 text-xs font-semibold leading-normal">
+                  {rootParentDetails?.name ? t("Location") : t("single_equipment_page_location")}
+                </h4>
+                <hr className='my-2 w-32 border-gray-300' />
+                <ul className="list-none list-inside text-slate-500 text-xs font-medium">
+                  <li className='flex items-center'>
+                    <MapPin className='w-4 h-4 mr-2' />
+                    {rootParentDetails?.name || installation?.name}
+                  </li>
+                  <li className='ml-6 pb-1'>
+                    {rootParentDetails?.db_address_street || installation?.db_address_street}
+                    {' '}
+                    {rootParentDetails?.db_address_street_number || ''}
+                  </li>
+                  <li className='ml-6 pb-1'>
+                    {rootParentDetails?.db_address_zip || installation?.db_address_zip}
+                    {' '}
+                    {rootParentDetails?.db_address_city || installation?.db_address_city}
+                  </li>
+                  {(rootParentDetails?.contact_mobile || installation?.contact_mobile) && (
+                    <li className='flex items-center'>
+                      <Phone className="w-4 h-4 mr-1" />
+                      {rootParentDetails?.contact_mobile || installation?.contact_mobile}
+                    </li>
+                  )}
+                </ul>
+              </div>
+            )}
 
             <div className='shadow-sm border rounded-lg p-4 '>
               <h4 className="block text-zinc-900 text-xs font-semibold leading-normal">{t("single_equipment_page_extra_location_info")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
               <ul className="list-none list-inside text-slate-500 text-xs font-medium">
-                <li>{Installation?.total_time_planned}</li>
+                <li>{installation?.total_time_planned}</li>
               </ul>
             </div>
 
@@ -526,10 +625,10 @@ const SingleInstallation = () => {
               <h4 className="block text-zinc-900 text-xs font-semibold leading-normal">{t("single_equipment_page_company_address")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
               <ul className="list-none list-inside text-slate-500 text-xs font-medium">
-                <li className='flex items-center'><MapPin className='w-4 h-4 mr-2' />{Installation?.db_address_street}</li>
-                <li className='ml-6 pb-1'>{Installation?.db_address_zip} {Installation?.db_address_city}</li>
-                {Installation?.contact_mobile &&
-                  <li className='flex items-center'><Phone className="w-4 h-4 mr-1" />{Installation?.contact_mobile}</li>}
+                <li className='flex items-center'><MapPin className='w-4 h-4 mr-2' />{installation?.db_address_street}</li>
+                <li className='ml-6 pb-1'>{installation?.db_address_zip} {installation?.db_address_city}</li>
+                {installation?.contact_mobile &&
+                  <li className='flex items-center'><Phone className="w-4 h-4 mr-1" />{installation?.contact_mobile}</li>}
               </ul>
             </div>
 
@@ -563,7 +662,15 @@ const SingleInstallation = () => {
                             className="w-48 h-40 object-cover rounded-md mx-auto"
                           />
                         ) : (
-                          <Image className="w-40 h-40 text-gray-200 mx-auto" /> // 👈 fallback image icon
+                          <div className="relative w-40 h-40 flex items-center justify-center mx-auto bg-gray-100 rounded-md">
+                            {/* Loading overlay */}
+                            <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-70 z-10">
+                              <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-gray-500"></div>
+                            </div>
+
+                            {/* Fallback icon */}
+                            <Image className="w-20 h-20 text-gray-300" />
+                          </div>
                         )
                       ) : (
                         <File className="w-40 h-40 text-gray-600 mx-auto" />
@@ -585,11 +692,10 @@ const SingleInstallation = () => {
                         </label>) : null}
 
                       {/* Show "View Document" only if it's an image */}
-                      {item.mime_type?.startsWith("image/") && (
-                        <a href={fileThumbnails[item.id] || ""} target="_blank" rel="noopener noreferrer" className="flex items-center mt-2 text-sm hover:underline">
-                          <Eye className="w-6 h-6 mr-2 text-gray-600" /> {t("single_equipment_page_view_document")}
-                        </a>
-                      )}
+
+                      <a href={fileThumbnails[item.id] || ""} target="_blank" rel="noopener noreferrer" className="flex items-center mt-2 text-sm hover:underline">
+                        <Eye className="w-6 h-6 mr-2 text-gray-600" /> {t("single_equipment_page_view_document")}
+                      </a>
                     </div>
                   </div>
                 ))}
@@ -617,49 +723,6 @@ const SingleInstallation = () => {
           </div>
         ) : activeTab === 'wordOrder' ? (
           <>
-            {isPopupOpen && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-                <div className="w-96 relative p-4 bg-white rounded-lg shadow-md border">
-                  <h4 className='text-lg font-semibold border-b-2 border-gray-200 pb-2 mb-2'>{t("single_equipment_page_work_order_list_table_planned_date_technician")}</h4>
-                  <button onClick={() => setIsPopupOpen(false)} className="px-1.5 absolute -top-1 -right-1 bg-gray-700 text-white rounded-full text-sm hover:bg-gray-800">
-                    x</button>
-                  <div className="flex gap-8">
-                    <div>
-                      {Array.from(
-                        new Set(
-                          popupData?.map(item =>
-                            new Date(item.date_from).toLocaleDateString("nl-BE", {
-                              year: "2-digit",
-                              month: "2-digit",
-                              day: "2-digit",
-                            })
-                          )
-                        )
-                      ).map((date, index) => (
-                        <div key={index} className="text-gray-500 py-2">
-                          {date}
-                        </div>
-                      ))}
-                    </div>
-                    <div>
-                      {popupData?.map?.(item => (
-                        <div key={item.id} className='flex gap-4 text-gray-500'>
-                          <span className='py-2'>
-                            {new Date(item.date_from).toLocaleTimeString("nl-BE", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </span>
-                          <span className='py-2'>
-                            {item.user_firstname + ' ' + item.user_lastname}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
             <div className="overflow-x-auto">
               <div className="flex items-center mb-1 text-zinc-800 text-sm font-normal px-4 py-2">
                 <BadgeInfo className='mr-2 w-5 h-5 text-slate-300' /> {t("single_equipment_page_helping_text")}
@@ -685,22 +748,139 @@ const SingleInstallation = () => {
                   ))}
                 </thead>
                 <tbody {...getTableBodyProps()} className="bg-white divide-y divide-gray-200">
-                  {!loading && page.map(row => { // Change from rows to page
-                    prepareRow(row);
-                    return (
-                      <tr {...row.getRowProps()} className="hover:bg-gray-200">
-                        {row.cells.map((cell, index) => (
-                          <td
-                            {...cell.getCellProps()}
-                            className={`self-stretch p-2 text-xs font-normal text-zinc-900 ${index !== 1 ? 'cursor-pointer' : ''}`}
-                            onClick={index !== 1 ? () => navigate(`/workorder/${row.original.id}`) : undefined}
-                          >
-                            {cell.render('Cell')}
-                          </td>
-                        ))}
-                      </tr>
-                    );
-                  })}
+                  {!loading &&
+                    page.map(row => {
+                      prepareRow(row);
+                      return (
+                        <React.Fragment key={row.id}>
+                          <tr {...row.getRowProps()} className="hover:bg-gray-200">
+                            {row.cells.map((cell, index) => (
+                              <td
+                                {...cell.getCellProps()}
+                                className={`self-stretch p-2 text-xs font-normal text-zinc-900 ${index !== 1 ? 'cursor-pointer' : ''
+                                  }`}
+                                onClick={
+                                  index !== 1 ? () => navigate(`/workorder/${row.original.id}`) : undefined
+                                }
+                              >
+                                {cell.render('Cell')}
+                              </td>
+                            ))}
+                          </tr>
+
+                          {expandedRowId === row.original.id && (
+                            <>
+                              {/* --- Planned Dates and Technicians --- */}
+                              {activeSection === 'popup' && (
+                                <>
+                                  {loadingMap[row.original.id] ? (
+                                    <tr>
+                                      <td colSpan={row.cells.length} className="bg-gray-50 p-4 text-center">
+                                        <Loader size="36" className="m-2 text-blue-600 animate-spin inline-block" />
+                                      </td>
+                                    </tr>
+                                  ) : popupDataMap[row.original.id]?.length > 0 && (
+                                    <tr>
+                                      <td colSpan={row.cells.length} className="bg-gray-50 p-4">
+                                        <div className="p-1">
+                                          <h4 className="text-sm font-semibold border-b-2 border-gray-200 pb-2 mb-2">
+                                            {t('single_equipment_page_work_order_list_planned_date_technician')}
+                                          </h4>
+                                          <div className="flex gap-16 text-xs font-normal">
+                                            <div>
+                                              {Array.from(
+                                                new Set(
+                                                  popupDataMap[row.original.id].map(item =>
+                                                    new Date(item.date_from).toLocaleDateString('en-GB', {
+                                                      year: '2-digit',
+                                                      month: '2-digit',
+                                                      day: '2-digit',
+                                                    })
+                                                  )
+                                                )
+                                              ).map((date, index) => (
+                                                <div key={index} className="text-gray-500 py-2">
+                                                  {date}
+                                                </div>
+                                              ))}
+                                            </div>
+                                            <div>
+                                              {popupDataMap[row.original.id].map(item => (
+                                                <div key={item.id} className="flex gap-8 text-gray-500">
+                                                  <span className="py-2">
+                                                    {new Date(item.date_from).toLocaleTimeString('en-GB', {
+                                                      timeZone: 'UTC',
+                                                      hour: '2-digit',
+                                                      minute: '2-digit',
+                                                    })}
+                                                  </span>
+                                                  <span className="py-2">
+                                                    {item.user_firstname} {item.user_lastname}
+                                                  </span>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  )}
+                                </>
+                              )}
+
+                              {/* --- Technician Remarks --- */}
+                              {activeSection === 'remarks' && (
+                                <>
+                                  {loadingMap[row.original.id] ? (
+                                    <tr>
+                                      <td colSpan={row.cells.length} className="bg-gray-50 p-4 text-center">
+                                        <Loader size="36" className="m-2 text-blue-600 animate-spin inline-block" />
+                                      </td>
+                                    </tr>
+                                  ) : remarksDataMap[row.original.id]?.length > 0 && (
+                                    <tr>
+                                      <td colSpan={row.cells.length} className="bg-gray-50 p-4">
+                                        <div className="p-1">
+                                          <table className="table-auto w-full text-xs font-normal text-left border-collapse">
+                                            <thead>
+                                              <tr className="text-gray-700 border-b">
+                                                <th className="pb-2">{t("single_equipment_page_work_order_list_remarks_ref")}</th>
+                                                <th className="pb-2">{t("single_equipment_page_work_order_list_remarks_technician")}</th>
+                                                <th className="pb-2">{t("single_equipment_page_work_order_list_remarks_date")}</th>
+                                                <th className="pb-2">{t("single_equipment_page_work_order_list_remarks_technicians_remarks")}</th>
+                                              </tr>
+                                            </thead>
+                                            <tbody>
+                                              {remarksDataMap[row.original.id].map(item => (
+                                                <tr key={item.id} className="text-gray-500 border-b last:border-none">
+                                                  <td className="py-2 font-medium">{item.object_id2}</td>
+                                                  <td className="py-2">{item.user_fullname}</td>
+                                                  <td className="py-2 font-medium text-gray-700">
+                                                    {new Date(item.date_add).toLocaleDateString('en-GB', {
+                                                      timeZone: 'UTC',
+                                                      year: '2-digit',
+                                                      month: '2-digit',
+                                                      day: '2-digit',
+                                                      hour: '2-digit',
+                                                      minute: '2-digit',
+                                                    })}
+                                                  </td>
+                                                  <td className="py-2 w-1/2">{item.notes}</td>
+                                                </tr>
+                                              ))}
+                                            </tbody>
+                                          </table>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  )}
+                                </>
+                              )}
+                            </>
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
                 </tbody>
               </table>
             </div>
@@ -734,137 +914,314 @@ const SingleInstallation = () => {
               </div>
             )}
           </>
-        )
-          : (
-            <div className='grid grid-cols-1 md:grid-cols-3 gap-4 px-12 pb-12'>
-              <div className='md:col-span-3 shadow-sm border rounded-lg p-4 '>
-                <h4 className="text-lg font-semibold">{t("single_equipment_page_contract_warranty_information")}</h4>
-                <hr className='my-2 w-32 border-gray-300' />
-                <ul className="list-none list-inside text-gray-400 flex flex-col gap-y-2">
-                  <li className='grid grid-cols-3 gap-1'>{t("single_equipment_page_contract_build_date")} <span className='font-semibold'>26/04/2021</span></li>
-                  <li className='grid grid-cols-3 gap-1'>{t("single_equipment_page_contract_commissioning_date")} <span className='font-semibold'>26/04/2021</span></li>
-                  <li className='grid grid-cols-3 gap-1'>{t("single_equipment_page_contract_warranty_date")} <span className='font-semibold'>26/04/2029</span></li>
-                  <li className='grid grid-cols-3 gap-1'>{t("single_equipment_page_contract_parts_warranty_date")} <span className='font-semibold'>26/04/2021</span></li>
-                </ul>
-              </div>
-
-              <div className='md:col-span-3 shadow-sm border rounded-lg p-4 '>
-                <h4 className="text-lg font-semibold">{t("single_equipment_page_contract_corrective_contract_info")}</h4>
-                <hr className='mt-2 mb-4 w-32 border-gray-300' />
-                <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-                  <div className='shadow-sm border rounded-lg p-4 '>
-                    <h4 className="text-lg font-semibold">25CTROCOR100 - ABC Limited - Corrective+ (May 25- May 26)</h4>
-                    <hr className='my-2 w-32 border-gray-300' />
-                    <ul className="list-none list-inside text-gray-400 flex flex-col gap-y-2">
-                      <li className='grid grid-cols-3 gap-1'>{t("single_equipment_page_contract_start_date")}: <span className='font-semibold'>24/05/2025</span></li>
-                      <li className='grid grid-cols-3 gap-1'>{t("single_equipment_page_contract_end_date")}: <span className='font-semibold'>23/05/2026</span></li>
-                      <li className='grid grid-cols-3 gap-1'>{t("single_equipment_page_contract_status")}: <span className='font-semibold'>Signed</span></li>
-                    </ul>
-                  </div>
-
-                  <div className='shadow-sm border rounded-lg p-4 '>
-                    <h4 className="text-lg font-semibold">{t("single_equipment_page_contract_SLA_info")}</h4>
-                    <hr className='my-2 w-32 border-gray-300' />
-                    <ul className="list-none list-inside text-gray-400 flex flex-col gap-y-2">
-                      <li>FAST +</li>
-                      <li>During 9 to 5 working hours only.</li>
-                    </ul>
-                  </div>
-
-                  <div className='shadow-sm border rounded-lg p-4 '>
-                    <h4 className="text-lg font-semibold">{t("single_equipment_page_contract_SLA_deadlines")}</h4>
-                    <hr className='my-2 w-32 border-gray-300' />
-                    <ul className="list-none list-inside text-gray-400 flex flex-col gap-y-2">
-                      <li className='grid grid-cols-2 gap-4'>{t("single_equipment_page_contract_response_time")}: <span className='font-semibold'>within 20 minutes</span></li>
-                      <li className='grid grid-cols-2 gap-4'>{t("single_equipment_page_contract_arrival_time")}: <span className='font-semibold'>within 12 hours</span></li>
-                      <li className='grid grid-cols-2 gap-4'>{t("single_equipment_page_contract_resolution_time")}: <span className='font-semibold'>{("/")}</span></li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-
-              <div className='md:col-span-3 shadow-sm border rounded-lg p-4 '>
-                <h4 className="text-lg font-semibold">{t("single_equipment_page_contract_preventive_contract_info")}</h4>
-                <hr className='mt-2 mb-4 w-32 border-gray-300' />
-                <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-                  <div className='shadow-sm border rounded-lg p-4 '>
-                    <h4 className="text-lg font-semibold">28CTRPREV100 - ABC Limited - CTR11 (May 25- May 26)</h4>
-                    <hr className='my-2 w-32 border-gray-300' />
-                    <ul className="list-none list-inside text-gray-400 flex flex-col gap-y-2">
-                      <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_start_date")} <span className='font-semibold'>24/05/2025</span></li>
-                      <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_end_date")} <span className='font-semibold'>23/05/2026</span></li>
-                      <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_status")} <span className='font-semibold'>Signed</span></li>
-                    </ul>
-                    <hr className='my-2 border-gray-300' />
-                    <ul className="list-none list-inside text-gray-400 flex flex-col gap-y-2">
-                      <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_contract_ref")} <span className='font-semibold'>46</span></li>
-                      <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_contract_type")} <span className='font-semibold'>Maintenance</span></li>
-                    </ul>
-                  </div>
-
-                  <div className='shadow-sm border rounded-lg p-4 '>
-                    <h4 className="text-lg font-semibold">Service Model - 176</h4>
-                    <hr className='my-2 w-32 border-gray-300' />
-                    <ul className="list-none list-inside text-gray-400 flex flex-col gap-y-2">
-                      <li>{t("Monthly Inspection")}</li>
-                      <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_start_date")} <span className='font-semibold'>24/05/2025</span></li>
-                      <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_end_date")} <span className='font-semibold'>23/05/2026</span></li>
-                      <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_WO_type")} <span className='font-semibold'>Preventive inspection</span></li>
-                      <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_next_expected_intervention")} <span className='font-semibold'>24/02/2026</span></li>
-                    </ul>
-                  </div>
-
-                  <div className='shadow-sm border rounded-lg p-4 '>
-                    <h4 className="text-lg font-semibold">Service Model - 166</h4>
-                    <hr className='my-2 w-32 border-gray-300' />
-                    <ul className="list-none list-inside text-gray-400 flex flex-col gap-y-2">
-                      <li>{t("Monthly Inspection")}</li>
-                      <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_start_date")} <span className='font-semibold'>24/05/2025</span></li>
-                      <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_end_date")} <span className='font-semibold'>23/05/2026</span></li>
-                      <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_WO_type")} <span className='font-semibold'>Maintenance</span></li>
-                      <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_next_expected_intervention")} <span className='font-semibold'>24/02/2026</span></li>
-                    </ul>
-                  </div>
-                </div>
-
-                <div className='my-4 font-semibold text-gray-800 '>
-                  <span className='flex items-center justify-end underline'>{t("single_equipment_page_contract_view_more_button")}<ArrowUpRight className="ml-1 w-5 h-5" /></span>
-                </div>
-
-                <hr className='my-8 border-gray-300' />
-                <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-                  <div className='shadow-sm border rounded-lg p-4 '>
-                    <h4 className="text-lg font-semibold">28CTRPREV100 - ABC Limited - CTR11 (May 25- May 26)</h4>
-                    <hr className='my-2 w-32 border-gray-300' />
-                    <ul className="list-none list-inside text-gray-400 flex flex-col gap-y-2">
-                      <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_start_date")} <span className='font-semibold'>24/05/2025</span></li>
-                      <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_end_date")} <span className='font-semibold'>23/05/2026</span></li>
-                      <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_status")} <span className='font-semibold'>Signed</span></li>
-                    </ul>
-                    <hr className='my-2 border-gray-300' />
-                    <ul className="list-none list-inside text-gray-400 flex flex-col gap-y-2">
-                      <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_contract_ref")} <span className='font-semibold'>46</span></li>
-                      <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_contract_type")} <span className='font-semibold'>Maintenance</span></li>
-                    </ul>
-                  </div>
-
-                  <div className='shadow-sm border rounded-lg p-4 '>
-                    <h4 className="text-lg font-semibold">Service Model - 176</h4>
-                    <hr className='my-2 w-32 border-gray-300' />
-                    <ul className="list-none list-inside text-gray-400 flex flex-col gap-y-2">
-                      <li>{t("Monthly Inspection")}</li>
-                      <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_start_date")} <span className='font-semibold'>24/05/2025</span></li>
-                      <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_end_date")} <span className='font-semibold'>23/05/2026</span></li>
-                      <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_WO_type")} <span className='font-semibold'>Preventive inspection</span></li>
-                      <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_next_expected_intervention")} <span className='font-semibold'>24/02/2026</span></li>
-                    </ul>
-                  </div>
-
-                </div>
-              </div>
-
+        ) : (
+          <div className='grid grid-cols-1 md:grid-cols-3 gap-4 px-12 pb-12'>
+            <div className='md:col-span-3 shadow-sm border rounded-lg p-4 '>
+              <h4 className="block text-zinc-900 text-sm font-semibold leading-normal">{t("single_equipment_page_contract_warranty_information")}</h4>
+              <hr className='my-2 w-32 border-gray-300' />
+              <ul className="list-none list-inside text-slate-500 text-xs font-medium">
+                <li className='grid grid-cols-3 gap-1'>{t("single_equipment_page_contract_build_date")}
+                  <span className='font-semibold'>
+                    {installation?.date_built &&
+                      new Date(installation?.date_built).getFullYear() !== 1980
+                      ? new Date(installation?.date_built).toLocaleString(undefined, {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                      })
+                      : "N/A"}
+                  </span>
+                </li>
+                <li className='grid grid-cols-3 gap-1'>{t("single_equipment_page_contract_commissioning_date")}
+                  <span className='font-semibold'>
+                    {installation?.date_start_production &&
+                      new Date(installation?.date_start_production).getFullYear() !== 1980
+                      ? new Date(installation?.date_start_production).toLocaleString(undefined, {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                      })
+                      : "N/A"}
+                  </span>
+                </li>
+                <li className='grid grid-cols-3 gap-1'>{t("single_equipment_page_contract_warranty_date")}
+                  <span className='font-semibold'>
+                    {installation?.warranty_date_until &&
+                      new Date(installation?.warranty_date_until).getFullYear() !== 1980
+                      ? new Date(installation?.warranty_date_until).toLocaleString(undefined, {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                      })
+                      : "N/A"}
+                  </span>
+                </li>
+                <li className='grid grid-cols-3 gap-1'>{t("single_equipment_page_contract_parts_warranty_date")}
+                  <span className='font-semibold'>
+                    {installation?.replacement_date &&
+                      new Date(installation?.replacement_date).getFullYear() !== 1980
+                      ? new Date(installation?.replacement_date).toLocaleString(undefined, {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                      })
+                      : "N/A"}
+                  </span>
+                </li>
+              </ul>
             </div>
-          )}
+
+            {Array.isArray(contractDetails.Corrective) && contractDetails.Corrective.length > 0 && (
+              <div className='md:col-span-3 shadow-sm border rounded-lg p-4'>
+                <h4 className="block text-zinc-900 text-sm font-semibold leading-normal">
+                  {t("single_equipment_page_contract_corrective_contract_info")}
+                </h4>
+                <hr className='mt-2 mb-4 w-32 border-gray-300' />
+                <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+                  {(isCorrectiveExpanded
+                    ? contractDetails.Corrective
+                    : contractDetails.Corrective.slice(0, 2)
+                  ).map((contract, index) => (
+                    <React.Fragment key={index}>
+                      <div className='shadow-sm border rounded-lg p-4'>
+                        <h4 className="block text-zinc-900 text-xs font-semibold leading-normal">
+                          {contract.contract_name}
+                        </h4>
+                        <hr className='my-2 w-32 border-gray-300' />
+                        <ul className="list-none list-inside text-slate-500 text-xs font-medium">
+                          <li className='grid grid-cols-3 gap-1'>
+                            {t("single_equipment_page_contract_start_date")}: <span className='font-semibold'>
+                              {contract.date_start && new Date(contract.date_start).getFullYear() !== 1980
+                                ? new Date(contract.date_start).toLocaleDateString(undefined, {
+                                  day: "2-digit",
+                                  month: "2-digit",
+                                  year: "numeric",
+                                })
+                                : "N/A"}
+                            </span>
+                          </li>
+                          <li className='grid grid-cols-3 gap-1'>
+                            {t("single_equipment_page_contract_end_date")}: <span className='font-semibold'>
+                              {contract.date_end && new Date(contract.date_end).getFullYear() !== 1980
+                                ? new Date(contract.date_end).toLocaleDateString(undefined, {
+
+                                  day: "2-digit",
+                                  month: "2-digit",
+                                  year: "numeric",
+                                })
+                                : "N/A"}
+                            </span>
+                          </li>
+                          <li className='grid grid-cols-3 gap-1'>
+                            {t("single_equipment_page_contract_status")}: <span className='font-semibold'>
+                              {contract.contract_status_name}
+                            </span>
+                          </li>
+                        </ul>
+                      </div>
+
+                      <div className='shadow-sm border rounded-lg p-4'>
+                        <h4 className="block text-zinc-900 text-xs font-semibold leading-normal">
+                          {t("single_equipment_page_contract_SLA_info")}
+                        </h4>
+                        <hr className='my-2 w-32 border-gray-300' />
+                        <ul className="list-none list-inside text-slate-500 text-xs font-medium">
+                          <li>{contract.sla_name}</li>
+                          <li>{contract.sla_coverage_type}</li>
+                        </ul>
+                      </div>
+
+                      <div className='shadow-sm border rounded-lg p-4'>
+                        <h4 className="block text-zinc-900 text-xs font-semibold leading-normal">
+                          {t("single_equipment_page_contract_SLA_deadlines")}
+                        </h4>
+                        <hr className='my-2 w-32 border-gray-300' />
+                        <ul className="list-none list-inside text-slate-500 text-xs font-medium">
+                          <li className='grid grid-cols-2 gap-4'>
+                            {t("single_equipment_page_contract_response_time")}: <span className='font-semibold'>{contract.sla_respone_time}</span>
+                          </li>
+                          <li className='grid grid-cols-2 gap-4'>
+                            {t("single_equipment_page_contract_arrival_time")}: <span className='font-semibold'>{contract.sla_arrival_time}</span>
+                          </li>
+                          <li className='grid grid-cols-2 gap-4'>
+                            {t("single_equipment_page_contract_resolution_time")}: <span className='font-semibold'>{contract.sla_resolution_time}</span>
+                          </li>
+                        </ul>
+                      </div>
+                    </React.Fragment>
+                  ))}
+                </div>
+                {contractDetails.Corrective.length > 2 && (
+                  <div className='flex items-center justify-end mt-4 font-semibold text-gray-800'>
+                    <button
+                      onClick={toggleCorrectiveExpand}
+                      className='flex items-center justify-end underline'
+                    >
+                      {isCorrectiveExpanded
+                        ? t("single_equipment_page_contract_view_less_button")
+                        : t("single_equipment_page_contract_view_more_button")}
+                      {isCorrectiveExpanded ? (
+                        <ArrowDownLeft className="ml-1 w-5 h-5" />
+                      ) : (
+                        <ArrowUpRight className="ml-1 w-5 h-5" />
+                      )}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+
+            {Array.isArray(contractDetails?.Preventive) && contractDetails.Preventive.length > 0 && (
+              <div className='md:col-span-3 shadow-sm border rounded-lg p-4 '>
+                <h4 className="block text-zinc-900 text-sm font-semibold leading-normal">{t("single_equipment_page_contract_preventive_contract_info")}</h4>
+                <hr className='mt-2 mb-4 w-32 border-gray-300' />
+
+                {contractDetails.Preventive.map((preventive, index) => {
+                  const isExpanded = expandedPreventives[index] || false;
+                  const serviceModelsToShow = isExpanded
+                    ? preventive.service_models
+                    : preventive.service_models?.slice(0, 2);
+
+                  return (
+                    <div key={index}>
+                      {index !== 0 && <hr className='my-8 border-gray-300' />}
+
+                      <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+                        <div className='shadow-sm border rounded-lg p-4 '>
+                          <h4 className="block text-zinc-900 text-xs font-semibold leading-normal">{preventive.contract_type_name}</h4>
+                          <hr className='my-2 w-32 border-gray-300' />
+                          <ul className="list-none list-inside text-slate-500 text-xs font-medium">
+                            <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_start_date")} <span className='font-semibold'>
+                              {preventive.date_start &&
+                                new Date(preventive.date_start).getFullYear() !== 1980
+                                ? new Date(preventive.date_start).toLocaleString(undefined, {
+
+                                  day: "2-digit",
+                                  month: "2-digit",
+                                  year: "numeric",
+                                })
+                                : "N/A"}
+                            </span></li>
+                            <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_end_date")} <span className='font-semibold'>
+                              {preventive.date_end &&
+                                new Date(preventive.date_end).getFullYear() !== 1980
+                                ? new Date(preventive.date_end).toLocaleString(undefined, {
+
+                                  day: "2-digit",
+                                  month: "2-digit",
+                                  year: "numeric",
+                                })
+                                : "N/A"}
+                            </span></li>
+                            <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_status")} <span className='font-semibold'>{preventive.contract_status_name}</span></li>
+                          </ul>
+                          <hr className='my-2 border-gray-300' />
+                          <ul className="list-none list-inside text-slate-500 text-xs font-medium">
+                            <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_contract_ref")} <span className='font-semibold'>{preventive.id2}</span></li>
+                            <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_contract_type")} <span className='font-semibold'>{preventive.contract_type_name}</span></li>
+                          </ul>
+                        </div>
+
+                        {/* Service Models */}
+                        {Array.isArray(serviceModelsToShow) &&
+                          serviceModelsToShow.map((model, modelIndex) => (
+                            <div key={modelIndex} className='shadow-sm border rounded-lg p-4 '>
+                              <h4 className="block text-zinc-900 text-xs font-semibold leading-normal">Service Model - {model?.id2}</h4>
+                              <hr className='my-2 w-32 border-gray-300' />
+                              <ul className="list-none list-inside text-slate-500 text-xs font-medium">
+                                <li>{model?.service_model_name}</li>
+                                <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_start_date")} <span className='font-semibold'>
+                                  {model?.date_start &&
+                                    new Date(model?.date_start).getFullYear() !== 1980
+                                    ? new Date(model?.date_start).toLocaleString(undefined, {
+
+                                      day: "2-digit",
+                                      month: "2-digit",
+                                      year: "numeric",
+                                    })
+                                    : "N/A"}
+                                </span></li>
+                                <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_end_date")} <span className='font-semibold'>
+                                  {model?.date_end &&
+                                    new Date(model?.date_end).getFullYear() !== 1980
+                                    ? new Date(model?.date_end).toLocaleString(undefined, {
+
+                                      day: "2-digit",
+                                      month: "2-digit",
+                                      year: "numeric",
+                                    })
+                                    : "N/A"}
+                                </span></li>
+                                <li className='grid grid-cols-2 gap-1'>
+                                  <span>{t("single_equipment_page_contract_WO_type")}</span>
+                                  <span>
+                                    {model?.job_type_name && (
+                                      <>
+                                        <Circle
+                                          className={`inline-block w-2 h-2 mr-1 rounded-full border`}
+                                          style={
+                                            model?.job_type_color
+                                              ? {
+                                                backgroundColor: `#${model.job_type_color}`,
+                                                borderColor: `#${model.job_type_color}`,
+                                              }
+                                              : {
+                                                backgroundColor: `#999999`,
+                                                borderColor: `#999999`,
+                                              }
+                                          }
+                                        />
+                                        <span className="font-semibold">{model?.job_type_name}</span>
+                                      </>
+                                    )}
+                                  </span>
+                                </li>
+                                <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_next_expected_intervention")} <span className='font-semibold'>
+                                  {model?.next_expected_job_date &&
+                                    new Date(model?.next_expected_job_date).getFullYear() !== 1980
+                                    ? new Date(model?.next_expected_job_date).toLocaleString(undefined, {
+
+                                      day: "2-digit",
+                                      month: "2-digit",
+                                      year: "numeric",
+                                    })
+                                    : "N/A"}
+                                </span></li>
+                              </ul>
+                            </div>
+                          ))}
+                      </div>
+
+                      {/* View More / View Less Link */}
+                      {Array.isArray(preventive.service_models) && preventive.service_models.length > 2 && (
+                        <div className='flex items-center justify-end my-4 font-semibold text-gray-800'>
+                          {!isExpanded ? (
+                            <button
+                              onClick={() => toggleExpand(index)}
+                              className='flex items-center justify-end underline'
+                            >
+                              {t("single_equipment_page_contract_view_more_button")}
+                              <ArrowUpRight className="ml-1 w-5 h-5" />
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => toggleExpand(index)}
+                              className='flex items-center justify-end underline'
+                            >
+                              {t("single_equipment_page_contract_view_less_button")}
+                              <ArrowDownLeft className="ml-1 w-5 h-5" />
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

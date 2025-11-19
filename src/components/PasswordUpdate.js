@@ -1,6 +1,6 @@
 // src/pages/PasswordUpdate.js
 import { useState, useRef, useEffect } from 'react';
-import { fetchData } from '../services/apiService';
+import { fetchDocuments } from '../services/apiServiceDocuments';
 import { useAuth } from '../AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Loader } from 'lucide-react';
@@ -25,7 +25,7 @@ function maskEmail(email) {
 
 const PasswordUpdate = () => {
   const navigate = useNavigate();
-  const { auth, login, updateAuthToken } = useAuth(); // Access the user's current auth info
+  const { auth, login, logout, updateAuthToken } = useAuth(); // Access the user's current auth info
   const [token, setToken] = useState('Ez5IDzie+E+CLFBR3A40g2ktg97czumlArA+gnrQJKyP4JYfct6q3oBltWdW4YFP8lePTkPURYdSmioIShjEuwWcEcCWkh7UDHf+2F9J6LWkGbgbrJbFJGQRoFqJCwhX+UYAh7D0ukj6FAqWn9AX/uXoiRwQmI8XQKUiUfjJvkuCbKSMLUydLtdQPimZdwSdPmqwd/oJTlPMAcb3ndTW5g==')
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -94,7 +94,7 @@ const PasswordUpdate = () => {
 
       setCurrentToken(userData.data.auth_token);
       // Step 2: Request password change using received auth token
-      const response = await fetchData('api/ContactPlug/request-changepw', 'PUT', userData.data.auth_token);
+      const response = await fetchDocuments('api/ContactPlug/request-changepw', 'PUT', userData.data.auth_token);
 
       if (!response || !response.otp_token) {
         setCurrentPassword('');
@@ -137,7 +137,7 @@ const PasswordUpdate = () => {
     //console.log(payload);
 
     try {
-      const response = await fetchData('api/ContactPlug/verify-changepw', 'PUT', currentToken, payload);
+      const response = await fetchDocuments('api/ContactPlug/verify-changepw', 'PUT', currentToken, payload);
 
       console.log(response);
       if (response.auth_token) {
@@ -149,6 +149,10 @@ const PasswordUpdate = () => {
       setCurrentPassword('');
       setNewPassword('');
       setConfirmNewPassword('');
+      setTimeout(() => {
+        logout();
+        navigate('/login');
+      }, 2000);
     } catch (err) {
       setError(t('update_password_page_err_failed'));
       setSuccessMessage(null);

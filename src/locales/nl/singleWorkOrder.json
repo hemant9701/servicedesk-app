@@ -22,5 +22,12 @@
   "single_work_order_page_ticket_details": "Details werkopdracht",
   "single_work_order_page_total_planned_time": "Totale geplande tijd",
   "single_work_order_page_type_status": "Type en status",
-  "single_work_order_page_view_document": "Document bekijken"
+  "single_work_order_page_view_document": "Document bekijken",
+  "single_work_order_page_sub_wo_status": "Status",
+  "single_work_order_page_sub_wo_name": "Naam",
+  "single_work_order_page_sub_wo_reference": "Referentie",
+  "single_work_order_page_sub_wo_type": "Type",
+  "single_work_order_page_download_button": "Downloaden",
+  "single_work_order_page_download_all_button": "Alles downloaden",
+  "single_work_order_page_loading": "Bezig met laden..."
 }

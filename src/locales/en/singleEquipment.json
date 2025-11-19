@@ -27,6 +27,8 @@
   "single_equipment_page_helping_text": "Click on the row to view the Work Order(WO) details.",
   "single_equipment_page_work_order_table_reference_text": "Reference",
   "single_equipment_page_work_order_table_planned_date_text": "Planned date",
+  "single_equipment_page_work_order_table_scheduled_technician_text": "Scheduled Technician",
+  "single_equipment_page_work_order_table_close_date_text": "Close Date",
   "single_equipment_page_work_order_table_status_text": "Status",
   "single_equipment_page_work_order_table_address_text": "Address",
   "single_equipment_page_work_order_table_name_text": "Name",
@@ -34,7 +36,11 @@
   "single_equipment_page_work_order_list_table_pagination_page": "Page",
   "single_equipment_page_work_order_list_table_pagination_of": "of",
   "single_equipment_page_work_order_list_table_pagination_show": "Show",
-  "single_equipment_page_work_order_list_table_planned_date_technician": "Planned date and Technician",
+  "single_equipment_page_work_order_list_planned_date_technician": "Planned date and Technician",
+  "single_equipment_page_work_order_list_remarks_ref": "Ref",
+  "single_equipment_page_work_order_list_remarks_technician": "Technician",
+  "single_equipment_page_work_order_list_remarks_date": "Date",
+  "single_equipment_page_work_order_list_remarks_technicians_remarks": "Technicians Remarks",
   "single_equipment_page_contract_warranty_information": "Warranty Information",
   "single_equipment_page_contract_build_date": "Build date",
   "single_equipment_page_contract_commissioning_date": "Commissioning date",
@@ -54,5 +60,6 @@
   "single_equipment_page_contract_contract_type": "Contract type",
   "single_equipment_page_contract_WO_type": "WO Type",
   "single_equipment_page_contract_next_expected_intervention": "Next Expected Intervention",
-  "single_equipment_page_contract_view_more_button": "View More"
+  "single_equipment_page_contract_view_more_button": "View More",
+  "single_equipment_page_contract_view_less_button": "View Less"
 }

@@ -5,6 +5,7 @@
   "work_order_list_table_heading_address_text": "Adresse",
   "work_order_list_table_heading_name_text": "Nom",
   "work_order_list_table_heading_planned_date_text": "Date prévue",
+  "work_order_list_table_heading_closing_date_text": "Date de clôture",
   "work_order_list_table_heading_reference_text": "Référence",
   "work_order_list_table_heading_status_text": "Statut",
   "work_order_list_table_heading_type_text": "Type",

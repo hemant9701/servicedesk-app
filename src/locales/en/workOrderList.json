@@ -6,6 +6,7 @@
   "work_order_list_page_helping_text": "Click the row to view Work Order details.",
   "work_order_list_table_heading_reference_text": "Reference",
   "work_order_list_table_heading_planned_date_text": "Planned date",
+  "work_order_list_table_heading_closing_date_text": "Closed date",
   "work_order_list_table_heading_status_text": "Status",
   "work_order_list_table_heading_address_text": "Address",
   "work_order_list_table_heading_name_text": "Name",

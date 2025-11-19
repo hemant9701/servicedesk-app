@@ -5,6 +5,7 @@
   "work_order_list_table_heading_address_text": "Adres",
   "work_order_list_table_heading_name_text": "Naam",
   "work_order_list_table_heading_planned_date_text": "Geplande datum",
+  "work_order_list_table_heading_closing_date_text": "Sluitingsdatum",
   "work_order_list_table_heading_reference_text": "Referentie",
   "work_order_list_table_heading_status_text": "Status",
   "work_order_list_table_heading_type_text": "Type",

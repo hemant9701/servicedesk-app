@@ -13,7 +13,8 @@ const SingleWordOrder = () => {
   const { workOrderId } = useParams();
   const [workOrder, setWorkOrder] = useState(null);
   const [doc, setDoc] = useState([]);
-  const [sub, setSub] = useState([]);
+  const [subWO, setSubWO] = useState([]);
+  const [planned, setPlanned] = useState([]);
   //const [file, setFile] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -24,7 +25,7 @@ const SingleWordOrder = () => {
   const { auth } = useAuth();
   const { t } = useTranslation('singleWorkOrder');
 
-  const url = `https://testservicedeskapi.odysseemobile.com/`;
+  const url = process.env.REACT_APP_API_URL || 'https://servicedeskapi.odysseemobile.com';
 
   const statusColors = useMemo(() => ({
     "In Progress": "bg-yellow-100 text-yellow-600",
@@ -60,7 +61,7 @@ const SingleWordOrder = () => {
     const getworkOrderDetails = async () => {
       try {
         if (!workOrderId) {
-          setError('single_work_order_page_err_no_ticket_id');
+          setError(t('single_work_order_page_err_no_ticket_id'));
           setLoading(false);
           return;
         }
@@ -71,11 +72,26 @@ const SingleWordOrder = () => {
         setLoading(false);
       } catch (err) {
         console.error("Error fetching workOrder details:", err);
-        setError('single_work_order_page_err_failed_to_fetch_wo');
+        setError(t('single_work_order_page_err_failed_to_fetch_wo'));
         setLoading(false);
       }
     };
 
+    const getworkOrderPlanned = async () => {
+      try {
+        const response = await fetchDocuments(`api/JobPlanningView?$filter=jobs_id eq ${workOrderId}&$orderby=date_from`);
+        setPlanned(response.value);
+      } catch (err) {
+        console.error("Error fetching documents:", err);
+        setError(t('single_work_order_page_err_failed_to_fetch_thumbnail'));
+      }
+    };
+
+    getworkOrderDetails();
+    getworkOrderPlanned();
+  }, [workOrderId, auth, t]);
+
+  useEffect(() => {
     const getworkOrderDoc = async () => {
       try {
         const endpoint_1 = `api/DbFileView?$filter=db_table_name+eq+%27jobs%27+and+id_in_table+eq+${workOrderId}`;
@@ -83,64 +99,69 @@ const SingleWordOrder = () => {
         setDoc(data_1.value);
       } catch (err) {
         console.error("Error fetching documents:", err);
-        setError('single_work_order_page_err_failed_to_fetch_document');
+        setError(t('single_work_order_page_err_failed_to_fetch_document'));
       }
     };
+    getworkOrderDoc();
+  }, [workOrderId, auth, t]);
 
+  useEffect(() => {
     const getworkOrderSub = async () => {
       try {
         const endpoint_2 = `api/JobsView?$filter=root_parent_id+eq+${workOrderId}+and+has_child+eq+false&$orderby=id2%20desc`;
         const data_2 = await fetchDocuments(endpoint_2, 'GET', auth.authKey);
-        setSub(data_2.value);
+        setSubWO(data_2.value);
       } catch (err) {
         console.error("Error fetching documents:", err);
-        setError('single_work_order_page_err_failed_to_fetch_thumbnail');
+        setError(t('single_work_order_page_err_failed_to_fetch_thumbnail'));
       }
     };
 
-    getworkOrderDetails();
-    getworkOrderDoc();
     getworkOrderSub();
-  }, [workOrderId, auth]);
-
+  }, [workOrderId, auth, t]);
 
   useEffect(() => {
     const GetFileThumbnails = async () => {
       try {
-        if (!doc || doc.length === 0) return; // Ensure there is data
+        if (!doc || doc.length === 0) return;
 
         const authKey = auth?.authKey;
         if (!authKey) return;
 
         const updatedThumbnails = {};
 
-        // Fetch thumbnails for all documents in the array
         await Promise.all(
           doc.map(async (item) => {
             if (!item.id) return;
 
-            const endpoint = `api/DbFileView/GetFileThumbnail/?id=${item.id}&maxWidth=500&maxHeight=500`;
+            try {
+              const endpoint = `api/DbFileView/GetFileThumbnail/?id=${item.id}&maxWidth=500&maxHeight=500`;
 
-            // ✅ Use fetchDocuments (returns blob when accept="image/png")
-            const blob = await fetchDocuments(endpoint, "GET", authKey, null, "image/png");
+              // fetchDocuments returns blob when accept="image/png"
+              const blob = await fetchDocuments(endpoint, "GET", authKey, null, "image/png");
 
-            updatedThumbnails[item.id] = URL.createObjectURL(blob); // Store URL in object
+              updatedThumbnails[item.id] = URL.createObjectURL(blob);
+            } catch (err) {
+              console.warn(`Failed to load thumbnail for ${item.id}:`, err);
+              // Skip just this one
+            }
           })
         );
 
         setFileThumbnails(updatedThumbnails);
       } catch (err) {
         console.error("Error fetching thumbnails:", err);
-        setError("single_work_order_page_err_failed_to_fetch_thumbnail");
+        setError(t("single_work_order_page_err_failed_to_fetch_thumbnail"));
       } finally {
         setLoading(false);
       }
     };
 
+
     if (activeTab === "documents") {
       GetFileThumbnails();
     }
-  }, [doc, auth, activeTab]);
+  }, [doc, auth, activeTab, t]);
 
 
   const handleDownloadAll = async () => {
@@ -182,11 +203,17 @@ const SingleWordOrder = () => {
   if (error) return <div className="text-center text-red-600">{error}</div>;
 
   return (
-    <div className="w-full max-w-4xl mx-auto p-6 bg-white">
+    <div className="mx-auto w-full p-6 bg-white">
       <div className='flex'>
         {/* Back Button */}
         <button
-          onClick={() => navigate(-1)} // Navigate back one step in history
+          onClick={() => {
+            if (activeTab !== 'details') {
+              setActiveTab('details');
+            } else {
+              navigate(-1);
+            }
+          }}
           className="flex items-center mb-6 font-semibold text-zinc-900 text-base"
         >
           <ArrowLeft className="mr-2 w-5 h-5" /> {t("single_work_order_page_go_back")}
@@ -209,11 +236,20 @@ const SingleWordOrder = () => {
           >
             {t("single_work_order_page_documents")}
           </button>
+          {workOrder?.has_child && (
+            <button
+              className={`px-4 py-2 mr-2 text-lg font-medium leading-7 ${activeTab === 'sub-wo' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-slate-500'}`}
+              onClick={() => setActiveTab('sub-wo')}
+            >
+              {t("Sub-WO List")}
+            </button>
+          )
+          }
         </div>
 
         {activeTab === 'details' ? (
           <>
-            <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+            <div className='grid grid-cols-1 md:grid-cols-[1fr_0.9fr_1.1fr] gap-4'>
               <div className='shadow-sm border rounded-lg p-4 '>
                 <h4 className="block text-zinc-900 text-xs font-semibold leading-normal pb-2">{t("single_work_order_page_equipment")}</h4>
                 <ul className="list-none list-inside text-slate-500 text-xs font-medium">
@@ -241,7 +277,7 @@ const SingleWordOrder = () => {
                   )}
                   {workOrder?.contact_phone && (
                     <li className='flex items-center'>
-                      <Phone className="w-4 h-4 mr-1" /> <a href={`tel:${workOrder.contact_phone}`}>{workOrder.contact_phone}</a>
+                      <Phone className="w-4 h-4 mr-2" /> <a href={`tel:${workOrder.contact_phone}`}>{workOrder.contact_phone}</a>
                     </li>
                   )}
                 </ul>
@@ -250,9 +286,43 @@ const SingleWordOrder = () => {
               <div className='shadow-sm border rounded-lg p-4 '>
                 <h4 className="block text-zinc-900 text-xs font-semibold leading-normal pb-2">{t("single_work_order_page_sla_info")}</h4>
                 <ul className="list-none list-inside text-slate-500 text-xs font-medium">
-                  <li className='grid grid-cols-2 gap-4'>{t("single_work_order_page_response_time")} {new Date(workOrder?.dateutc_max_sla_resolution).getFullYear() !== 1980 ?? new Date(workOrder?.dateutc_max_sla_resolution).toLocaleString()}</li>
-                  <li className='grid grid-cols-2 gap-4'>{t("single_work_order_page_resolution_time")} {new Date(workOrder?.dateutc_max_sla_resolution).getFullYear() !== 1980 ?? new Date(workOrder?.dateutc_max_sla_resolution).toLocaleString()}</li>
-                  <li className='grid grid-cols-2 gap-4'>{t("single_work_order_page_arrival_time")} {new Date(workOrder?.dateutc_max_sla_hands_on_machine).getFullYear() !== 1980 ?? new Date(workOrder?.dateutc_max_sla_hands_on_machine).toLocaleString()}</li>
+                  <li className="grid grid-cols-2 gap-2">
+                    <span>{t("single_work_order_page_response_time")}</span>
+                    <span>
+                      {workOrder?.dateutc_max_sla_resolution &&
+                        new Date(workOrder.dateutc_max_sla_resolution).getFullYear() !== 1980
+                        ? new Date(workOrder.dateutc_max_sla_resolution).toLocaleString("en-GB", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                        : "N/A"}
+                    </span>
+                  </li>
+                  <li className='grid grid-cols-2 gap-2'><span>{t("single_work_order_page_arrival_time")}</span> <span>{
+                    new Date(workOrder?.dateutc_max_sla_contact).getFullYear() !== 1980
+                      ? new Date(workOrder?.dateutc_max_sla_contact).toLocaleDateString({
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                      : 'N/A'
+                  }</span></li>
+                  <li className='grid grid-cols-2 gap-2'><span>{t("single_work_order_page_resolution_time")}</span> <span>{
+                    new Date(workOrder?.dateutc_max_sla_contact).getFullYear() !== 1980
+                      ? new Date(workOrder?.dateutc_max_sla_contact).toLocaleDateString({
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                      : <span className='text-red-500'>SLA exceeded</span>
+                  }</span></li>
                 </ul>
               </div>
 
@@ -285,45 +355,47 @@ const SingleWordOrder = () => {
                 </ul>
               </div>
             </div>
+
             <div className='shadow-sm border rounded-lg p-4 mt-4'>
-              {sub.length > 0 ? (
+              {planned.length > 0 ? (
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="border-b-2">
                       <tr>
-                        <th className="px-4 py-2 text-left text-md font-semibold text-gray-700">
+                        <th className="px-4 py-2 text-left text-zinc-900 text-xs font-semibold leading-normal">
                           {t("single_work_order_page_planned_date")}
                         </th>
-                        <th className="px-4 py-2 text-left text-md font-semibold text-gray-700">
+                        <th className="px-4 py-2 text-left text-zinc-900 text-xs font-semibold leading-normal">
 
                         </th>
-                        <th className="px-4 py-2 text-left text-md font-semibold text-gray-700">
+                        <th className="px-4 py-2 text-left text-zinc-900 text-xs font-semibold leading-normal">
                           {t("single_work_order_page_planned_duration")}
                         </th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {sub.map(item => (
+                      {planned.map(item => (
                         <tr className="hover:bg-gray-50">
-                          <td className="px-4 py-2 text-sm text-gray-400">
+                          <td className="px-4 py-2 text-slate-500 text-xs font-medium">
                             {(() => {
-                              const date = new Date(item.date_create);
+                              const date = new Date(item.date_from);
                               return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear().toString().slice(-2)}`;
                             })()}
                           </td>
 
-                          <td className="px-4 py-2 text-sm text-gray-400">
-                            {new Date(item.date_create).toLocaleTimeString('en-US', {
+                          <td className="px-4 py-2 text-slate-500 text-xs font-medium">
+                            {new Date(item.date_from).toLocaleTimeString('en-GB', {
+                              timeZone: 'UTC',
                               hour: '2-digit',
                               minute: '2-digit',
                               hour12: false,
-                            })} {item.created_by_user_firstname || 'John'} {item.created_by_user_lastname || 'Doe'}
+                            })} {item.user_firstname || 'John'} {item.user_lastname || 'Doe'}
                           </td>
 
-                          <td className="px-4 py-2 text-sm text-gray-400">
+                          <td className="px-4 py-2 text-slate-500 text-xs font-medium">
                             {(() => {
-                              const closed = new Date(item.date_update);
-                              const created = new Date(item.date_create);
+                              const closed = new Date(item.date_to);
+                              const created = new Date(item.date_from);
                               const diffMs = closed - created;
 
                               const totalMinutes = Math.floor(diffMs / (1000 * 60));
@@ -342,12 +414,17 @@ const SingleWordOrder = () => {
                 <p className="text-slate-500 text-xs font-medium">{t("single_work_order_page_no_record")}</p>
               )}
             </div>
+
             <div className='shadow-sm border rounded-lg p-4 mt-4'>
               <h4 className="block text-zinc-900 text-xs font-semibold leading-normal pb-2">{t("single_work_order_page_description")}</h4>
-              {workOrder?.remark ? (<p className="mb-4 text-slate-500 text-xs font-medium">{workOrder?.remark}</p>) : (<p className="mb-4 text-slate-500 text-xs font-medium">{t("single_work_order_page_no_description")}</p>)}
+              {workOrder.description ? (<p className="mb-4 text-slate-500 text-xs font-medium">{workOrder.description}</p>) : (<p className="mb-4 text-slate-500 text-xs font-medium">{t("single_work_order_page_no_description")}</p>)}
             </div>
+            {workOrder?.remakes && <div className='shadow-sm border rounded-lg p-4 mt-4'>
+              <h4 className="block text-zinc-900 text-xs font-semibold leading-normal pb-2">{t("single_work_order_page_description")}</h4>
+              <p className="mb-4 text-slate-500 text-xs font-medium">{workOrder.remakes}</p>
+            </div>}
           </>
-        ) : (
+        ) : activeTab === 'documents' ? (
           <div className=''>
             <ToastContainer
               position="bottom-right"
@@ -367,11 +444,6 @@ const SingleWordOrder = () => {
                   <div key={item.id} className="p-2 flex flex-col border rounded-lg shadow-md">
                     <div className='flex flex-col items-center'>
                       {/* Show image thumbnail if it's an image, otherwise show file icon */}
-                      {/* {item.mime_type?.startsWith("image/") ? (
-                        <img src={fileThumbnails[item.id] || ""} alt={item.name} className="w-48 h-48 object-cover rounded-md mx-auto" />
-                      ) : (
-                        <File className="w-48 h-48 text-gray-600" />
-                      )} */}
                       {item.mime_type?.startsWith("image/") ? (
                         fileThumbnails[item.id] ? (
                           <img
@@ -380,7 +452,15 @@ const SingleWordOrder = () => {
                             className="w-48 h-40 object-cover rounded-md mx-auto"
                           />
                         ) : (
-                          <Image className="w-40 h-40 text-gray-200 mx-auto" /> // 👈 fallback image icon
+                          <div className="relative w-40 h-40 flex items-center justify-center mx-auto bg-gray-100 rounded-md">
+                            {/* Loading overlay */}
+                            <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-70 z-10">
+                              <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-gray-500"></div>
+                            </div>
+
+                            {/* Fallback icon */}
+                            <Image className="w-20 h-20 text-gray-300" />
+                          </div>
                         )
                       ) : (
                         <File className="w-40 h-40 text-gray-600 mx-auto" />
@@ -389,7 +469,14 @@ const SingleWordOrder = () => {
                     <div className='flex flex-col'>
                       <h4 className="text-gray-500 text-sm py-1 break-words">{item.name}</h4>
 
-                      <p className="text-gray-500 text-sm">{new Date(item.date_add).toLocaleString()}</p>
+                      <p className="text-gray-500 text-sm">{new Date(item.date_add).toLocaleString('en-GB', {
+                        day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: false,
+                      })}</p>
 
                       {item.file_name ? (
                         <label className="mt-2 flex space-x-2 items-start text-sm">
@@ -431,6 +518,49 @@ const SingleWordOrder = () => {
               </div>
             )}
           </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200 border border-gray-300">
+                <thead className="bg-gray-100">
+                  <tr className="bg-white divide-x divide-gray-300">
+                    <th className="p-2 whitespace-nowrap text-left text-slate-500 text-xs font-medium leading-none">
+                      {t("single_work_order_page_sub_wo_status")}
+                    </th>
+                    <th className="p-2 whitespace-nowrap text-left text-slate-500 text-xs font-medium leading-none">
+                      {t("single_work_order_page_sub_wo_name")}
+                    </th>
+                    <th className="p-2 whitespace-nowrap text-left text-slate-500 text-xs font-medium leading-none">
+                      {t("single_work_order_page_sub_wo_reference")}
+                    </th>
+                    <th className="p-2 whitespace-nowrap text-left text-slate-500 text-xs font-medium leading-none">
+                      {t("single_work_order_page_sub_wo_type")}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {subWO && subWO.length > 0 && (
+                    subWO.map((item) => (
+                      <tr key={item.id} className="hover:bg-gray-200">
+                        <td className="self-stretch p-2 text-xs font-normal text-zinc-900 whitespace-nowrap">
+                          {item.job_status_name}
+                        </td>
+                        <td className="self-stretch p-2 text-xs font-normal text-zinc-900 whitespace-nowrap">
+                          {item.project_name}
+                        </td>
+                        <td className="self-stretch p-2 text-xs font-normal text-zinc-900 whitespace-nowrap">
+                          {item.job_reference}
+                        </td>
+                        <td className="self-stretch p-2 text-xs font-normal text-zinc-900 whitespace-nowrap">
+                          {item.job_type_name}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
     </div>

@@ -22,5 +22,12 @@
   "single_work_order_page_ticket_details": "Détails de l'ordre de travail",
   "single_work_order_page_total_planned_time": "Temps planifié total",
   "single_work_order_page_type_status": "Type et statut",
-  "single_work_order_page_view_document": "Voir le document"
+  "single_work_order_page_view_document": "Voir le document",
+  "single_work_order_page_sub_wo_status": "Statut",
+  "single_work_order_page_sub_wo_name": "Nom",
+  "single_work_order_page_sub_wo_reference": "Référence",
+  "single_work_order_page_sub_wo_type": "Type",
+  "single_work_order_page_download_button": "Télécharger",
+  "single_work_order_page_download_all_button": "Tout télécharger",
+  "single_work_order_page_loading": "Chargement..."
 }

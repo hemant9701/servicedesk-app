@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { useTable, useSortBy, useExpanded } from 'react-table';
-import { fetchData } from '../services/apiService.js';
+import { fetchDocuments } from '../services/apiServiceDocuments.js';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext.js';
 import {
@@ -90,13 +90,13 @@ const ViewInstallations = () => {
       };
 
       try {
-        const response = await fetchData(url, 'POST', auth.authKey, payload);
+        const response = await fetchDocuments(url, 'POST', auth.authKey, payload);
         const mapped = response.map(item => ({
           ...item,
           subRows: item.has_child ? [] : []
         }));
 
-        if (parentOnly || (!parentOnly && !parentId)) {
+        if (parentOnly) {
           setContacts(mapped);
         }
         if (!parentOnly && parentId) {
@@ -112,6 +112,10 @@ const ViewInstallations = () => {
     },
     [auth, filters]
   );
+
+  useEffect(() => {
+    fetchProjects({ parentOnly: true });
+  }, [fetchProjects]);
 
   useEffect(() => {
     const loadLocations = async () => {
@@ -144,9 +148,12 @@ const ViewInstallations = () => {
       }
     };
 
-    loadLocations();
-  }, [fetchProjects]);
+    if (isModalOpen) {
+      loadLocations();
+    }
+  }, [fetchProjects, isModalOpen]);
 
+  // Handle location input changes
   const handleLocationChange = (e) => {
     const value = e.target.value;
     setTempFilters(prev => ({ ...prev, locationLabel: value }));
@@ -161,6 +168,7 @@ const ViewInstallations = () => {
     }
   };
 
+  // When a hint is clicked
   const handleHintClick = (hint) => {
     setTempFilters(prev => ({
       ...prev,
@@ -170,10 +178,11 @@ const ViewInstallations = () => {
     setLocationHints([]);
   };
 
+
   useEffect(() => {
     const fetchBrands = async () => {
       try {
-        const resbrands = await fetchData('api/EquipmentBrand', 'GET', auth.authKey);
+        const resbrands = await fetchDocuments('api/EquipmentBrand', 'GET', auth.authKey);
         setFetchBrands(resbrands.value);
       } catch (err) {
         setError(err);
@@ -182,7 +191,7 @@ const ViewInstallations = () => {
 
     const fetchModels = async () => {
       try {
-        const resmodels = await fetchData('api/EquipmentModel', 'GET', auth.authKey);
+        const resmodels = await fetchDocuments('api/EquipmentModel', 'GET', auth.authKey);
         setFetchModels(resmodels.value);
       } catch (err) {
         setError(err);
@@ -191,16 +200,19 @@ const ViewInstallations = () => {
 
     const fetchStatuses = async () => {
       try {
-        const restatuses = await fetchData('api/ProjectStatus', 'GET', auth.authKey);
+        const restatuses = await fetchDocuments('api/ProjectStatus', 'GET', auth.authKey);
         setFetchStatuses(restatuses.value);
       } catch (err) {
         setError(err);
       }
     };
-    fetchBrands();
-    fetchStatuses();
-    fetchModels();
-  }, [auth]);
+
+    if (isModalOpen) {
+      fetchBrands();
+      fetchStatuses();
+      fetchModels();
+    }
+  }, [auth, isModalOpen]);
 
   const brandOptions = Array.isArray(fetchBrands)
     ? fetchBrands
@@ -237,10 +249,6 @@ const ViewInstallations = () => {
       : []),
   ];
 
-  useEffect(() => {
-    fetchProjects({ parentOnly: true });
-  }, [fetchProjects]);
-
   const handleFetchChildren = useCallback(
     async (parentId) => {
       if (subRowsMap[parentId]) return;
@@ -256,20 +264,6 @@ const ViewInstallations = () => {
     setExpanded(prev => ({ ...prev, [id]: !prev[id] }));
   }, [expanded, handleFetchChildren]);
 
-  const flattenData = (contacts, subRowsMap) => {
-    const flat = [];
-    const addRows = rows => {
-      rows.forEach(row => {
-        flat.push(row);
-        if (subRowsMap[row.id] && subRowsMap[row.id].length > 0) {
-          addRows(subRowsMap[row.id]);
-        }
-      });
-    };
-    addRows(contacts);
-    return flat;
-  };
-
   const clearedFilters = {
     location: "",
     keyword: "",
@@ -282,7 +276,6 @@ const ViewInstallations = () => {
   // Apply filters when Confirm is clicked
   const applyFilters = async () => {
     const { brand, status, model, location, keyword } = tempFilters;
-
     const isValid =
       brand !== clearedFilters.brand ||
       status !== clearedFilters.status ||
@@ -293,42 +286,60 @@ const ViewInstallations = () => {
     if (!isValid) return;
 
     setIsLoading(true);
-
     try {
-      flattenData(contacts, subRowsMap); // Ensure it's awaited if async
-      setFilters(tempFilters); // Sync UI state
+      setFilters(tempFilters);
 
-      await fetchProjects({
-        parentOnly: false,
-        brand,
-        status,
-        model,
+      // 1️⃣ Fetch parent-only rows for tree structure
+      const parentData = await fetchProjects({ parentOnly: true });
+
+      // 2️⃣ Fetch filtered rows with parentOnly: false to include children
+      const filteredData = await fetchProjects({ parentOnly: false, filters: tempFilters });
+
+      // 3️⃣ Merge parent + filtered children
+      // Keep parents as the base, and for any filtered child, ensure they appear under correct parent
+      const mergedSubRowsMap = { ...subRowsMap };
+      filteredData.forEach(row => {
+        if (row.parentId) {
+          if (!mergedSubRowsMap[row.parentId]) mergedSubRowsMap[row.parentId] = [];
+          // Avoid duplicates
+          if (!mergedSubRowsMap[row.parentId].some(r => r.id === row.id)) {
+            mergedSubRowsMap[row.parentId].push(row);
+          }
+        } else {
+          // If a parent matches filters, make sure it's in parentData
+          if (!parentData.some(r => r.id === row.id)) {
+            parentData.push(row);
+          }
+        }
       });
-    } catch (error) {
-      console.error("Failed to apply filters:", error);
-      // Optionally show a toast
+
+      setContacts(parentData);
+      setSubRowsMap(mergedSubRowsMap);
+    } catch (err) {
+      console.error('Failed to apply filters:', err);
     } finally {
       setIsModalOpen(false);
       setIsLoading(false);
     }
   };
+
 
   // Reset filters and reload default data
   const handleReset = async () => {
     setIsLoading(true);
-
     try {
       setTempFilters(clearedFilters);
       setFilters(clearedFilters);
-
-      await fetchProjects({ parentOnly: true }); // Reload default view
-    } catch (error) {
-      console.error("Reset failed:", error);
+      const data = await fetchProjects({ parentOnly: true });
+      setContacts(data);
+    } catch (err) {
+      console.error('Reset failed:', err);
     } finally {
       setIsModalOpen(false);
       setIsLoading(false);
     }
   };
+
 
   const columns = useMemo(() => [
     {

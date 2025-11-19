@@ -1,68 +1,78 @@
 import axios from "axios";
-import React, { createContext, useState, useContext } from "react";
-//import { fetchData } from './services/apiService';
+import { createContext, useState, useContext, useEffect } from "react";
+
+const baseUrl = process.env.REACT_APP_API_URL || 'https://servicedeskapi.odysseemobile.com';
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [auth, setAuth] = useState(() => {
     try {
-      const storedAuth = sessionStorage.getItem("auth");
+      const storedAuth = localStorage.getItem("auth");
       return storedAuth ? JSON.parse(storedAuth) : null;
     } catch (error) {
-      console.error("Failed to parse auth data from session storage:", error);
+      console.error("Failed to parse auth data from local storage:", error);
       return null;
     }
   });
 
+  // Sync logout across tabs
+  useEffect(() => {
+    const handleStorageChange = (event) => {
+      if (event.key === "auth" && event.newValue === null) {
+        setAuth(null);
+      }
+    };
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
+
   const login = async (token, email, password) => {
     try {
-      if (!token || !email || !password) {
-        throw new Error("All fields must be filled out.");
-      }
+      if (!token) throw new Error("Your access token is not set.");
+      if (!email || !password) throw new Error("All fields must be filled out.");
 
       const authEmail = email.trim();
-      const url = `https://testservicedeskapi.odysseemobile.com/api/Authentication/contact-authtoken/`;
-
-      const data = {
-        "useremail": email,
-        "password": password,
-        "access_token": token
-      }
+      const url = `${baseUrl.replace(/\/$/, '')}/api/Authentication/contact-authtoken/`;
+      const data = { useremail: email, password, access_token: token };
 
       const response = await axios.post(url, data);
-      //const response = await fetchData(url, 'POST', data)
 
-      //console.log(response.data);
-
-
-      if (response) {
-        const userName = response.data.firstname + ' ' + response.data.lastname;
-        const userId = response.data.id;
-        const userLang = response.data.db_language_iso_code;
-        const authKey = response.data.auth_token;
-        const authData = { authKey, userId, userName, authEmail, userLang };
+      if (response?.data) {
+        const { firstname, lastname, id, db_language_iso_code, auth_token } = response.data;
+        const authData = {
+          authKey: auth_token,
+          userId: id,
+          userName: `${firstname} ${lastname}`,
+          authEmail,
+          userLang: db_language_iso_code
+        };
         setAuth(authData);
-        sessionStorage.setItem("auth", JSON.stringify(authData));
+        localStorage.setItem("auth", JSON.stringify(authData)); // ✅ use localStorage
       }
 
       return response;
     } catch (error) {
-      console.error("Error fetching data:", error);
-      throw new Error("Login failed. Please check your credentials.");
+      const apiMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        "Login failed. Please check your credentials.";
+      throw new Error(apiMessage);
     }
   };
 
   const logout = () => {
     setAuth(null);
-    sessionStorage.removeItem("auth");
+    localStorage.removeItem("auth"); // ✅ use localStorage
   };
 
   const updateAuthToken = (newToken) => {
-    setAuth(prev => ({
-      ...prev,
-      auth_token: newToken
-    }));
+    setAuth(prev => {
+      const updated = { ...prev, authKey: newToken };
+      localStorage.setItem("auth", JSON.stringify(updated)); // ✅ persist update
+      return updated;
+    });
   };
 
   return (

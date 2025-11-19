@@ -21,8 +21,9 @@
   "single_equipment_page_contract_view_more_button": "Voir plus",
   "single_equipment_page_contract_warranty_date": "Date de fin de garantie",
   "single_equipment_page_contract_warranty_information": "Informations sur la garantie",
-  "single_equipment_page_contract_WO_type": "Type WO",
+  "single_equipment_page_contract_WO_type": "Type d'OT",
   "single_equipment_page_description": "Description",
+  "single_equipment_page_helping_text": "Cliquez sur la ligne pour voir les détails de l'ordre de travail (OT).",
   "single_equipment_page_documents": "Documents",
   "single_equipment_page_download_all_button": "Télécharger tout",
   "single_equipment_page_download_button": "Télécharger",
@@ -36,6 +37,11 @@
   "single_equipment_page_properties": "Propriétés",
   "single_equipment_page_reference": "Référence",
   "single_equipment_page_select_to_download": "Sélectionnez pour télécharger le document.",
+  "single_equipment_page_work_order_list_planned_date_technician": "Date planifiée et technicien",
+  "single_equipment_page_work_order_list_remarks_ref": "Réf",
+  "single_equipment_page_work_order_list_remarks_technician": "Technicien",
+  "single_equipment_page_work_order_list_remarks_date": "Date",
+  "single_equipment_page_work_order_list_remarks_technicians_remarks": "Remarques du technicien",
   "single_equipment_page_serial_number": "Numéro de série",
   "single_equipment_page_shutdown_consequence": "Conséquence d'une mise à l'arrêt",
   "single_equipment_page_supplier_ref": "Fournisseur Réf",
@@ -51,5 +57,7 @@
   "single_equipment_page_work_order_table_reference_text": "Référence",
   "single_equipment_page_work_order_table_status_text": "Statut",
   "single_equipment_page_work_order_table_type_text": "Type",
-  "single_equipment_page_work_orders": "Ordres de travail"
+  "single_equipment_page_work_orders": "Ordres de travail",
+  "single_equipment_page_work_order_table_scheduled_technician_text": "Technicien prévu",
+  "single_equipment_page_work_order_table_close_date_text": "Date de clôture"
 }

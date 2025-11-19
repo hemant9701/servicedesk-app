@@ -17,7 +17,7 @@ const WELLO_API_URL =
 export const fetchDocuments = async (
   endpoint,
   method = "GET",
-  authKey = JSON.parse(sessionStorage.getItem("auth"))?.authKey,
+  authKey = JSON.parse(localStorage.getItem("auth"))?.authKey,
   data = null,
   accept = "application/json",
   contentType

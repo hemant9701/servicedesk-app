@@ -23,6 +23,7 @@
   "single_equipment_page_contract_warranty_information": "Garantie-informatie",
   "single_equipment_page_contract_WO_type": "WO-type",
   "single_equipment_page_description": "Beschrijving",
+  "single_equipment_page_helping_text": "Klik op de rij om de details van de werkorder (WO) te bekijken.",
   "single_equipment_page_documents": "Documenten",
   "single_equipment_page_download_all_button": "Alles downloaden",
   "single_equipment_page_download_button": "Downloaden",
@@ -36,6 +37,11 @@
   "single_equipment_page_properties": "Eigenschappen",
   "single_equipment_page_reference": "Referentie",
   "single_equipment_page_select_to_download": "Selecteer om het document te downloaden.",
+  "single_equipment_page_work_order_list_planned_date_technician": "Geplande datum en technicus",
+  "single_equipment_page_work_order_list_remarks_ref": "Ref",
+  "single_equipment_page_work_order_list_remarks_technician": "Technicus",
+  "single_equipment_page_work_order_list_remarks_date": "Datum",
+  "single_equipment_page_work_order_list_remarks_technicians_remarks": "Opmerkingen van technici",
   "single_equipment_page_serial_number": "Serienummer",
   "single_equipment_page_shutdown_consequence": "Gevolgen van uitschakeling",
   "single_equipment_page_supplier_ref": "Leverancier Ref",
@@ -51,5 +57,7 @@
   "single_equipment_page_work_order_table_reference_text": "Referentie",
   "single_equipment_page_work_order_table_status_text": "Status",
   "single_equipment_page_work_order_table_type_text": "Type",
-  "single_equipment_page_work_orders": "Werkorders"
+  "single_equipment_page_work_orders": "Werkorders",
+  "single_equipment_page_work_order_table_scheduled_technician_text": "Geplande technicus",
+  "single_equipment_page_work_order_table_close_date_text": "Sluitingsdatum"
 }

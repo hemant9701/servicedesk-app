@@ -25,5 +25,9 @@
   "single_work_order_page_err_failed_to_fetch_thumbnail": "Failed to fetch thumbnails.",
   "single_work_order_page_select_to_download": "Select to Download the Document.",
   "single_work_order_page_download_button": "Download",
-  "single_work_order_page_download_all_button": "Download All"
+  "single_work_order_page_download_all_button": "Download All",
+  "single_work_order_page_sub_wo_status": "Status",
+  "single_work_order_page_sub_wo_name": "Name",
+  "single_work_order_page_sub_wo_reference": "Reference",
+  "single_work_order_page_sub_wo_type": "Type"
 }

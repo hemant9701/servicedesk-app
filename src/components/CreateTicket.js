@@ -22,6 +22,7 @@ const CreateTicket = () => {
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [submitLoading, setSubmitLoading] = useState(false);
   const [subRowsMap, setSubRowsMap] = useState({});
   const [renderedSubRows, setRenderedSubRows] = useState({});
   const [error, setError] = useState(null);
@@ -31,12 +32,13 @@ const CreateTicket = () => {
     ticketType: '',
     severity: '',
     problemDescription: '',
-    file: null
+    file: [] // ensure file is an array to avoid files.map is not a function
   });
 
   const [ticketTypes, setTicketTypes] = useState([]);
   const [severities, setSeverities] = useState([]);
   const [expanded, setExpanded] = useState({});
+  const [isDragActive, setIsDragActive] = useState(false);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -74,11 +76,12 @@ const CreateTicket = () => {
 
   const [date, setDate] = React.useState(new Date());
   const [selectedTime, setSelectedTime] = useState(null);
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
   const [responseId, setResponseId] = useState();
   const dropdownRef = useRef(null);
-  const { t } = useTranslation('createTicket');
+  const { t, i18n } = useTranslation('createTicket');
+  const locale = i18n?.language || 'en-GB'; // used for Calendar and toLocaleString
 
   const timeSlots = [
     '08:00', '08:30', '09:00', '09:30',
@@ -185,17 +188,6 @@ const CreateTicket = () => {
     }));
     setLocationHints([]);
   };
-
-  // Close dropdown on outside click
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   useEffect(() => {
     const fetchBrands = async () => {
@@ -309,28 +301,50 @@ const CreateTicket = () => {
     }));
   };
 
-  const handleFileChange = (event) => {
-    const newFiles = Array.from(event.target.files);
 
+  const handleFileChange = (event) => {
+    const newFiles = Array.from(event.target.files || []);
+
+    // Filter out large files and warn
     const validFiles = newFiles.filter((file) => {
       if (file.size > maxFileSize) {
-        toast.warn(`${file.name} is larger than 5MB and will not be added.`);
+        toast.warn(t("create_ticket_file_more_then_max_size", { fileName: file.name }));
         return false;
       }
       return true;
     });
 
-    // Update files state
     setFiles((prevFiles) => {
-      const updatedFiles = [...prevFiles, ...validFiles];
-      syncTicketFiles(updatedFiles);
+      const uniqueFiles = validFiles.filter((f) => {
+        const isDuplicate = prevFiles.some(
+          (pf) =>
+            pf.name === f.name &&
+            pf.size === f.size &&
+            pf.lastModified === f.lastModified
+        );
+
+        if (isDuplicate) {
+          toast.warn(t("create_ticket_fileAlreadyAdded", { fileName: f.name }));
+          return false;
+        }
+        return true;
+      });
+
+      const updatedFiles = [...prevFiles, ...uniqueFiles];
+
+      // optional sync
+      syncTicketFiles?.(updatedFiles);
+
       return updatedFiles;
     });
 
-    if (fileInputRef.current) {
+    // Clear input so user can select same files again
+    if (fileInputRef?.current) {
       fileInputRef.current.value = "";
     }
   };
+
+
 
   const removeFile = (index) => {
     setFiles((prevFiles) => {
@@ -671,6 +685,8 @@ const CreateTicket = () => {
 
 
   const handleSubmitTicket = async () => {
+    setSubmitLoading(true); // ⬅️ Start loading
+
     const selectedTaskType = ticketTypes.find(type => type.name === ticketDetails.ticketType); // Assuming you're choosing from a list
     const selectedSeverity = severities.find(severity => severity.name === ticketDetails.severity); // Assuming you're choosing from a list
 
@@ -697,7 +713,7 @@ const CreateTicket = () => {
       if (response) {
         await postImage(response.id, response.id2);
         setLoading(false);
-        toast.success('Ticket created successfully!');
+        toast.success(t('create_ticket_created_successfully'));
         setIsSubmitModalOpen(true);
         setResponseId(response.id);
         //navigate(`/ticket/${response.id}`)
@@ -705,37 +721,101 @@ const CreateTicket = () => {
 
       // Reset state after submission
       setStep(3);
-      //setSelectedRow(null);
-      //setTicketDetails({});
-      //setTicketName(''); // Make sure ticketName is cleared
+
     } catch (err) {
       console.error('Error creating ticket:', err);
       setError(err);
-      setLoading(false);
+      toast.error(t('create_ticket_failed_create_ticket'));
+    } finally {
+      setSubmitLoading(false);      // ⬅️ Stop loading
     }
   };
 
   const postImage = async (ticketId, ticketId2) => {
     try {
-      const imagePayload = new FormData();
-      const selectedFile = ticketDetails.file;
-      //imagePayload.append("file", selectedFile);
-      selectedFile.forEach((file, index) => {
-        imagePayload.append(`file${index + 1}`, file);
-      });
-
-      if (imagePayload) {
-        await fetchDocuments(
-          `api/dbfile/add?db_table_id=448260E5-7A17-4381-A254-0B1D8FE53947&id_in_table=${ticketId}&description=Uploaded by Service Desk - ${ticketId2}`,
-          'POST', auth.authKey, imagePayload
-        );
+      if (!ticketId || !ticketId2) {
+        throw new Error(t("create_ticket_error_missing_identifiers"));
       }
 
-      //console.log(imageResponse);
+      const selectedFiles = ticketDetails?.file;
+      if (!Array.isArray(selectedFiles) || selectedFiles.length === 0) {
+        return; // nothing to upload
+      }
+
+      const baseUrl =
+        process.env.REACT_APP_API_URL ||
+        "https://servicedeskapi.wello.solutions/";
+
+      const headers = {};
+      if (auth?.authKey) {
+        headers["Authorization"] = auth.authKey;
+      }
+
+      // ✅ Upload each file in its own request
+      for (const file of selectedFiles) {
+        const formData = new FormData();
+        formData.append("file", file, file.name);
+
+        const description = `Uploaded by Service Desk - ${ticketId2}`;
+        formData.append("description", description);
+
+        const endpoint = `/api/dbfile/add?db_table_id=448260E5-7A17-4381-A254-0B1D8FE53947&id_in_table=${ticketId}&description=${encodeURIComponent(
+          description
+        )}`;
+
+        const url = `${baseUrl.replace(/\/$/, "")}${endpoint}`;
+
+        const res = await fetch(url, {
+          method: "POST",
+          headers,
+          body: formData,
+        });
+
+        let json = null;
+        try {
+          json = await res.json();
+        } catch {
+          const text = await res.text();
+          console.warn("Non-JSON response:", text);
+        }
+
+        if (!res.ok || (json && json.success === false)) {
+          throw new Error(json?.message || `Upload failed for file: ${file.name}`);
+        }
+
+        console.log(`Upload successful for ${file.name}:`, json);
+      }
+
+      //toast.success("All files uploaded successfully.");
     } catch (err) {
-      // toast.error("Failed to upload image.");
-      // alert("Failed to upload image.");
+      console.error("Upload error:", err);
+      toast.error(t('create_ticket_failed_upload_files.'));
     }
+  };
+
+
+
+  // Handle image drop 
+  const handleDrop = (event) => {
+    event.preventDefault();
+    setIsDragActive(false);
+
+    // Use the same handler as file input so files stay as File objects (array)
+    const droppedFiles = Array.from(event.dataTransfer?.files || []);
+    if (droppedFiles.length === 0) return;
+    // Re-use existing handler which validates sizes and updates state
+    handleFileChange({ target: { files: droppedFiles } });
+  };
+
+  // allow drop event
+  const handleDragOver = (event) => {
+    event.preventDefault();
+    setIsDragActive(true);
+  };
+
+  // for stop dragging state
+  const handleDragLeave = () => {
+    setIsDragActive(false);
   };
 
   return (
@@ -752,7 +832,7 @@ const CreateTicket = () => {
         pauseOnHover
         theme="colored"
       />
-      <h1 className="justify-start text-zinc-900 text-3xl font-semibold mb-6">{t("Ticket creation")}</h1>
+      <h1 className="justify-start text-zinc-900 text-3xl font-semibold mb-6">{t("create_ticket_page_title")}</h1>
 
       {/* Step Indicator Bar */}
       <div className='w-full border-b-2 mb-4 border-gray-200'>
@@ -1117,7 +1197,7 @@ const CreateTicket = () => {
             </div>
 
             <div className="mb-4">
-              <label className="block text-slate-700 text-sm font-medium leading-tight">{t("create_ticket_step-2_issue_inputbox_label")}</label>
+              <label className="block text-slate-700 text-sm font-medium leading-tight"><span className='text-sm text-red-500'>* </span>{t("create_ticket_step-2_issue_inputbox_label")}</label>
               <input
                 type="text"
                 maxLength={50}
@@ -1137,7 +1217,7 @@ const CreateTicket = () => {
                 value={textarea}
                 onChange={(e) => handleInputChange('problemDescription', e.target.value)}
                 placeholder={t('create_ticket_step-2_description_textbox_placeholder')}
-                className="mt-1 p-2 text-gray-400 font-normal leading-normal text-base w-full border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="mt-1 p-2 h-32 text-gray-400 font-normal leading-normal text-base w-full border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
               <p className="text-red-500 text-xs font-normal leading-normal mt-1 text-end">
                 {255 - textarea.length} {t("create_ticket_step-2_characters_remaining_text")}
@@ -1148,22 +1228,38 @@ const CreateTicket = () => {
             <div className="w-full mx-auto">
               <label
                 htmlFor="file-upload"
-                className="flex flex-col items-center justify-center w-full h-40 px-4 transition bg-white border-1 border rounded-md cursor-pointer border-gray-300"
+                tabIndex={0}
+                className={`flex flex-col items-center justify-center w-full h-28 px-4 transition bg-white border border-gray-300 rounded-md cursor-pointer ${isDragActive ? "bg-blue-50 border-blue-400" : ""
+                  }`}
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
               >
                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
                   <UploadCloud className="w-8 h-8 mb-3 p-1.5 rounded-3xl text-zinc-800 bg-gray-200" />
-                  <p className="mb-2 text-zinc-800 text-sm leading-tight">
-                    <span className="font-medium">{t("create_ticket_step-2_upload_inputfile_label")}</span>
+                  <p className="mb-2 text-zinc-800 text-sm leading-tight text-center">
+                    <span className="font-medium">
+                      {t("create_ticket_step-2_upload_inputfile_label_1")}
+                    </span>
+                    <span className="font-normal text-gray-500">
+                      {t("create_ticket_step-2_upload_inputfile_label_2")}
+                    </span>
                   </p>
-                  <p className="text-gray-500 text-xs font-normal leading-none">{t("create_ticket_step-2_upload_inputfile_name")}</p>
+                  <p className="text-gray-500 text-xs font-normal leading-none">
+                    {t("create_ticket_step-2_upload_inputfile_name")}
+                  </p>
                 </div>
-                <input id="file-upload"
+                <input
+                  id="file-upload"
                   type="file"
                   multiple
                   ref={fileInputRef}
-                  onChange={handleFileChange} className="hidden" />
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
               </label>
             </div>
+
 
             <div className="mb-4">
               {/* File Thumbnails Grid */}
@@ -1238,11 +1334,25 @@ const CreateTicket = () => {
                   onChange={setDate}
                   value={date}
                   minDate={new Date()}
+                  locale={locale}
                   calendarType="gregory" // Week starts on Sunday
-                  formatShortWeekday={(locale, date) => date.toLocaleDateString(locale, { weekday: 'short' }).slice(0, 1)}
+                  //formatShortWeekday={(locale, date) => date.toLocaleDateString(locale, { weekday: 'short' }).slice(0, 1)}
                   prev2Label={null}  // Remove double prev
                   next2Label={null}  // Remove double next
                   className="calendar-component"
+                  formatShortWeekday={(lc, dt) => {
+                    const weekday = dt.toLocaleDateString(locale, { weekday: 'short' });
+                    return weekday.charAt(0).toUpperCase() + weekday.slice(1);
+                  }}
+                  formatMonthYear={(locale, date) => {
+                    const month = date.toLocaleDateString(locale, { month: 'long' });
+                    const year = date.getFullYear();
+                    return `${month.charAt(0).toUpperCase() + month.slice(1)} ${year}`;
+                  }}
+                  formatDay={(locale, date) => {
+                    const day = date.getDate().toString();
+                    return day.charAt(0).toUpperCase() + day.slice(1);
+                  }}
                 />
               </div>
 
@@ -1288,7 +1398,20 @@ const CreateTicket = () => {
             </div>
             <div className='text-zinc-900 text-base font-medium my-8'>
               {t("create_ticket_page_step-3_selected_date_time")}
-              <span className='underline ml-4'>{date.toLocaleDateString('en-BE', { year: 'numeric', month: 'long', day: 'numeric' })} | {selectedTime || '08:00'}</span>
+              <span className='underline ml-4 '>
+                {
+                  (() => {
+                    const day = date.getDate();
+                    const month = date.toLocaleDateString(locale, { month: 'long' });
+                    const year = date.getFullYear();
+
+                    const capitalize = str => str.charAt(0).toUpperCase() + str.slice(1);
+
+                    return `${day} ${capitalize(month)} ${year} `;
+                  })()
+                } 
+                </span> | <span className='underline'>{selectedTime || '08:00'}
+               </span>
             </div>
 
 
@@ -1334,8 +1457,15 @@ const CreateTicket = () => {
             </div>
           )}
 
+          {submitLoading && (
+            <div className="fixed inset-0 bg-black bg-opacity-40 flex flex-col items-center justify-center z-50">
+              <div className="w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-white text-lg font-medium mt-4">{t("create_ticket_step-4_submitting_text")}</p>
+            </div>
+          )}
+
           <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-            <div className='shadow-sm rounded-lg bg-white p-4 '>
+            <div className='shadow-sm border rounded-lg bg-white p-4 '>
               <h4 className="text-zinc-900 text-xs font-semibold leading-normal">{t("create_ticket_step-4_address")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
               <ul className="text-sm list-none list-inside text-slate-500 text-xs font-medium">
@@ -1370,7 +1500,7 @@ const CreateTicket = () => {
               <h4 className='text-zinc-900 text-xs font-semibold leading-normal'>{t("create_ticket_step-4_preferred_date_time")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
               <ul className="text-sm list-none list-inside text-slate-500 text-xs font-medium">
-                <li>{date.toLocaleDateString('nl-BE')} {selectedTime}</li>
+                <li>{date.toLocaleDateString('en-GB')} {selectedTime}</li>
               </ul>
             </div>
             <div className='shadow-sm border rounded-lg bg-white p-4 '>
@@ -1432,10 +1562,12 @@ const CreateTicket = () => {
             </div>
           </div>
           <div className="mt-4 flex justify-end">
-            <button type='button' onClick={() => setStep(2)} className="w-48 px-5 py-3 border border-2 bg-white rounded-lg flex items-center justify-center text-zinc-800 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
+            <button type='button' onClick={() => setStep(2)} disabled={submitLoading}
+              className="w-48 px-5 py-3 border border-2 bg-white rounded-lg flex items-center justify-center text-zinc-800 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
               {t('create_ticket_popup_button_back')}
             </button>
-            <button onClick={handleSubmitTicket} className="w-48 px-5 py-3 ml-2 bg-zinc-800 rounded-lg flex items-center justify-center text-pink-50 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
+            <button onClick={handleSubmitTicket} disabled={submitLoading}
+              className={`w-48 px-5 py-3 ml-2 rounded-lg flex items-center justify-center text-pink-50 text-base font-medium leading-normal ${submitLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-zinc-800 hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]'}`}>
               {t('create_ticket_popup_button_confirm')}
             </button>
           </div>

@@ -22,9 +22,14 @@ const SingleTicket = () => {
   const [fileThumbnails, setFileThumbnails] = useState({});
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [downloadMsg, setDownloadMsg] = useState('');
+  // persistence key (per ticket)
+  const STORAGE_KEY = `SingleTicketState_${ticketId || 'global'}`;
+  const [selectedFileIds, setSelectedFileIds] = useState([]);
+  const [expandedRowId, setExpandedRowId] = useState(null);
+  const [expandedPreventives, setExpandedPreventives] = useState({});
   const { t } = useTranslation('singleTicket');
 
-  const url = `https://testservicedeskapi.odysseemobile.com/`;
+  const url = process.env.REACT_APP_API_URL || 'https://servicedeskapi.odysseemobile.com';
 
   const statusColors = useMemo(() => ({
     "In progress": "bg-yellow-100 text-yellow-600",
@@ -108,30 +113,34 @@ const SingleTicket = () => {
           doc.map(async (item) => {
             if (!item.id) return;
 
-            const endpoint = `api/DbFileView/GetFileThumbnail/?id=${item.id}&maxWidth=${item.image_width || '500'}&maxHeight=${item.image_heigth || '500'}`;
+            try {
+              const endpoint = `api/DbFileView/GetFileThumbnail/?id=${item.id}&maxWidth=${item.image_width || '500'}&maxHeight=${item.image_heigth || '500'}`;
 
-            // 👇 Use fetchDocuments with "image/png"
-            const response = await fetchDocuments(
-              endpoint,
-              "GET",
-              authKey,
-              null,
-              "image/png"
-            );
+              const response = await fetchDocuments(
+                endpoint,
+                "GET",
+                authKey,
+                null,
+                "image/png"
+              );
 
-            // fetchDocuments returns blob for non-json responses
-            updatedThumbnails[item.id] = URL.createObjectURL(response);
+              updatedThumbnails[item.id] = URL.createObjectURL(response);
+            } catch (err) {
+              console.warn(`Failed to load thumbnail for ${item.id}:`, err);
+              // Skip just this one, let others continue
+            }
           })
         );
 
         setFileThumbnails(updatedThumbnails);
       } catch (err) {
         console.error("Error fetching thumbnails:", err);
-        setError(t("single_ticket_page_err_failed_to_fetch_thumbnail"));
+        // setError(t("single_ticket_page_err_failed_to_fetch_thumbnail"));
       } finally {
         setLoading(false);
       }
     };
+
 
     if (activeTab === "documents") {
       GetFileThumbnails();
@@ -159,12 +168,50 @@ const SingleTicket = () => {
     setDownloadMsg("Downloading selected files...");
   };
 
+  // Restore small UI state on mount (tab, selected file ids, expanded rows)
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw);
+      if (saved.activeTab) setActiveTab(saved.activeTab);
+      if (Array.isArray(saved.selectedFileIds)) setSelectedFileIds(saved.selectedFileIds);
+      if (saved.expandedRowId) setExpandedRowId(saved.expandedRowId);
+      if (saved.expandedPreventives) setExpandedPreventives(saved.expandedPreventives);
+    } catch (e) {
+      // ignore parse/storage errors
+    }
+  }, [STORAGE_KEY]);
+
+  // Reconcile stored file ids with loaded doc list
+  useEffect(() => {
+    if (!Array.isArray(selectedFileIds) || !Array.isArray(doc) || doc.length === 0) return;
+    const sel = doc.filter(d => selectedFileIds.includes(d.id));
+    setSelectedFiles(sel);
+  }, [doc, selectedFileIds]);
+
+  // Persist UI state when it changes
+  useEffect(() => {
+    try {
+      const toSave = {
+        activeTab,
+        selectedFileIds,
+        expandedRowId,
+        expandedPreventives,
+      };
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+    } catch (e) {
+      // ignore storage errors
+    }
+  }, [activeTab, selectedFileIds, expandedRowId, expandedPreventives, STORAGE_KEY]);
+
   const toggleFileSelection = (file) => {
-    setSelectedFiles((prev) =>
-      prev.some((f) => f.id === file.id)
-        ? prev.filter((f) => f.id !== file.id)
-        : [...prev, file]
-    );
+    setSelectedFiles((prev) => {
+      const exists = prev.some((f) => f.id === file.id);
+      const updated = exists ? prev.filter((f) => f.id !== file.id) : [...prev, file];
+      setSelectedFileIds(updated.map(f => f.id));
+      return updated;
+    });
   };
 
 
@@ -179,11 +226,17 @@ const SingleTicket = () => {
   if (error) return <div className="text-center text-red-600">{error}</div>;
 
   return (
-    <div className="w-full max-w-4xl mx-auto p-6 bg-white">
+    <div className="mx-auto w-full p-6 bg-white">
       <div className='flex'>
         {/* Back Button */}
         <button
-          onClick={() => navigate(-1)} // Navigate back one step in history
+          onClick={() => {
+            if (activeTab !== 'details') {
+              setActiveTab('details');
+            } else {
+              navigate(-1);
+            }
+          }}
           className="flex items-center mb-6 font-semibold text-zinc-900 text-base"
         >
           <ArrowLeft className="mr-2 w-5 h-5" /> {t("single_ticket_page_go_back")}
@@ -243,13 +296,19 @@ const SingleTicket = () => {
                 <hr className='my-2 w-32 border-gray-300' />
                 <ul className="list-none list-inside text-slate-500 text-xs font-medium">
                   <li className='flex items-center pb-1'><User className='w-4 h-4 mr-2' />{ticket?.contact_fullname}</li>
-                  <li className='flex items-center'><Calendar className='w-4 h-4 mr-2' />{(new Date(ticket?.date_create).getFullYear() !== 1980) ? new Date(ticket?.date_create).toLocaleString('nl-BE', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  }) : ''}</li>
+                  <li className='flex items-center'>
+                    <Calendar className='w-4 h-4 mr-2' />
+                    {(new Date(ticket?.date_create).getFullYear() !== 1980) ?
+                      new Date(ticket?.date_create).toLocaleString('en-GB', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: false // optional: use 24-hour format
+                      })
+                      : ''}
+                  </li>
                 </ul>
               </div>
 
@@ -261,12 +320,13 @@ const SingleTicket = () => {
                   {ticket?.date_assigned && new Date(ticket.date_assigned).getFullYear() !== 1980 && (
                     <li className='flex items-center'>
                       <Calendar className='w-4 h-4 mr-2' />
-                      {new Date(ticket.date_assigned).toLocaleString('nl-BE', {
+                      {new Date(ticket.date_assigned).toLocaleString('en-GB', {
                         year: 'numeric',
                         month: '2-digit',
                         day: '2-digit',
                         hour: '2-digit',
-                        minute: '2-digit'
+                        minute: '2-digit',
+                        hour12: false,
                       })}
                     </li>
                   )}
@@ -350,7 +410,15 @@ const SingleTicket = () => {
                             className="w-48 h-40 object-cover rounded-md mx-auto"
                           />
                         ) : (
-                          <Image className="w-40 h-40 text-gray-200 mx-auto" /> // 👈 fallback image icon
+                          <div className="relative w-40 h-40 flex items-center justify-center mx-auto bg-gray-100 rounded-md">
+                            {/* Loading overlay */}
+                            <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-70 z-10">
+                              <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-gray-500"></div>
+                            </div>
+
+                            {/* Fallback icon */}
+                            <Image className="w-20 h-20 text-gray-300" />
+                          </div>
                         )
                       ) : (
                         <File className="w-40 h-40 text-gray-600 mx-auto" />
@@ -359,7 +427,14 @@ const SingleTicket = () => {
                     <div className='flex flex-col'>
                       <h4 className="text-gray-500 text-sm py-1 break-words">{item.name}</h4>
 
-                      <p className="text-gray-500 text-sm">{new Date(item.date_add).toLocaleString()}</p>
+                      <p className="text-gray-500 text-sm">{new Date(item.date_add).toLocaleString('en-GB', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: false,
+                      })}</p>
 
                       {item.file_name ? (
                         <label className="mt-2 flex space-x-2 items-start text-sm">

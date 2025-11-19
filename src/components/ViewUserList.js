@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useTable, usePagination } from 'react-table';
-import { fetchData } from '../services/apiService.js';
+import{ fetchDocuments } from '../services/apiServiceDocuments';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { ArrowLeft, ArrowRight, ArrowLeftToLine, ArrowRightToLine, Lock } from 'lucide-react';
@@ -17,7 +17,7 @@ const ViewUserList = () => {
   useEffect(() => {
     const fetchContact = async () => {
       try {
-        const response = await fetchData('api/Contact?$filter=e_login+ne+%27%27', 'GET', auth.authKey);
+        const response = await fetchDocuments('api/Contact?$filter=e_login+ne+%27%27', 'GET', auth.authKey);
         setContacts(response.value); // Adjusted for your API's response structure
         setLoading(false);
       } catch (err) {

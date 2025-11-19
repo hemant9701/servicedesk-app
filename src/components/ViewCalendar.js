@@ -1,11 +1,11 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
-import { useTable, useSortBy } from 'react-table';
+import { useTable, useSortBy, useExpanded } from 'react-table';
 import { fetchDocuments } from '../services/apiServiceDocuments';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import { useAuth } from '../AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { BadgeInfo, Loader, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, ArrowLeftToLine, ArrowRightToLine, Filter } from 'lucide-react';
+import { BadgeInfo, Loader, FileText, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, ArrowLeftToLine, ArrowRightToLine, Filter } from 'lucide-react';
 import { useTranslation } from "react-i18next";
 import { startOfMonth, endOfMonth, format } from 'date-fns';
 import Select from 'react-select';
@@ -18,12 +18,14 @@ const ViewCalendars = () => {
   const [contents, setContents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingDates, setLoadingDates] = useState(true);
   const [error, setError] = useState(null);
   const [date, setDate] = useState(new Date());
-  const { t } = useTranslation('calendar');
+  const { t, i18n } = useTranslation('calendar');
+  const locale = i18n?.language || 'en-US'; // used for Calendar and toLocaleString
 
   // Search Filter states
-  //const [location, setLocation] = useState('');
+  //const [location, setLocation('');
   const [equipmentTypes, setEquipmentTypes] = useState([]);
   const [equipmentNames, setEquipmentNames] = useState([]);
   const [selectedEquipmentType, setSelectedEquipmentType] = useState('All');
@@ -34,6 +36,11 @@ const ViewCalendars = () => {
 
   const [allLocations, setAllLocations] = useState([]);
   const [locationHints, setLocationHints] = useState([]);
+
+  const [expandedRowId, setExpandedRowId] = useState(null);
+  const [activeSection, setActiveSection] = useState(null); // 'popup' | 'remarks'
+  const [remarksDataMap, setRemarksDataMap] = useState({});
+  const [loadingMap, setLoadingMap] = useState({});
 
   const EmptyGuid = "00000000-0000-0000-0000-000000000000";
 
@@ -72,9 +79,6 @@ const ViewCalendars = () => {
           subRows: item.has_child ? [] : []
         }));
 
-        if (parentOnly || (!parentOnly && !parentId)) {
-          setContents(mapped);
-        }
         return await mapped;
       } catch (err) {
         console.error(err);
@@ -151,23 +155,26 @@ const ViewCalendars = () => {
 
   useEffect(() => {
     const fetchJobs = async () => {
+      setLoadingDates(true); // 🔄 Trigger loading before fetch starts
+
       const formatDate = (date) => format(date, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
       const dateFrom = formatDate(startOfMonth(currentMonth));
       const dateTo = formatDate(endOfMonth(currentMonth));
 
       const query = `date_from gt '${dateFrom}' and date_to le '${dateTo}'`;
-      const encodedQuery = encodeURIComponent(query);
-      const url = `api/JobPlanningView?$filter=${encodedQuery}`;
+      const url = `api/JobPlanningView?$filter=${encodeURIComponent(query)}`;
 
       try {
         const response = await fetchDocuments(url, 'GET', auth.authKey);
         setContents(response.value);
-        setLoading(false);
       } catch (err) {
         setError(err);
+      } finally {
+        setLoadingDates(false); // ✅ Always stop loading after fetch
         setLoading(false);
       }
     };
+
     fetchJobs();
   }, [auth, currentMonth]);
 
@@ -218,10 +225,52 @@ const ViewCalendars = () => {
       }))
     : [];
 
+  const handleRemarksClick = useCallback(async (rowId) => {
+    if (expandedRowId === rowId && activeSection === "remarks") {
+      setExpandedRowId(null);
+      setActiveSection(null);
+      return;
+    }
+
+    setExpandedRowId(rowId);
+    setActiveSection("remarks");
+
+    if (remarksDataMap[rowId]) return;
+
+    setLoadingMap(prev => ({ ...prev, [rowId]: true }));
+    try {
+      const response = await fetchDocuments(`api/JobsView/GetAllTechnicianRemarksOfJob?jobs_id=${rowId}`);
+      const res = response;
+      setRemarksDataMap(prev => ({ ...prev, [rowId]: res }));
+    } finally {
+      setLoadingMap(prev => ({ ...prev, [rowId]: false }));
+    }
+  }, [expandedRowId, activeSection, remarksDataMap]);
+
   const columns = useMemo(
     () => [
       {
-        Header: t('calender_table_heading_reference_text'),
+        Header: '', // Blank header
+        accessor: 'icon', // Dummy accessor to satisfy react-table
+        Cell: ({ row }) => {
+          const showFileIcon = row.original.jobs_nb_notes > 0;
+
+          if (!showFileIcon) return null;
+
+          return (
+            <span className="flex gap-2 items-center">
+              {showFileIcon && (
+                <FileText
+                  className="w-5 h-5 cursor-pointer"
+                  onClick={() => handleRemarksClick(row.original.jobs_id)}
+                />
+              )}
+            </span>
+          );
+        },
+      },
+      {
+        Header: t('calendar_table_heading_reference_text'),
         accessor: 'jobs_id2',
         Cell: ({ row }) => (
           <span
@@ -231,24 +280,31 @@ const ViewCalendars = () => {
         )
       },
       {
-        Header: t('calender_table_heading_hour_text'),
+        Header: t('calendar_table_heading_hour_text'),
         accessor: 'date_from',
-        Cell: ({ value }) => new Date(value).toLocaleString('nl-BE', { hour: 'numeric', minute: 'numeric', hour12: false })
+        Cell: ({ value }) => {
+          if (!value) return '';
+          try {
+            return new Date(value).toLocaleTimeString("en-GB", { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', hour12: false });
+          } catch {
+            return '';
+          }
+        }
       },
       {
-        Header: t('calender_table_heading_name_text'),
+        Header: t('calendar_table_heading_name_text'),
         accessor: 'jobs_name',
       },
       {
-        Header: t('calender_table_heading_address_text'),
+        Header: t('calendar_table_heading_address_text'),
         accessor: ({ db_address_street, db_address_city, db_address_zip }) => `${db_address_street} ${db_address_city} ${db_address_zip}`
       },
       {
-        Header: t('calender_table_heading_technician_text'),
+        Header: t('calendar_table_heading_technician_text'),
         accessor: ({ user_firstname, user_lastname }) => `${user_firstname} ${user_lastname}`
       }
     ],
-    [t]
+    [handleRemarksClick, t]
   );
 
   const { filteredContents, datesWithData } = useMemo(() => {
@@ -265,12 +321,12 @@ const ViewCalendars = () => {
 
       const matchesEquipmentType =
         selectedEquipmentType && selectedEquipmentType !== 'All'
-          ? content.project_equipment_family_id === (selectedEquipmentType.value || selectedEquipmentType)
+          ? content.project_equipment_family_id === (selectedEquipmentType)
           : true;
 
       const matchesEquipmentName =
         selectedEquipmentName && selectedEquipmentName !== 'All'
-          ? content.project_equipment_family_id === (selectedEquipmentName.value || selectedEquipmentName)
+          ? content.project_equipment_family_id === (selectedEquipmentName)
           : true;
 
       const matchesArchived = includeArchived
@@ -298,13 +354,13 @@ const ViewCalendars = () => {
           // Equipment type filter
           const matchesEquipmentType =
             selectedEquipmentType && selectedEquipmentType !== 'All'
-              ? content.project_equipment_family_id === (selectedEquipmentType.value || selectedEquipmentType)
+              ? content.project_equipment_family_id === (selectedEquipmentType)
               : true;
 
           // Equipment name filter
           const matchesEquipmentName =
             selectedEquipmentName && selectedEquipmentName !== 'All'
-              ? content.project_equipment_family_id === (selectedEquipmentName.value || selectedEquipmentName)
+              ? content.project_equipment_family_id === (selectedEquipmentName)
               : true;
 
           // Archived filter
@@ -319,7 +375,8 @@ const ViewCalendars = () => {
     return { filteredContents: filtered, datesWithData: uniqueDatesWithData };
   }, [contents, date, selectedEquipmentType, selectedEquipmentName, includeArchived, filters]);
 
-  const tableInstance = useTable({ columns, data: filteredContents, initialState: { pageIndex: 0, pageSize: 12 }, }, useSortBy);
+
+  const tableInstance = useTable({ columns, data: filteredContents, initialState: { pageIndex: 0, pageSize: 12 }, }, useSortBy, useExpanded);
   const {
     getTableProps,
     getTableBodyProps,
@@ -336,6 +393,7 @@ const ViewCalendars = () => {
     state: { pageIndex, pageSize },
   } = tableInstance;
 
+
   if (loading) {
     return <div className="flex w-full items-center justify-center h-screen">
       <div className="relative">
@@ -350,31 +408,47 @@ const ViewCalendars = () => {
   }
 
   const handleReset = () => {
-    //setLocation('');
     setDate(new Date());
+
+    // Reset all equipment filters
     setSelectedEquipmentType('All');
     setSelectedEquipmentName('All');
-    setTempFilters({ location: "", locationLabel: "" }); 
-    setFilters({ location: "", locationLabel: "" }); 
-    setLocationHints([]); 
+
+    // Reset location filters
+    setTempFilters({
+      location: "",
+      locationLabel: "",
+      selectedEquipmentType: 'All',
+      selectedEquipmentName: 'All',
+    });
+
+    setFilters({
+      location: "",
+      locationLabel: "",
+      selectedEquipmentType: 'All',
+      selectedEquipmentName: 'All',
+    });
+
+    setLocationHints([]);
     setIncludeArchived(false);
   };
 
+
   return (
     <div className="w-full mx-auto p-6">
-      <h1 className="text-zinc-900 text-3xl font-semibold mb-6">{t('calender_page_title')}</h1>
+      <h1 className="text-zinc-900 text-3xl font-semibold mb-6">{t('calendar_page_title')}</h1>
 
       {/* Back Button */}
       <button
-        onClick={() => navigate('/')} // Navigate back one step in history
+        onClick={() => navigate(-1)} // Navigate back one step in history
         className="flex items-center mb-6 font-semibold text-zinc-900 text-base"
       >
-        <ArrowLeft className="mr-2 w-5 h-5" /> {t("calender_page_go_back")}
+        <ArrowLeft className="mr-2 w-5 h-5" /> {t("calendar_page_go_back")}
       </button>
 
       <div className="flex flex-col lg:flex-row gap-12">
         {/* Filters Section */}
-        <div className="bg-white p-4 rounded-lg shadow-[0_0_10px_2px_rgba(0,0,0,0.1)] w-full lg:w-1/3">
+        <div className="bg-white p-4 rounded-lg shadow-[0_0_10px_2px_rgba(0,0,0,0.1)] w-full lg:w-2/5">
           <h2 className="flex items-center text-zinc-900 text-base font-medium leading-normal pb-6">
             {t('calendar_page_filter_label')} <Filter className="w-5 h-4 ml-4" />
           </h2>
@@ -521,31 +595,66 @@ const ViewCalendars = () => {
           <div className="flex items-center mb-1 text-zinc-800 text-sm font-normal px-4 py-2">
             <BadgeInfo className='mr-2 w-5 h-5 text-slate-300' /> {t("calendar_page_calendar_helping_text")}
           </div>
-          <div className="bg-white rounded-lg shadow-[0_0_10px_2px_rgba(0,0,0,0.1)]">
+          <div className="relative bg-white rounded-lg shadow-[0_0_10px_2px_rgba(0,0,0,0.1)]">
+            {loadingDates && (
+              <div className="absolute inset-0 bg-white bg-opacity-70 flex items-center justify-center z-10">
+                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-purple-500"></div>
+              </div>
+            )}
             <Calendar
               onChange={onDateChange}
               value={date}
               onActiveStartDateChange={handleMonthChange}
-              tileClassName={({ date, view }) => {
-                if (view === 'month' && datesWithData.includes(date.toDateString())) {
+              locale={locale}
+              calendarType="gregory"
+              className="calendar-component"
+              prev2Label={null}
+              next2Label={null}
+
+              tileClassName={({ date: tileDate, view }) => {
+                if (view === 'month' && datesWithData.includes(tileDate.toDateString())) {
                   return 'rounded-date';
                 }
                 return null;
               }}
-              calendarType="gregory"
-              formatShortWeekday={(locale, date) =>
-                date.toLocaleDateString(locale, { weekday: 'short' }).slice(0, 1)
-              }
-              prev2Label={null}
-              next2Label={null}
-              className="calendar-component"
+
+              formatShortWeekday={(lc, dt) => {
+                const weekday = dt.toLocaleDateString(locale, { weekday: 'short' });
+                return weekday.charAt(0).toUpperCase() + weekday.slice(1);
+              }}
+
+              formatMonthYear={(locale, date) => {
+                const month = date.toLocaleDateString(locale, { month: 'long' });
+                const year = date.getFullYear();
+                return `${month.charAt(0).toUpperCase() + month.slice(1)} ${year}`;
+              }}
+
+              formatDay={(locale, date) => {
+                const day = date.getDate().toString();
+                return day.charAt(0).toUpperCase() + day.slice(1);
+              }}
             />
           </div>
         </div>
       </div>
 
       <div className='shadow-[0_0_10px_2px_rgba(0,0,0,0.1)] rounded-lg mt-4'>
-        <h2 className="text-gray-900 text-lg font-medium leading-7 px-4 py-2">{date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h2>
+        <h2 className="text-gray-900 text-lg font-medium leading-7 px-4 py-2">
+          {(() => {
+            const formattedDate = date.toLocaleDateString(locale, {
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            });
+
+            // Capitalize each word's first letter
+            return formattedDate
+              .split(' ')
+              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+              .join(' ');
+          })()}
+        </h2>
         {rows?.length > 0 ? (
           <>
             <div className="flex items-center mb-1 text-zinc-800 text-sm font-normal px-4 py-2">
@@ -572,34 +681,98 @@ const ViewCalendars = () => {
                     </tr>
                   ))}
                 </thead>
-                <tbody {...getTableBodyProps()} className="bg-white">
-                  {rows.map(row => {
-                    prepareRow(row);
-                    return (
-                      !isLoading && (
-                        <tr {...row.getRowProps()} className="cursor-pointer hover:bg-gray-200" onClick={() => navigate(`/workorder/${row.original.jobs_id}`)}>
-                          {row.cells.map((cell, index) => (
-                            <td {...cell.getCellProps()} className={`self-stretch px-1 py-2 text-xs font-normal text-zinc-900 ${index === 0 ? 'text-center' : ''}`}>
-                              {cell.render('Cell')}
-                            </td>
-                          ))}
-                        </tr>
-                      )
-                    );
-                  })}
+                <tbody {...getTableBodyProps()} className="bg-white divide-y divide-gray-200">
+                  {!isLoading &&
+                    rows.map(row => {
+                      prepareRow(row);
+                      return (
+                        <React.Fragment key={row.original.id}>
+                          <tr
+                            {...row.getRowProps()}
+                            className="cursor-pointer hover:bg-gray-200"
+                          >
+                            {row.cells.map((cell, index) => (
+                              <td
+                                {...cell.getCellProps()}
+                                className={`self-stretch px-1 py-2 text-xs font-normal text-zinc-900 ${index === 0 ? 'text-center' : 'cursor-pointer'
+                                  }`}
+                                onClick={
+                                  index === 0 ? undefined : () => navigate(`/workorder/${row.original.jobs_id}`)
+                                }
+                              >
+                                {cell.render('Cell')}
+                              </td>
+                            ))}
+                          </tr>
+
+                          {expandedRowId === row.original.jobs_id && (
+                            <>
+                              {/* --- Technician Remarks --- */}
+                              {activeSection === 'remarks' && (
+                                <>
+                                  {loadingMap[row.original.jobs_id] ? (
+                                    <tr>
+                                      <td colSpan={row.cells.length} className="bg-gray-50 p-4 text-center">
+                                        <Loader size="36" className="m-2 text-blue-600 animate-spin inline-block" />
+                                      </td>
+                                    </tr>
+                                  ) : remarksDataMap[row.original.jobs_id]?.length > 0 && (
+                                    <tr>
+                                      <td colSpan={row.cells.length} className="bg-gray-50 p-4">
+                                        <div className="p-1">
+                                          <table className="table-auto w-full text-xs font-normal text-left border-collapse">
+                                            <thead>
+                                              <tr className="text-gray-700 border-b">
+                                                <th className="pb-2">Ref</th>
+                                                <th className="pb-2">Technician</th>
+                                                <th className="pb-2">Date</th>
+                                                <th className="pb-2">Technicians Remarks</th>
+                                              </tr>
+                                            </thead>
+                                            <tbody>
+                                              {remarksDataMap[row.original.jobs_id].map(item => (
+                                                <tr key={item.id} className="text-gray-500 border-b last:border-none">
+                                                  <td className="py-2 font-medium">{item.object_id2}</td>
+                                                  <td className="py-2">{item.user_fullname}</td>
+                                                  <td className="py-2 font-medium text-gray-700">
+                                                    {new Date(item.date_add).toLocaleString(locale, {
+                                                      timeZone: 'UTC',
+                                                      year: '2-digit',
+                                                      month: '2-digit',
+                                                      day: '2-digit',
+                                                      hour: '2-digit',
+                                                      minute: '2-digit',
+                                                    })}
+                                                  </td>
+                                                  <td className="py-2 w-1/2">{item.notes}</td>
+                                                </tr>
+                                              ))}
+                                            </tbody>
+                                          </table>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  )}
+                                </>
+                              )}
+                            </>
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
                 </tbody>
               </table>
             </div>
             {isLoading && <Loader className="ml-2 text-blue-600 animate-spin" />}
           </>
         ) : (
-          <div className='px-4 py-2'>{t("calender_table_no_records_text")}</div>
+          <div className='px-4 py-2'>{t("calendar_table_no_records_text")}</div>
         )}
         {/* Pagination Controls - Only show if filteredTickets exceed pageSize (10) */}
         {filteredContents.length > 12 && (
           <div className="flex items-center justify-between p-4">
             <span className="text-sm text-gray-700">
-              {t("calender_table_pagination_page")} {pageIndex + 1} {t("calender_table_pagination_of")} {pageOptions.length}
+              {t("calendar_table_pagination_page")} {pageIndex + 1} {t("calendar_table_pagination_of")} {pageOptions.length}
             </span>
             <div>
               <button onClick={() => gotoPage(0)} disabled={!canPreviousPage} className="py-1 px-2 md:py-1 md:px-3 mr-1 text-gray-900 rounded-md border border-gray-900 disabled:border-gray-700">
@@ -618,7 +791,7 @@ const ViewCalendars = () => {
             <select value={pageSize} onChange={e => setPageSize(Number(e.target.value))} className="ml-1 p-1 md:p-1 border border-gray-300 rounded-md max-w-32">
               {[12, 24, 36, 48].map(size => (
                 <option key={size} value={size}>
-                  {t("calender_table_pagination_show")} {size}
+                  {t("calendar_table_pagination_show")} {size}
                 </option>
               ))}
             </select>

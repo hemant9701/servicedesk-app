@@ -1,8 +1,9 @@
-import React, { useMemo, useState, useEffect } from 'react';
-import { useTable, useSortBy, usePagination } from 'react-table';
-import { fetchData } from '../services/apiService.js';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
+import { useTable, useSortBy, useExpanded, usePagination } from 'react-table';
+//import { fetchData } from '../services/apiService.js';
+import { fetchDocuments } from '../services/apiServiceDocuments';
 import { useNavigate } from 'react-router-dom';
-import { Loader, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, ArrowLeftToLine, ArrowRightToLine, BadgeInfo, Circle, CalendarClock } from 'lucide-react';
+import { Loader, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, ArrowLeftToLine, ArrowRightToLine, BadgeInfo, Circle, CalendarClock, FileText } from 'lucide-react';
 import { useAuth } from '../AuthContext';
 import { useTranslation } from "react-i18next";
 
@@ -10,13 +11,21 @@ const ViewWorkOrderList = () => {
   const navigate = useNavigate();
   const { auth } = useAuth();
   const [jobs, setJobs] = useState([]);
-  const [popupData, setPopupData] = useState([]);
-  const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [isCompleted, setIsCompleted] = useState(false);
   const [error, setError] = useState(null);
   const [selectedTab, setSelectedTab] = useState('open');
+
+
+  const [expandedRowId, setExpandedRowId] = useState(null);
+  const [activeSection, setActiveSection] = useState(null); // 'popup' | 'remarks'
+
+  const [popupDataMap, setPopupDataMap] = useState({});
+  const [remarksDataMap, setRemarksDataMap] = useState({});
+
+  const [loadingMap, setLoadingMap] = useState({});
+
   const { t } = useTranslation('workOrderList');
 
   const statusColors = useMemo(() => ({
@@ -43,9 +52,6 @@ const ViewWorkOrderList = () => {
     "Completed": "bg-pink-600 text-pink-600",
   }), []);
 
-  let startRow = 0;
-  let endRow = 500;
-
   useEffect(() => {
     const fetchWorkOrder = async (completedStatus, startRow = 0, endRow = 500) => {
       setIsLoading(true); // Trigger loading immediately on tab switch
@@ -65,7 +71,7 @@ const ViewWorkOrderList = () => {
             sortModel: []
           }
         };
-        const response = await fetchData(endpoint, 'POST', auth.authKey, payload);
+        const response = await fetchDocuments(endpoint, 'POST', auth.authKey, payload);
         if (response) {
           setJobs(response);
           setLoading(false);
@@ -78,31 +84,101 @@ const ViewWorkOrderList = () => {
     };
 
     fetchWorkOrder(isCompleted);
-  }, [isCompleted, startRow, endRow, auth]);
+  }, [isCompleted, auth]);
 
-  const handleCalendarClick = async (rowData) => {
-    try {
-      const response = await fetchData(`api/JobPlanningView?$filter=jobs_id eq ${rowData}&$orderby=date_from`);
-      setPopupData(response.value);
-      setIsPopupOpen(true);
-    } catch (error) {
-      console.error('Failed to fetch planning data:', error);
+
+  const handleCalendarClick = useCallback(async (rowId) => {
+    // if same row clicked again, toggle collapse
+    if (expandedRowId === rowId && activeSection === "popup") {
+      setExpandedRowId(null);
+      setActiveSection(null);
+      return;
     }
-  };
+
+    setExpandedRowId(rowId);
+    setActiveSection("popup");
+
+    // if cached, don’t refetch
+    if (popupDataMap[rowId]) return;
+
+    setLoadingMap(prev => ({ ...prev, [rowId]: true }));
+    try {
+      const response = await fetchDocuments(`api/JobPlanningView?$filter=jobs_id eq ${rowId}&$orderby=date_from`);
+      const res = response.value;
+      setPopupDataMap(prev => ({ ...prev, [rowId]: res }));
+    } finally {
+      setLoadingMap(prev => ({ ...prev, [rowId]: false }));
+    }
+  }, [expandedRowId, activeSection, popupDataMap]);
+
+  const handleRemarksClick = useCallback(async (rowId) => {
+    // if same row clicked again, toggle collapse
+    if (expandedRowId === rowId && activeSection === "remarks") {
+      setExpandedRowId(null);
+      setActiveSection(null);
+      return;
+    }
+
+    setExpandedRowId(rowId);
+    setActiveSection("remarks");
+
+    if (remarksDataMap[rowId]) return;
+
+    setLoadingMap(prev => ({ ...prev, [rowId]: true }));
+    try {
+      const response = await fetchDocuments(`api/JobsView/GetAllTechnicianRemarksOfJob?jobs_id=${rowId}`);
+      const res = response;
+      setRemarksDataMap(prev => ({ ...prev, [rowId]: res }));
+    } finally {
+      setLoadingMap(prev => ({ ...prev, [rowId]: false }));
+    }
+  }, [expandedRowId, activeSection, remarksDataMap]);
+
 
   const columns = useMemo(
     () => [
       {
-        Header: t('work_order_list_table_heading_planned_date_text'), accessor: 'date_create',
-        Cell: ({ row, value }) => (
-          <span className="flex justify-between items-center">
-            {new Date(value).toLocaleDateString('nl-BE')}
-            {row.original.job_planning_count > 1 && (
-              <CalendarClock className="w-5 h-5 cursor-pointer"
-                onClick={() => handleCalendarClick(row.original.id)} />
-            )}
-          </span>
-        )
+        id: '1',
+        Header: () =>
+          !isCompleted
+            ? t('work_order_list_table_heading_planned_date_text')
+            : t('work_order_list_table_heading_closing_date_text'),
+
+        accessor: row => !isCompleted ? row.first_planning_date : row.date_closed,
+
+        Cell: ({ row, value }) => {
+          const displayDate =
+            new Date(value).getFullYear() !== 1980
+              ? new Date(value).toLocaleDateString("en-GB", {
+                year: '2-digit',
+                month: '2-digit',
+                day: '2-digit',
+              })
+              : ' ';
+
+          const showCalendarIcon = !isCompleted && row.original.job_planning_count > 1;
+          const showFileIcon = row.original.nb_notes > 0;
+
+          return (
+            <span className="flex justify-between items-center gap-2">
+              <span>{displayDate}</span>
+              <span className="flex gap-2 justify-end">
+                {showCalendarIcon && (
+                  <CalendarClock
+                    className="w-5 h-5 cursor-pointer"
+                    onClick={() => handleCalendarClick(row.original.id)}
+                  />
+                )}
+                {showFileIcon && (
+                  <FileText
+                    className="w-5 h-5 cursor-pointer"
+                    onClick={() => handleRemarksClick(row.original.id)}
+                  />
+                )}
+              </span>
+            </span>
+          );
+        }
       },
       {
         Header: t('work_order_list_table_heading_reference_text'), accessor: 'id2',
@@ -144,7 +220,7 @@ const ViewWorkOrderList = () => {
         ),
       },
     ],
-    [statusColors, statusDotColors, t]
+    [statusColors, statusDotColors, isCompleted, handleCalendarClick, handleRemarksClick, t]
   );
 
 
@@ -170,6 +246,7 @@ const ViewWorkOrderList = () => {
       initialState: { pageIndex: 0, pageSize: 12 }, // Set initial page size to 10
     },
     useSortBy,
+    useExpanded,
     usePagination,
   );
 
@@ -189,50 +266,6 @@ const ViewWorkOrderList = () => {
   return (
     <div className="w-full mx-auto p-1 md:p-8">
       <h1 className="text-zinc-900 text-3xl font-semibold mb-6">{t("work_order_list_page_title")}</h1>
-
-      {isPopupOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="w-96 relative p-4 bg-white rounded-lg shadow-md border">
-            <h4 className='text-lg font-semibold border-b-2 border-gray-200 pb-2 mb-2'>{t("Planned date and Technician")}</h4>
-            <button onClick={() => setIsPopupOpen(false)} className="px-1.5 absolute -top-1 -right-1 bg-gray-700 text-white rounded-full text-sm hover:bg-gray-800">
-              x</button>
-            <div className="flex gap-8">
-              <div>
-                {Array.from(
-                  new Set(
-                    popupData?.map(item =>
-                      new Date(item.date_from).toLocaleDateString("nl-BE", {
-                        year: "2-digit",
-                        month: "2-digit",
-                        day: "2-digit",
-                      })
-                    )
-                  )
-                ).map((date, index) => (
-                  <div key={index} className="text-gray-500 py-2">
-                    {date}
-                  </div>
-                ))}
-              </div>
-              <div>
-                {popupData?.map?.(item => (
-                  <div key={item.id} className='flex gap-4 text-gray-500'>
-                    <span className='py-2'>
-                      {new Date(item.date_from).toLocaleTimeString("nl-BE", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </span>
-                    <span className='py-2'>
-                      {item.user_firstname + ' ' + item.user_lastname}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Back Button */}
       <button
@@ -275,53 +308,192 @@ const ViewWorkOrderList = () => {
         <div className="overflow-x-auto">
           <table {...getTableProps()} className="min-w-full divide-y divide-gray-200 border border-gray-300">
             <thead className="bg-gray-100">
-              {headerGroups.map(headerGroup => (
-                <tr {...headerGroup.getHeaderGroupProps()} className="bg-white divide-x divide-gray-300">
-                  {headerGroup.headers.map((column, index) => {
-                    const sortProps = column.getSortByToggleProps();
-                    const headerProps = column.getHeaderProps(sortProps);
-                    const { key, ...restHeaderProps } = headerProps;
-
-                    return (
-                      <th
-                        key={column.id || column.accessor}
-                        {...restHeaderProps}
-                        className={`px-2 py-3 text-left whitespace-nowrap text-slate-500 text-xs font-medium leading-none ${index !== 0 ? 'border-r border-gray-300' : ''}`}
-                      >
-                        {column.render('Header')}
-                        {column.isSorted ? (
-                          column.isSortedDesc ? (
-                            <ArrowUp className="inline w-4 h-4 ml-1" />
-                          ) : (
-                            <ArrowDown className="inline w-4 h-4 ml-1" />
-                          )
-                        ) : null}
-                      </th>
-                    );
-                  })}
-                </tr>
-              ))}
+              {headerGroups.map((headerGroup, hgIdx) => {
+                const headerGroupProps = headerGroup.getHeaderGroupProps();
+                const { key: headerGroupKey, ...restHeaderGroupProps } = headerGroupProps;
+                return (
+                  <tr key={headerGroupKey || hgIdx} {...restHeaderGroupProps} className="bg-white divide-x divide-gray-300">
+                    {headerGroup.headers.map((column, colIdx) => {
+                      const sortProps = column.getSortByToggleProps();
+                      const headerProps = column.getHeaderProps(sortProps);
+                      const { key: headerKey, ...restHeaderProps } = headerProps;
+                      return (
+                        <th
+                          key={headerKey || column.id || column.accessor || colIdx}
+                          {...restHeaderProps}
+                          className={`px-2 py-3 text-left whitespace-nowrap text-slate-500 text-xs font-medium leading-none ${colIdx !== 0 ? 'border-r border-gray-300' : ''}`}
+                        >
+                          {column.render('Header')}
+                          {column.isSorted ? (
+                            column.isSortedDesc ? (
+                              <ArrowUp className="inline w-4 h-4 ml-1" />
+                            ) : (
+                              <ArrowDown className="inline w-4 h-4 ml-1" />
+                            )
+                          ) : null}
+                        </th>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
             </thead>
             <tbody {...getTableBodyProps()} className="bg-white divide-y divide-gray-200">
               {!isLoading &&
-                page.map((row) => {
+                page.map((row, rowIdx) => {
                   prepareRow(row);
+                  const rowProps = row.getRowProps();
+                  const { key: rowKey, ...restRowProps } = rowProps;
                   return (
-                    <tr key={row.id} {...row.getRowProps()} className="hover:bg-gray-200">
-                      {row.cells.map((cell, index) => {
-                        const cellProps = {
-                          ...cell.getCellProps(),
-                          className: `self-stretch px-1 py-2 text-xs font-normal text-zinc-900 ${index !== 0 ? 'cursor-pointer' : ''}`,
-                          onClick: index !== 0 ? () => navigate(`/workorder/${row.original.id}`) : undefined
-                        };
+                    // <tr key={rowKey || row.original.id || rowIdx} {...restRowProps} className="hover:bg-gray-200">
+                    //   {row.cells.map((cell, cellIdx) => {
+                    //     const cellProps = cell.getCellProps();
+                    //     const { key: cellKey, ...restCellProps } = cellProps;
+                    //     return (
+                    //       <td
+                    //         key={cellKey || cellIdx}
+                    //         {...restCellProps}
+                    //         className={`self-stretch px-1 py-2 text-xs font-normal text-zinc-900 ${cellIdx !== 0 ? 'cursor-pointer' : ''}`}
+                    //         onClick={cellIdx !== 0 ? () => navigate(`/workorder/${row.original.id}`) : undefined}
+                    //       >
+                    //         {cell.render('Cell')}
+                    //       </td>
+                    //     );
+                    //   })}
+                    // </tr>
+                    <React.Fragment key={rowKey || row.original.id || rowIdx}>
+                      {/* Normal row */}
+                      <tr {...restRowProps} className="hover:bg-gray-200">
+                        {row.cells.map((cell, cellIdx) => {
+                          const cellProps = cell.getCellProps();
+                          const { key: cellKey, ...restCellProps } = cellProps;
 
-                        return (
-                          <td key={row.original.id || row.original.accessor} {...cellProps}>
-                            {cell.render('Cell')}
-                          </td>
-                        );
-                      })}
-                    </tr>
+                          return (
+                            <td
+                              key={cellKey || cellIdx}
+                              {...restCellProps}
+                              className={`self-stretch px-1 py-2 text-xs font-normal text-zinc-900 ${cellIdx !== 0 ? 'cursor-pointer' : ''}`}
+                              onClick={cellIdx !== 0 ? () => navigate(`/workorder/${row.original.id}`) : undefined}
+                            >
+                              {cell.render("Cell")}
+                            </td>
+                          );
+                        })}
+                      </tr>
+
+                      {expandedRowId === row.original.id && (
+                        <>
+                          {/* --- Planned Dates and Technicians --- */}
+                          {activeSection === "popup" && (
+                            <>
+                              {loadingMap[row.original.id] ? (
+                                <tr>
+                                  <td colSpan={row.cells.length} className="bg-gray-50 p-4 text-center">
+                                    <Loader size="36" className="m-2 text-blue-600 animate-spin inline-block" />
+                                  </td>
+                                </tr>
+                              ) : popupDataMap[row.original.id]?.length > 0 && (
+                                <tr>
+                                  <td colSpan={row.cells.length} className="bg-gray-50 p-4">
+                                    <div className="p-1">
+                                      <h4 className="text-sm font-semibold border-b-2 border-gray-200 pb-2 mb-2">
+                                        {t("Planned date and Technician")}
+                                      </h4>
+                                      <div className="flex gap-16 text-xs font-normal">
+                                        <div>
+                                          {Array.from(
+                                            new Set(
+                                              popupDataMap[row.original.id].map(item =>
+                                                new Date(item.date_from).toLocaleDateString("en-GB", {
+                                                  year: "2-digit",
+                                                  month: "2-digit",
+                                                  day: "2-digit",
+                                                })
+                                              )
+                                            )
+                                          ).map((date, index) => (
+                                            <div key={index} className="text-gray-500 py-2">
+                                              {date}
+                                            </div>
+                                          ))}
+                                        </div>
+
+                                        <div>
+                                          {popupDataMap[row.original.id].map(item => (
+                                            <div key={item.id} className="flex gap-8 text-gray-500">
+                                              <span className="py-2">
+                                                {new Date(item.date_from).toLocaleTimeString("en-GB", {
+                                                  timeZone: "UTC",
+                                                  hour: "2-digit",
+                                                  minute: "2-digit",
+                                                  hour12: false,
+                                                })}
+                                              </span>
+                                              <span className="py-2">
+                                                {item.user_firstname} {item.user_lastname}
+                                              </span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </>
+                          )}
+
+                          {/* --- Technician Remarks --- */}
+                          {activeSection === "remarks" && (
+                            <>
+                              {loadingMap[row.original.id] ? (
+                                <tr>
+                                  <td colSpan={row.cells.length} className="bg-gray-50 p-4 text-center">
+                                    <Loader size="36" className="m-2 text-blue-600 animate-spin inline-block" />
+                                  </td>
+                                </tr>
+                              ) : remarksDataMap[row.original.id]?.length > 0 && (
+                                <tr>
+                                  <td colSpan={row.cells.length} className="bg-gray-50 p-4">
+                                    <div className="p-1">
+                                      <table className="table-auto w-full text-xs font-normal text-left border-collapse">
+                                        <thead>
+                                          <tr className="text-gray-700 border-b">
+                                            <th className="pb-2">Ref</th>
+                                            <th className="pb-2">Technician</th>
+                                            <th className="pb-2">Date</th>
+                                            <th className="pb-2">Technicians Remarks</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          {remarksDataMap[row.original.id].map(item => (
+                                            <tr key={item.id} className="text-gray-500 border-b last:border-none">
+                                              <td className="py-2 font-medium">{item.object_id2}</td>
+                                              <td className="py-2">{item.user_fullname}</td>
+                                              <td className="py-2 font-medium text-gray-700">
+                                                {new Date(item.date_add).toLocaleDateString("en-GB", {
+                                                  timeZone: "UTC",
+                                                  year: "2-digit",
+                                                  month: "2-digit",
+                                                  day: "2-digit",
+                                                  hour: "2-digit",
+                                                  minute: "2-digit",
+                                                })}
+                                              </td>
+                                              <td className="py-2 w-1/2">{item.notes}</td>
+                                            </tr>
+                                          ))}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </>
+                          )}
+                        </>
+                      )}
+                    </React.Fragment>
                   );
                 })}
             </tbody>

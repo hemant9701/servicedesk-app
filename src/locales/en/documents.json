@@ -1,6 +1,7 @@
 {
   "documents_page_go_back": "Go Back",
   "documents_page_title": "Documents",
+  "documents_table_heading_select_all_text": "Select All",
   "documents_table_heading_object_text": "Object",
   "documents_table_heading_object_name_text": "Object Name",
   "documents_table_heading_file_type_text": "File Type",
@@ -13,6 +14,7 @@
   "documents_table_filter_file_type": "Select file type",
   "documents_table_filter_objects": "Select objects",
   "documents_table_filter_reset_button": "Reset Filters",
+  "documents_table_filter_apply_button": "Confirm",
   "documents_table_download_button": "Download",
   "documents_table_downloadall_button": "Download All",
   "documents_page_helping_text": "Click on the check box to select files to download.",
@@ -23,6 +25,3 @@
   "documents_table_pagination_of": "of",
   "documents_table_pagination_show": "Show"
 }
-
-
-

@@ -20,5 +20,8 @@
   "documents_table_pagination_of": "van",
   "documents_table_pagination_page": "Pagina",
   "documents_table_pagination_show": "Toon",
-  "documents_table_view_document_text": "Document bekijken"
+  "documents_table_view_document_text": "Document bekijken",
+  "documents_table_heading_select_all_text": "Alles selecteren",
+  "documents_table_filter_apply_button": "Bevestigen",
+  "documents_table_downloadall_button": "Alles downloaden"
 }

@@ -20,5 +20,8 @@
   "documents_table_pagination_of": "de",
   "documents_table_pagination_page": "Page",
   "documents_table_pagination_show": "Montrer",
-  "documents_table_view_document_text": "Voir le document"
+  "documents_table_view_document_text": "Voir le document",
+  "documents_table_heading_select_all_text": "Tout sélectionner",
+  "documents_table_filter_apply_button": "Confirmer",
+  "documents_table_downloadall_button": "Tout télécharger"
 }

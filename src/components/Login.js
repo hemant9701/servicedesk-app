@@ -9,8 +9,9 @@ import nl from '../locales/nl/login.json';
 
 const Login = () => {
   const [email, setEmail] = useState('')
-  //const [token, setToken] = useState('Ez5IDzie+E+CLFBR3A40g2ktg97czumlArA+gnrQJKyP4JYfct6q3oBltWdW4YFP8lePTkPURYdSmioIShjEuwWcEcCWkh7UDHf+2F9J6LWkGbgbrJbFJGQRoFqJCwhX+UYAh7D0ukj6FAqWn9AX/uXoiRwQmI8XQKUiUfjJvkuCbKSMLUydLtdQPimZdwSdPmqwd/oJTlPMAcb3ndTW5g==')
-  const [token, setToken] = useState('')
+  //const [token, setToken] = useState('AKCDR8dilnE7ISown6JvUY/2CiBNXbEMZuBJTUwAveQBViIrXSeZq/q97oxBrIhd3YYmYBfUW5rul8UDkwFcxFR/Ozj0hvbJLPNRAaT2FeOFtxlyvMKv9QkuTmgzX0atfkgi1Rgcsq+3KX27nNJNoQNuQwqUuTUOWm08U1ZGVlIs+hgxdXUHVxRxEWB9vWjFodYxc91ujzGlOw7I8NQvXw==')
+  const [token, setToken] = useState('vbhPhRFQXaXPSq1rv801N3DOP+WhR5sw7xmmuAsbjzAQFYGXypuX07Naz+3LcSQ0SuyjhMf5VnqqBtJ1fMISByvklKH9rjNUtKuwCxxMlMzlUVGzccJnRtvrGua+rn+foeUykkB9CoHkWoFfOQP84umQm2Go52GGvfUul6ibRVCb/cBaK4KgvtHRJI0JUUEY')
+  //const [token, setToken] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false);
   const [visible, setVisible] = useState(false);
@@ -64,9 +65,32 @@ const Login = () => {
     nl: t('login_lang_nl') || 'Nederlands'
   };
 
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault()
+  //   setLoading(true);
+  //   if (rememberMe) {
+  //     localStorage.setItem('rememberedEmail', email);
+  //   } else {
+  //     localStorage.removeItem('rememberedEmail');
+  //   }
+
+  //   try {
+  //     const userData = await login(token, email, password);
+  //     //console.log("Login successful:", userData);
+  //     if (userData) {
+  //       navigate("/");
+  //     }
+  //   } catch (err) {
+  //     toast.error(err.message || "Login failed!");
+  //     setEmail('');
+  //     setPassword('');
+  //   }
+  // }
+
   const handleSubmit = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
     setLoading(true);
+
     if (rememberMe) {
       localStorage.setItem('rememberedEmail', email);
     } else {
@@ -75,16 +99,19 @@ const Login = () => {
 
     try {
       const userData = await login(token, email, password);
-      //console.log("Login successful:", userData);
+
       if (userData) {
         navigate("/");
+      } else {
+        throw new Error(t("login_invalid_credentials"));
       }
     } catch (err) {
-      toast.error(err.message || "Login failed!");
-      setEmail('');
+      toast.error(err.message || t("login_error_invalid_credentials"));
+      //setEmail('');
       setPassword('');
+      setLoading(false); // Ensure loading spinner stops
     }
-  }
+  };
 
   if (loading) {
     return <div className="flex w-full items-center justify-center h-screen">

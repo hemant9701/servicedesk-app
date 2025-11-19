@@ -1,9 +1,10 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useTable, useSortBy, usePagination } from 'react-table';
-import { fetchData } from '../services/apiService.js';
+//import { fetchData } from '../services/apiService.js';
+import { fetchDocuments } from '../services/apiServiceDocuments.js';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
-import { BadgeInfo, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, ArrowLeftToLine, ArrowRightToLine, Circle } from 'lucide-react';
+import { Loader, BadgeInfo, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, ArrowLeftToLine, ArrowRightToLine, Circle } from 'lucide-react';
 import { useTranslation } from "react-i18next";
 
 const ViewTicketList = () => {
@@ -11,6 +12,8 @@ const ViewTicketList = () => {
   const { auth } = useAuth();
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isArchived, setIsArchived] = useState(false);
   const [error, setError] = useState(null);
   const [selectedTab, setSelectedTab] = useState('open');
   const { t } = useTranslation('ticketList');
@@ -40,19 +43,38 @@ const ViewTicketList = () => {
   }), []);
 
   useEffect(() => {
-    const fetchTickets = async () => {
+    const fetchTickets = async (archivedStatus, startRow = 0, endRow = 500) => {
+      setIsLoading(true);
       try {
-        const response = await fetchData('api/TaskView/', 'GET', auth.authKey);
-        setTickets(response.value); // Adjusted for your API's response structure
+        const payload = {
+          "period": "",
+          "archived": archivedStatus,
+          "query_object":
+          {
+            "startRow": startRow || 0,
+            "endRow": endRow || 500,
+            "rowGroupCols": [],
+            "valueCols": [],
+            "pivotCols": [],
+            "pivotMode": false,
+            "groupKeys": [],
+            "filterModel": {},
+            "sortModel": []
+          }
+        }
+        const response = await fetchDocuments('api/TaskView/Search', 'POST', auth.authKey, payload);
+        setTickets(response); // Adjusted for your API's response structure
         setLoading(false);
       } catch (err) {
         setError(err);
         setLoading(false);
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    fetchTickets();
-  }, [auth]);
+    fetchTickets(isArchived);
+  }, [isArchived, auth]);
 
   const columns = useMemo(
     () => [
@@ -68,7 +90,7 @@ const ViewTicketList = () => {
       },
       {
         Header: t('tickets_list_table_heading_created_date_text'), accessor: 'date_create',
-        Cell: ({ value }) => new Date(value).toLocaleDateString('nl-BE')
+        Cell: ({ value }) => new Date(value).toLocaleDateString("en-GB")
       },
       {
         Header: t('tickets_list_table_heading_name_text'), accessor: 'subject',
@@ -101,27 +123,7 @@ const ViewTicketList = () => {
     [statusColors, statusDotColors, t]
   );
 
-  const filteredTickets = useMemo(() => {
-    return tickets
-      .filter(ticket => {
-        if (selectedTab === 'open') {
-          return (
-            ticket.task_status_id === 'f3507920-d746-4d1c-b81b-c2bf291830c5' ||
-            ticket.task_status_id === '4c1a28dc-e213-429d-bbd0-2595814ca9fc' ||
-            ticket.task_status_id === 'Waiting for Parts'
-          );
-        } else {
-          return (
-            ticket.task_status_id !== 'f3507920-d746-4d1c-b81b-c2bf291830c5' &&
-            ticket.task_status_id !== '4c1a28dc-e213-429d-bbd0-2595814ca9fc' &&
-            ticket.task_status_id !== 'Waiting for Parts'
-          );
-        }
-      })
-      .sort((a, b) => b.id2 - a.id2);
-  }, [tickets, selectedTab]);
-
-
+ 
   const {
     getTableProps,
     getTableBodyProps,
@@ -139,7 +141,7 @@ const ViewTicketList = () => {
   } = useTable(
     {
       columns,
-      data: filteredTickets,
+      data: tickets,
       initialState: { pageIndex: 0, pageSize: 12 }, // Set initial page size to 10
     },
     useSortBy,
@@ -175,13 +177,13 @@ const ViewTicketList = () => {
         <div className="flex text-lg mb-4">
           <button
             className={`px-4 py-2 mr-2 font-semibold leading-7 ${selectedTab === 'open' ? 'text-gray-900 border-b-2 border-zinc-800' : 'text-slate-500'}`}
-            onClick={() => setSelectedTab('open')}
+            onClick={() => { setSelectedTab('open'); setIsArchived(false); }}
           >
             {t("tickets_list_toggle_open_tickets_text")}
           </button>
           <button
             className={`px-4 py-2 font-semibold leading-7 ${selectedTab === 'completed' ? 'text-gray-900 border-b-2 border-zinc-800' : 'text-slate-500'}`}
-            onClick={() => setSelectedTab('completed')}
+            onClick={() => { setSelectedTab('completed'); setIsArchived(true); }}
           >
             {t("tickets_list_toggle_completed_tickets_text")}
           </button>
@@ -193,43 +195,60 @@ const ViewTicketList = () => {
         <div className="overflow-x-auto">
           <table {...getTableProps()} className="min-w-full divide-y divide-gray-200 border border-gray-300">
             <thead className="bg-white">
-              {headerGroups.map(headerGroup => (
-                <tr {...headerGroup.getHeaderGroupProps()} className="bg-white divide-x divide-gray-300">
-                  {headerGroup.headers.map(column => (
-                    <th {...column.getHeaderProps(column.getSortByToggleProps())}
-                      className="p-2 whitespace-nowrap text-slate-500 text-xs font-medium leading-none">
-                      {column.render('Header')}
-                      {column.isSorted ? (
-                        column.isSortedDesc ? (
-                          <ArrowDown className="inline w-4 h-4 ml-1" />
-                        ) : (
-                          <ArrowUp className="inline w-4 h-4 ml-1" />
-                        )
-                      ) : null}
-                    </th>
-                  ))}
-                </tr>
-              ))}
-            </thead>
-            <tbody {...getTableBodyProps()} className="bg-white divide-y divide-gray-200">
-              {page.map(row => { // Change from rows to page
-                prepareRow(row);
+              {headerGroups.map((headerGroup, hgIdx) => {
+                const headerGroupProps = headerGroup.getHeaderGroupProps();
+                const { key: headerGroupKey, ...restHeaderGroupProps } = headerGroupProps;
                 return (
-                  <tr {...row.getRowProps()} className="cursor-pointer hover:bg-gray-200" onClick={() => navigate(`/ticket/${row.original.id}`)}>
-                    {row.cells.map((cell, index) => (
-                      <td {...cell.getCellProps()} className="self-stretch px-1 py-2 text-xs font-normal text-zinc-900">
-                        {cell.render('Cell')}
-                      </td>
-                    ))}
+                  <tr key={headerGroupKey || hgIdx} {...restHeaderGroupProps} className="bg-white divide-x divide-gray-300">
+                    {headerGroup.headers.map((column, colIdx) => {
+                      const headerProps = column.getHeaderProps(column.getSortByToggleProps());
+                      const { key: headerKey, ...restHeaderProps } = headerProps;
+                      return (
+                        <th key={headerKey || colIdx} {...restHeaderProps}
+                          className="p-2 whitespace-nowrap text-slate-500 text-xs font-medium leading-none">
+                          {column.render('Header')}
+                          {column.isSorted ? (
+                            column.isSortedDesc ? (
+                              <ArrowDown className="inline w-4 h-4 ml-1" />
+                            ) : (
+                              <ArrowUp className="inline w-4 h-4 ml-1" />
+                            )
+                          ) : null}
+                        </th>
+                      );
+                    })}
                   </tr>
                 );
               })}
+            </thead>
+            <tbody {...getTableBodyProps()} className="bg-white divide-y divide-gray-200">
+              {!isLoading &&
+                page.map((row, rowIdx) => {
+                  prepareRow(row);
+                  const rowProps = row.getRowProps();
+                  const { key: rowKey, ...restRowProps } = rowProps;
+                  return (
+                    <tr key={rowKey || row.original.id || rowIdx} {...restRowProps} className="cursor-pointer hover:bg-gray-200" onClick={() => navigate(`/ticket/${row.original.id}`)}>
+                      {row.cells.map((cell, cellIdx) => {
+                        const cellProps = cell.getCellProps();
+                        const { key: cellKey, ...restCellProps } = cellProps;
+                        return (
+                          <td key={cellKey || cellIdx} {...restCellProps} className="self-stretch px-1 py-2 text-xs font-normal text-zinc-900">
+                            {cell.render('Cell')}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })}
             </tbody>
           </table>
         </div>
 
+        {isLoading && <Loader size='36' className="m-2 text-blue-600 animate-spin" />}
+
         {/* Pagination Controls - Only show if filteredTickets exceed pageSize (10) */}
-        {filteredTickets.length > 12 && (
+        {!isLoading && tickets.length > 12 && (
           <div className="flex items-center justify-between p-4">
             <span className="text-xs text-slate-700">
               {t("ticket_list_table_pagination_page")} {pageIndex + 1} {t("ticket_list_table_pagination_of")} {pageOptions.length}
