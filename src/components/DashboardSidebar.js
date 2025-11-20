@@ -69,7 +69,7 @@ export default function DashboardSidebar() {
     return (
         <>
             <button
-                className="md:hidden fixed top-2 right-2 p-2 bg-white shadow rounded-lg"
+                className="md:hidden fixed top-2 right-2 z-10 p-2 bg-white shadow rounded-lg"
                 onClick={() => setIsMobileMenuOpen(true)}
             >
                 <Menu size={24} />
