@@ -449,7 +449,18 @@ const SingleTicket = () => {
 
                       {/* Show "View Document" only if it's an image */}
 
-                      <a href={fileThumbnails[item.id] || ""} target="_blank" rel="noopener noreferrer" className="flex items-center mt-2 text-sm hover:underline">
+                      <a
+                        href={fileThumbnails[item.id] || ""}
+                        target="_blank"
+                        rel={item.mime_type?.startsWith("image/") ? "noopener noreferrer" : "noreferrer"}
+                        className={`flex items-center mt-2 text-sm ${fileThumbnails[item.id] ? "hover:underline" : "cursor-not-allowed pointer-events-none"
+                          }`}
+                        onClick={(e) => {
+                          if (!fileThumbnails[item.id]) {
+                            e.preventDefault(); // Prevent navigation if not loaded
+                          }
+                        }}
+                      >
                         <Eye className="w-6 h-6 mr-2 text-gray-600" /> {t("single_ticket_page_view_document")}
                       </a>
                     </div>

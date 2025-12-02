@@ -683,6 +683,19 @@ const CreateTicket = () => {
     return <div className="text-center text-red-600">Error fetching data: {error.message}</div>;
   }
 
+  function getFormattedDate() {
+    const now = new Date();
+
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+
+    const hours = String(now.getHours()).padStart(2, "0");
+    const minutes = String(now.getMinutes()).padStart(2, "0");
+    const seconds = String(now.getSeconds()).padStart(2, "0");
+
+    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.000`;
+  }
 
   const handleSubmitTicket = async () => {
     setSubmitLoading(true); // ⬅️ Start loading
@@ -703,8 +716,8 @@ const CreateTicket = () => {
       "date_suggested_by_company": `${date.toDateString()} ${selectedTime}`,
       "date_closed": "1980-01-01",
       "date_update": "1980-01-01",
-      "date_start": new Date().toISOString(),  // Use ISO string if needed
-      "date_create": new Date().toISOString() // Use ISO string if needed
+      "date_start": getFormattedDate(),
+      "date_create": getFormattedDate()
     };
 
     try {
@@ -1409,9 +1422,9 @@ const CreateTicket = () => {
 
                     return `${day} ${capitalize(month)} ${year} `;
                   })()
-                } 
-                </span> | <span className='underline'>{selectedTime || '08:00'}
-               </span>
+                }
+              </span> | <span className='underline'>{selectedTime || '08:00'}
+              </span>
             </div>
 
 

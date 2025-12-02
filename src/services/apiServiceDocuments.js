@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const WELLO_API_URL =
-  process.env.REACT_APP_WELLO_API_URL || "https://testservicedeskapi.odysseemobile.com";
+  process.env.REACT_APP_WELLO_API_URL || "https://servicedeskapi.odysseemobile.com";
 
 /**
  * Generic API request utility for Wello API

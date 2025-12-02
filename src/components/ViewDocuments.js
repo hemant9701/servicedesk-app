@@ -16,12 +16,15 @@ import Select from 'react-select';
 import makeAnimated from 'react-select/animated';
 const animatedComponents = makeAnimated();
 
+const url = process.env.REACT_APP_API_URL || 'https://servicedeskapi.odysseemobile.com';
+
 const ViewDocuments = () => {
   const navigate = useNavigate();
   const { auth } = useAuth();
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [isURLLoading, setIsURLLoading] = useState(false);
   const [error, setError] = useState(null);
   const [viewMode, setViewMode] = useState('table');
 
@@ -46,8 +49,6 @@ const ViewDocuments = () => {
 
   const [downloadMsg, setDownloadMsg] = useState('');
   const { t } = useTranslation('documents');
-
-  const url = `https://testservicedeskapi.odysseemobile.com/`;
 
   const [gridPageIndex, setGridPageIndex] = useState(0);
   const [gridPageSize, setGridPageSize] = useState(12);
@@ -321,7 +322,7 @@ const ViewDocuments = () => {
 
 
     GetFileThumbnails();
-  }, [contacts, auth, url, viewMode]); // 👈 Add viewMode to dependencies
+  }, [contacts, auth, viewMode]); // 👈 Add viewMode to dependencies
 
   // Confirm button
   const handleSearch = () => {
@@ -342,6 +343,36 @@ const ViewDocuments = () => {
     setIsLoading(true);
     fetchDocumentsData(filtersObj);
   };
+
+  const openDocumentInNewTab = useCallback(async (id) => {
+    if (!id || !auth?.authKey) return;
+
+    setIsURLLoading(true); // Show loading overlay
+
+    const endpoint = `api/DbFileView/View/?id=${id}`;
+    try {
+      const response = await fetchDocuments(
+        endpoint,
+        "GET",
+        auth.authKey,
+        null,
+        "image/png"
+      );
+
+      if (response) {
+        const blob = await response.blob?.() ?? response;
+        const blobUrl = URL.createObjectURL(blob);
+        window.open(blobUrl, '_blank', 'noopener,noreferrer');
+      } else {
+        console.error("Failed to fetch thumbnail:", response?.statusText);
+      }
+    } catch (error) {
+      console.error("Error fetching document thumbnail:", error);
+    } finally {
+      setIsURLLoading(false); // Hide loading overlay
+    }
+  }, [auth?.authKey]);
+
 
   const columns = useMemo(() => [
     {
@@ -411,6 +442,7 @@ const ViewDocuments = () => {
       Cell: ({ row }) =>
         row.original.object_name ? (
           <button
+            className="text-left"
             onClick={() => {
               let path;
               switch (row.original.object_type) {
@@ -450,18 +482,13 @@ const ViewDocuments = () => {
       Header: t('documents_table_heading_file_name_text'), accessor: 'file_name',
       Cell: ({ row }) =>
         row.original.file_name ? (
-          <a
-            href={`${url}api/DbFileView/View/${row.original.file_name.replace(
-              /[^a-zA-Z ]/g,
-              ''
-            )}?id=${row.original.id}&token=${encodeURIComponent(auth.authKey)}`}
+          <button
+            onClick={() => openDocumentInNewTab(row.original.id)}
             className="text-left"
-            target="_blank"
-            rel="noreferrer"
           >
             {row.original.file_name}
-          </a>
-        ) : null
+          </button>
+        ) : ' '
     },
     {
       Header: t('documents_table_heading_upload_when_text'), accessor: 'date_add',
@@ -474,7 +501,7 @@ const ViewDocuments = () => {
           })
           : null
     },
-  ], [auth, selectedFiles, navigate, url, t]);
+  ], [selectedFiles, navigate, openDocumentInNewTab, t]);
 
   const toggleFileSelection = (file) => {
     setSelectedFiles((prev) =>
@@ -850,6 +877,15 @@ const ViewDocuments = () => {
         {/* Table displaying data */}
         {viewMode === 'table' && (
           <>
+            {
+              isURLLoading && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-white/10">
+                  <div className="text-white text-lg font-semibold animate-pulse">
+                    <Loader className="w-20 h-20 ml-2 text-blue-600 animate-spin" />
+                  </div>
+                </div>
+              )
+            }
             <div className="flex items-center mb-1 text-zinc-800 text-sm font-normal px-4 py-2">
               <BadgeInfo className='mr-2 w-5 h-5 text-slate-300' /> {t("documents_page_helping_text")}
             </div>
@@ -994,21 +1030,30 @@ const ViewDocuments = () => {
                       <a
                         href={fileThumbnails[item.id] || ""}
                         target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center mt-2 text-sm hover:underline"
+                        rel={item.mime_type?.startsWith("image/") ? "noopener noreferrer" : "noreferrer"}
+                        className={`flex items-center mt-2 text-sm ${fileThumbnails[item.id] ? "hover:underline" : "cursor-not-allowed pointer-events-none"
+                          }`}
+                        onClick={(e) => {
+                          if (!fileThumbnails[item.id]) {
+                            e.preventDefault(); // Prevent navigation if not loaded
+                          }
+                        }}
                       >
                         <Eye className="w-4 h-4 mr-2 text-gray-600" />
                         {t("documents_table_view_document_text")}
                       </a>
                     ) : (
                       <a
-                        href={`${url}api/DbFileView/View/${item.file_name.replace(
-                          /[^a-zA-Z ]/g,
-                          ''
-                        )}?id=${item.id}&token=${encodeURIComponent(auth.authKey)}`}
-                        className="flex items-center mt-2 text-sm hover:underline"
+                        href={fileThumbnails[item.id] || ""}
                         target="_blank"
                         rel="noreferrer"
+                        className={`flex items-center mt-2 text-sm ${fileThumbnails[item.id] ? "hover:underline" : "cursor-not-allowed pointer-events-none"
+                          }`}
+                        onClick={(e) => {
+                          if (!fileThumbnails[item.id]) {
+                            e.preventDefault(); // Prevent navigation if not loaded
+                          }
+                        }}
                       >
                         <Eye className="w-4 h-4 mr-2 text-gray-600" />
                         {t("documents_table_view_document_text")}
