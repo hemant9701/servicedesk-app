@@ -38,7 +38,7 @@ const ViewUserList = () => {
         Cell: ({ row }) => (
           <a
             href={`mailto:${row.original.email}`}
-            className="me-2 text-left"
+            className="me-2 text-left no-underline"
             rel="noreferrer"
           >
             {row.original.email}
@@ -100,7 +100,7 @@ const ViewUserList = () => {
 
 
       <nav className="mb-6 text-right">
-        <Link to="/update-password" className="text-base font-medium text-zinc-900 border border-zinc-900 px-6 py-3 rounded-lg hover:bg-zinc-900 hover:text-white">
+        <Link to="/update-password" className="text-base font-medium no-underline text-zinc-900 border border-zinc-900 px-6 py-3 rounded-lg hover:bg-zinc-900 hover:text-white">
           {t('user_list_password_update_text')} <Lock className="ml-2 w-6 h-6 inline" />
         </Link>
       </nav>

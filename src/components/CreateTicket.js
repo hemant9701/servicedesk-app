@@ -83,6 +83,8 @@ const CreateTicket = () => {
   const { t, i18n } = useTranslation('createTicket');
   const locale = i18n?.language || 'en-GB'; // used for Calendar and toLocaleString
 
+  const baseUrl = process.env.REACT_APP_API_URL || "https://servicedeskapi.wello.solutions/";
+
   const timeSlots = [
     '08:00', '08:30', '09:00', '09:30',
     '10:00', '10:30', '11:00', '11:30',
@@ -755,10 +757,6 @@ const CreateTicket = () => {
         return; // nothing to upload
       }
 
-      const baseUrl =
-        process.env.REACT_APP_API_URL ||
-        "https://servicedeskapi.wello.solutions/";
-
       const headers = {};
       if (auth?.authKey) {
         headers["Authorization"] = auth.authKey;
@@ -832,7 +830,7 @@ const CreateTicket = () => {
   };
 
   return (
-    <div className="min-w-[78%] p-1 md:p-8">
+    <div className="min-w-[78%] w-full p-1 md:p-8">
       <ToastContainer
         position="bottom-right"
         autoClose={5000}

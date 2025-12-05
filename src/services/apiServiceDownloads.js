@@ -3,7 +3,7 @@ import axios from "axios";
 /**
  * Global service to download files from Wello API
  *
- * @param {string} baseUrl - API base URL (example: https://servicedeskapi.odysseemobile.com)
+ * @param {string} baseUrl - API base URL (example: https://servicedeskapi.wello.solutions)
  * @param {string} authKey - User auth key
  * @param {string[]} ids - Array of file IDs to download
  * @param {string} [fallbackName="download.zip"] - Default filename if no name can be resolved

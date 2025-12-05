@@ -89,7 +89,7 @@ export default function DashboardSidebar() {
                     md:sticky md:top-0 min-h-screen flex flex-col justify-between 
                     outline outline-1 outline-offset-[-1px] outline-gray-300 overflow-y-auto
                     rounded-br-2xl rounded-tr-2xl text-slate-500 bg-white p-4
-                    ${isCollapsed ? "w-[5rem]" : "w-[80%] md:w-1/4"}
+                    ${isCollapsed ? "w-[5rem]" : "w-[80%] md:w-1/4 lg:w-1/5"}
                 `}
             >
                 {isMobile && (
@@ -103,7 +103,7 @@ export default function DashboardSidebar() {
 
                 <div className="">
                     <div className="flex items-center justify-center h-16 gap-2 mb-2 w-full">
-                        <a href="/">
+                        <a href="/" className="flex items-center justify-center w-full">
                             {!isCollapsed ? <img src={logo} alt="Logo" className="w-32" /> : <img src={logo_2} alt="Logo" className="w-12" />}
                         </a>
                     </div>
@@ -142,7 +142,7 @@ export default function DashboardSidebar() {
                         end // ensures exact match for root path
                         className={({ isActive }) =>
                             [
-                                'flex items-center gap-2 leading-none cursor-pointer w-full px-2 py-2 mb-0.5 rounded-lg',
+                                'flex items-center gap-2 leading-none no-underline cursor-pointer w-full px-2 py-2 mb-0.5 rounded-lg',
                                 'hover:bg-gray-200 focus:border-r-4 focus:border-gray-600 focus:bg-gray-200',
                                 isActive
                                     ? 'text-zinc-800 border-r-4 border-gray-600 bg-gray-200'
@@ -158,7 +158,7 @@ export default function DashboardSidebar() {
                         end // ensures exact match for root path
                         className={({ isActive }) =>
                             [
-                                'flex items-center gap-2 leading-none cursor-pointer w-full px-2 py-2 mb-0.5 rounded-lg',
+                                'flex items-center gap-2 leading-none no-underline cursor-pointer w-full px-2 py-2 mb-0.5 rounded-lg',
                                 'hover:bg-gray-200 focus:border-r-4 focus:border-zinc-800 focus:bg-gray-200',
                                 isActive
                                     ? 'text-zinc-800 border-r-4 border-gray-600 bg-gray-200'
@@ -172,7 +172,7 @@ export default function DashboardSidebar() {
                         end // ensures exact match for root path
                         className={({ isActive }) =>
                             [
-                                'flex items-center gap-2 leading-none cursor-pointer w-full px-2 py-2 mb-0.5 rounded-lg',
+                                'flex items-center gap-2 leading-none no-underline cursor-pointer w-full px-2 py-2 mb-0.5 rounded-lg',
                                 'hover:bg-gray-200 focus:border-r-4 focus:border-zinc-800 focus:bg-gray-200',
                                 isActive
                                     ? 'text-zinc-800 border-r-4 border-gray-600 bg-gray-200'
@@ -186,7 +186,7 @@ export default function DashboardSidebar() {
                         end // ensures exact match for root path
                         className={({ isActive }) =>
                             [
-                                'flex items-center gap-2 leading-none cursor-pointer w-full px-2 py-2 mb-0.5 rounded-lg',
+                                'flex items-center gap-2 leading-none no-underline cursor-pointer w-full px-2 py-2 mb-0.5 rounded-lg',
                                 'hover:bg-gray-200 focus:border-r-4 focus:border-zinc-800 focus:bg-gray-200',
                                 isActive
                                     ? 'text-zinc-800 border-r-4 border-gray-600 bg-gray-200'
@@ -200,7 +200,7 @@ export default function DashboardSidebar() {
                         end // ensures exact match for root path
                         className={({ isActive }) =>
                             [
-                                'flex items-center gap-2 leading-none cursor-pointer w-full px-2 py-2 mb-0.5 rounded-lg',
+                                'flex items-center gap-2 leading-none no-underline cursor-pointer w-full px-2 py-2 mb-0.5 rounded-lg',
                                 'hover:bg-gray-200 focus:border-r-4 focus:border-zinc-800 focus:bg-gray-200',
                                 isActive
                                     ? 'text-zinc-800 border-r-4 border-gray-600 bg-gray-200'
@@ -215,7 +215,7 @@ export default function DashboardSidebar() {
                         end // ensures exact match for root path
                         className={({ isActive }) =>
                             [
-                                'flex items-center gap-2 leading-none cursor-pointer w-full px-2 py-2 mb-0.5 rounded-lg',
+                                'flex items-center gap-2 leading-none no-underline cursor-pointer w-full px-2 py-2 mb-0.5 rounded-lg',
                                 'hover:bg-gray-200 focus:border-r-4 focus:border-zinc-800 focus:bg-gray-200',
                                 isActive
                                     ? 'text-zinc-800 border-r-4 border-gray-600 bg-gray-200'
@@ -229,7 +229,7 @@ export default function DashboardSidebar() {
                         end // ensures exact match for root path
                         className={({ isActive }) =>
                             [
-                                'flex items-center gap-2 leading-none cursor-pointer w-full px-2 py-2 mb-0.5 rounded-lg',
+                                'flex items-center gap-2 leading-none no-underline cursor-pointer w-full px-2 py-2 mb-0.5 rounded-lg',
                                 'hover:bg-gray-200 focus:border-r-4 focus:border-zinc-800 focus:bg-gray-200',
                                 isActive
                                     ? 'text-zinc-800 border-r-4 border-gray-600 bg-gray-200'
@@ -243,7 +243,7 @@ export default function DashboardSidebar() {
                         end // ensures exact match for root path
                         className={({ isActive }) =>
                             [
-                                'flex items-center gap-2 leading-none cursor-pointer w-full px-2 py-2 mb-0.5 rounded-lg',
+                                'flex items-center gap-2 leading-none no-underline cursor-pointer w-full px-2 py-2 mb-0.5 rounded-lg',
                                 'hover:bg-gray-200 focus:border-r-4 focus:border-zinc-800 focus:bg-gray-200',
                                 isActive
                                     ? 'text-zinc-800 border-r-4 border-gray-600 bg-gray-200'
@@ -288,7 +288,7 @@ export default function DashboardSidebar() {
                         end // ensures exact match for root path
                         className={({ isActive }) =>
                             [
-                                'flex items-center gap-2 leading-none cursor-pointer w-full px-2 py-2 mb-0.5 rounded-lg',
+                                'flex items-center gap-2 leading-none no-underline cursor-pointer w-full px-2 py-2 mb-0.5 rounded-lg',
                                 'hover:bg-gray-200 focus:border-r-4 focus:border-zinc-800 focus:bg-gray-200',
                                 isActive
                                     ? 'text-zinc-800 border-r-4 border-gray-600 bg-gray-200'

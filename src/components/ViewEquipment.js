@@ -39,7 +39,7 @@ const SingleInstallation = () => {
 
   const { t } = useTranslation('singleEquipment');
 
-  const url = `https://servicedeskapi.wello.solutions/`;
+  const url = process.env.REACT_APP_API_URL || 'https://servicedeskapi.wello.solutions/';
 
   const statusColors = useMemo(() => ({
     "In progress": "bg-yellow-100 text-yellow-600",
@@ -697,7 +697,7 @@ const SingleInstallation = () => {
                         href={fileThumbnails[item.id] || ""}
                         target="_blank"
                         rel={item.mime_type?.startsWith("image/") ? "noopener noreferrer" : "noreferrer"}
-                        className={`flex items-center mt-2 text-sm ${fileThumbnails[item.id] ? "hover:underline" : "cursor-not-allowed pointer-events-none"
+                        className={`flex items-center no-underline mt-2 text-sm ${fileThumbnails[item.id] ? "hover:underline" : "cursor-not-allowed pointer-events-none"
                           }`}
                         onClick={(e) => {
                           if (!fileThumbnails[item.id]) {

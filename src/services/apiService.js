@@ -1,6 +1,6 @@
 import axios from 'axios';
 const auth = JSON.parse(sessionStorage.getItem('auth'));
-const WELLO_API_URL = process.env.REACT_APP_API_URL || 'https://servicedeskapi.odysseemobile.com';
+const WELLO_API_URL = process.env.REACT_APP_API_URL || 'https://servicedeskapi.wello.solutions';
 
 
 export const fetchData = async (endpoint, method = 'GET', data = null, accept= 'application/json') => {

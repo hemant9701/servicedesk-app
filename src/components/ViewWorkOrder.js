@@ -25,7 +25,7 @@ const SingleWordOrder = () => {
   const { auth } = useAuth();
   const { t } = useTranslation('singleWorkOrder');
 
-  const url = process.env.REACT_APP_API_URL || 'https://servicedeskapi.odysseemobile.com';
+  const url = process.env.REACT_APP_API_URL || 'https://servicedeskapi.wello.solutions/';
 
   const statusColors = useMemo(() => ({
     "In Progress": "bg-yellow-100 text-yellow-600",
@@ -257,7 +257,7 @@ const SingleWordOrder = () => {
                   <li className='ml-6 pb-1'>{workOrder?.db_address_zip} {workOrder?.db_address_city}</li>
                   {workOrder?.contact_mobile && (
                     <li className='flex items-center'>
-                      <Phone className="w-4 h-4 mr-1" /> <a href={`tel:${workOrder.contact_mobile}`}>{workOrder.contact_mobile}</a>
+                      <Phone className="w-4 h-4 mr-1" /> <a href={`tel:${workOrder.contact_mobile}`} className='no-underline'>{workOrder.contact_mobile}</a>
                     </li>
                   )}
                   {workOrder?.name && (
@@ -277,7 +277,7 @@ const SingleWordOrder = () => {
                   )}
                   {workOrder?.contact_phone && (
                     <li className='flex items-center'>
-                      <Phone className="w-4 h-4 mr-2" /> <a href={`tel:${workOrder.contact_phone}`}>{workOrder.contact_phone}</a>
+                      <Phone className="w-4 h-4 mr-2" /> <a href={`tel:${workOrder.contact_phone}`} className='no-underline'>{workOrder.contact_phone}</a>
                     </li>
                   )}
                 </ul>
@@ -494,7 +494,7 @@ const SingleWordOrder = () => {
                         href={fileThumbnails[item.id] || ""}
                         target="_blank"
                         rel={item.mime_type?.startsWith("image/") ? "noopener noreferrer" : "noreferrer"}
-                        className={`flex items-center mt-2 text-sm ${fileThumbnails[item.id] ? "hover:underline" : "cursor-not-allowed pointer-events-none"
+                        className={`flex items-center no-underline mt-2 text-sm ${fileThumbnails[item.id] ? "hover:underline" : "cursor-not-allowed pointer-events-none"
                           }`}
                         onClick={(e) => {
                           if (!fileThumbnails[item.id]) {

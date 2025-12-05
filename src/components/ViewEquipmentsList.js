@@ -517,7 +517,7 @@ const ViewInstallations = () => {
   }
 
   return (
-    <div className="min-w-[78%] mx-auto p-1 md:p-8">
+    <div className="min-w-[78%] w-full mx-auto p-1 md:p-8">
       <h1 className="text-zinc-900 text-3xl font-semibold mb-6">{t("equipments_list_page_title")}</h1>
       {/* Back Button */}
       <button

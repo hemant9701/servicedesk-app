@@ -16,7 +16,7 @@ import Select from 'react-select';
 import makeAnimated from 'react-select/animated';
 const animatedComponents = makeAnimated();
 
-const url = process.env.REACT_APP_API_URL || 'https://servicedeskapi.odysseemobile.com';
+const url = process.env.REACT_APP_API_URL || 'https://servicedeskapi.wello.solutions/';
 
 const ViewDocuments = () => {
   const navigate = useNavigate();
@@ -24,6 +24,7 @@ const ViewDocuments = () => {
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [thumbnailLoading, setThumbnailLoading] = useState({});
   const [isURLLoading, setIsURLLoading] = useState(false);
   const [error, setError] = useState(null);
   const [viewMode, setViewMode] = useState('table');
@@ -279,50 +280,37 @@ const ViewDocuments = () => {
   }
 
   useEffect(() => {
-    const GetFileThumbnails = async () => {
-      try {
-        if (viewMode !== 'grid') return; // Only run in grid view
-        if (contacts.length === 0) return;
-
-        const authKey = auth.authKey;
-        if (!authKey) return;
-
-        const updatedThumbnails = {};
-
-        await Promise.all(
-          contacts.map(async (item) => {
-            if (!item.id) return;
-
-            try {
-              const endpoint = `api/DbFileView/GetFileThumbnail/?id=${item.id}&maxWidth=${item.image_width || '500'}&maxHeight=${item.image_heigth || '500'}`;
-
-              const response = await fetchDocuments(
-                endpoint,
-                "GET",
-                authKey,
-                null,
-                "image/png"
-              );
-
-              updatedThumbnails[item.id] = URL.createObjectURL(response);
-            } catch (err) {
-              console.warn(`Failed to load thumbnail for ${item.id}:`, err);
-              // Skip just this item, but continue others
-            }
-          })
-        );
-
-        setFileThumbnails(updatedThumbnails);
-      } catch (err) {
-        console.error("Error fetching thumbnails:", err);
-      } finally {
-        setLoading(false);
+    const loadThumbnailsSequentially = async () => {
+      if (viewMode !== 'grid' || contacts.length === 0 || !auth?.authKey) {
+        return;
       }
+
+      for (const item of contacts) {
+        if (!item.id || !item.mime_type?.startsWith("image/")) continue;
+
+        // Start loading
+        setThumbnailLoading(prev => ({ ...prev, [item.id]: true }));
+
+        try {
+          const endpoint = `api/DbFileView/GetFileThumbnail/?id=${item.id}&maxWidth=${item.image_width || '500'}&maxHeight=${item.image_heigth || '500'}`;
+          const response = await fetchDocuments(endpoint, "GET", auth.authKey, null, "image/png");
+
+          setFileThumbnails(prev => ({
+            ...prev,
+            [item.id]: URL.createObjectURL(response),
+          }));
+        } catch (err) {
+          console.warn(`Failed to load thumbnail for ${item.id}:`, err);
+        } finally {
+          // End loading regardless of success
+          setThumbnailLoading(prev => ({ ...prev, [item.id]: false }));
+        }
+      }
+
     };
 
-
-    GetFileThumbnails();
-  }, [contacts, auth, viewMode]); // 👈 Add viewMode to dependencies
+    loadThumbnailsSequentially();
+  }, [contacts, auth, viewMode]);
 
   // Confirm button
   const handleSearch = () => {
@@ -994,16 +982,18 @@ const ViewDocuments = () => {
                         <img
                           src={fileThumbnails[item.id]}
                           alt={item.name}
-                          className="w-48 h-40 object-cover rounded-md mx-auto"
+                          className="w-48 h-40 object-cover rounded-md mx-auto opacity-0 transition-opacity duration-500 ease-in-out"
+                          onLoad={(e) => e.currentTarget.classList.remove("opacity-0")}
                         />
-                      ) : (
-                        <div className="relative w-40 h-40 flex items-center justify-center mx-auto bg-gray-100 rounded-md">
-                          {/* Loading overlay */}
+                      ) : thumbnailLoading[item.id] ? (
+                        <div className="relative w-40 h-40 flex items-center justify-center mx-auto bg-gray-100 rounded-md overflow-hidden">
                           <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-70 z-10">
                             <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-gray-500"></div>
                           </div>
-
-                          {/* Fallback icon */}
+                          <Image className="w-20 h-20 text-gray-300" />
+                        </div>
+                      ) : (
+                        <div className="w-40 h-40 flex items-center justify-center mx-auto rounded-md">
                           <Image className="w-20 h-20 text-gray-300" />
                         </div>
                       )
@@ -1031,7 +1021,7 @@ const ViewDocuments = () => {
                         href={fileThumbnails[item.id] || ""}
                         target="_blank"
                         rel={item.mime_type?.startsWith("image/") ? "noopener noreferrer" : "noreferrer"}
-                        className={`flex items-center mt-2 text-sm ${fileThumbnails[item.id] ? "hover:underline" : "cursor-not-allowed pointer-events-none"
+                        className={`flex items-center no-underline mt-2 text-sm ${fileThumbnails[item.id] ? "hover:underline" : "cursor-not-allowed pointer-events-none"
                           }`}
                         onClick={(e) => {
                           if (!fileThumbnails[item.id]) {
@@ -1047,7 +1037,7 @@ const ViewDocuments = () => {
                         href={fileThumbnails[item.id] || ""}
                         target="_blank"
                         rel="noreferrer"
-                        className={`flex items-center mt-2 text-sm ${fileThumbnails[item.id] ? "hover:underline" : "cursor-not-allowed pointer-events-none"
+                        className={`flex items-center no-underline mt-2 text-sm ${fileThumbnails[item.id] ? "hover:underline" : "cursor-not-allowed pointer-events-none"
                           }`}
                         onClick={(e) => {
                           if (!fileThumbnails[item.id]) {

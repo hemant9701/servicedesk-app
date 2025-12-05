@@ -58,7 +58,7 @@ const Home = () => {
       </div>
       <main className="relative mx-8 md:mx-32 mt-8 p-8">
         <div className="grid md:grid-cols-2 gap-6 text-zinc-800">
-          <Link to="/createticket" className="block">
+          <Link to="/createticket" className="block no-underline">
             <div className="bg-white outline outline-2 outline-zinc-800 p-2 md:p-6 rounded-2xl shadow relative hover:shadow-[4px_4px_20px_0px_rgba(31,39,45,0.40)] active:bg-gray-300">
               <div className="flex items-center space-x-2">
                 <NotebookPen className="w-12 h-12" />
@@ -66,7 +66,7 @@ const Home = () => {
               </div>
             </div>
           </Link>
-          <Link to="/tickets" className="block">
+          <Link to="/tickets" className="block no-underline">
             <div className="bg-white outline outline-2 outline-zinc-800 p-2 md:p-6 rounded-2xl shadow transition-colors relative hover:shadow-[4px_4px_20px_0px_rgba(31,39,45,0.40)] active:bg-gray-300">
               <div className="flex items-center space-x-2">
                 <Ticket className="w-12 h-12" />
@@ -76,8 +76,8 @@ const Home = () => {
                 {contactCount}
               </span>
             </div>
-          </Link>
-          <Link to="/calendar" className="block">
+          </Link> 
+          <Link to="/calendar" className="block no-underline">
             <div className="bg-white outline outline-2 outline-zinc-800 p-2 md:p-6 rounded-2xl shadow transition-colors relative hover:shadow-[4px_4px_20px_0px_rgba(31,39,45,0.40)] active:bg-gray-300">
               <div className="flex items-center space-x-2">
                 <CalendarDays className="w-12 h-12" />
@@ -85,7 +85,7 @@ const Home = () => {
               </div>
             </div>
           </Link>
-          <Link to="/workorders" className="block">
+          <Link to="/workorders" className="block no-underline">
             <div className="bg-white outline outline-2 outline-zinc-800 p-2 md:p-6 rounded-2xl shadow transition-colors relative hover:shadow-[4px_4px_20px_0px_rgba(31,39,45,0.40)] active:bg-gray-300">
               <div className="flex items-center space-x-2">
                 <FileText className="w-12 h-12" />
