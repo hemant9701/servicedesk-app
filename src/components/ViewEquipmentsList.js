@@ -365,7 +365,7 @@ const ViewInstallations = () => {
             onClick={() => toggleExpand(row.original.id)}
             className="pr-1"
           >
-            {expanded[row.original.id] ? <ChevronDown size={20} className='text-slate-500' /> : <ChevronUp size={20} className='text-slate-500' />}
+            {expanded[row.original.id] ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
           </button>
         ) : null
       )
@@ -482,7 +482,7 @@ const ViewInstallations = () => {
                 onClick={isSecondColumn ? (e) => e.stopPropagation() : undefined}
               >
                 {index === 0 && depth > 0 && (
-                  <CornerDownRight className="mr-1 text-gray-300" size={20} />
+                  <CornerDownRight className="mr-1" size={20} />
                 )}
                 {cellContent}
               </td>

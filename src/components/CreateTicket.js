@@ -647,7 +647,7 @@ const CreateTicket = () => {
     return data.map(row => (
       <React.Fragment key={row.id}>
         <tr
-          className="hover:bg-gray-50 cursor-pointer"
+          className="cursor-pointer hover:bg-primary/50 hover:text-primary-foreground transition-colors duration-200 ease-in-out"
           onClick={() => handleRowClick(row)}
         >
           {columns.map((column, index) => {
@@ -659,12 +659,12 @@ const CreateTicket = () => {
             return (
               <td
                 key={column.id || column.accessor}
-                className={`px-2 py-4 whitespace-nowrap text-zinc-900 text-base font-normal ${index === 0 ? 'flex' : ''}`}
+                className={`px-2 py-4 whitespace-nowrap text-base font-normal ${index === 0 ? 'flex' : ''}`}
                 style={index === 0 ? { paddingLeft: `${depth * 2 + 1}em` } : {}}
                 onClick={isSecondColumn ? (e) => e.stopPropagation() : undefined}
               >
                 {index === 0 && depth > 0 && (
-                  <CornerDownRight className="mr-1 text-gray-300" size={20} />
+                  <CornerDownRight className="mr-1" size={20} />
                 )}
                 {cellContent}
               </td>
