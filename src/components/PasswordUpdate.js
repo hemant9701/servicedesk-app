@@ -5,6 +5,7 @@ import { useAuth } from '../AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Loader } from 'lucide-react';
 import { useTranslation } from "react-i18next";
+import { setPrimaryTheme } from "../utils/setTheme";
 
 function maskEmail(email) {
   if (!email.includes('@')) return email;
@@ -26,6 +27,7 @@ function maskEmail(email) {
 const PasswordUpdate = () => {
   const navigate = useNavigate();
   const { auth, login, logout, updateAuthToken } = useAuth(); // Access the user's current auth info
+  setPrimaryTheme(auth?.colorPrimary);
   const [token, setToken] = useState('')
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -170,10 +172,10 @@ const PasswordUpdate = () => {
         <ArrowLeft className="mr-2 w-5 h-5" /> {t("update_password_page_go_back")}
       </button>
       <div className="max-w-md w-full mx-auto mt-10 p-6 bg-white rounded-lg shadow-md">
-        <h1 className="text-2xl font-semibold text-gray-800 mb-6">{t("update_password_page_title")}</h1>
+        <h1 className="text-2xl font-semibold text-primary mb-6">{t("update_password_page_title")}</h1>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">{t("update_password_page_current_password")}</label>
+            <label className="block text-base font-medium text-gray-700">{t("update_password_page_current_password")}</label>
             <input
               type="password"
               value={currentPassword}
@@ -184,7 +186,7 @@ const PasswordUpdate = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">{t("update_password_page_new_password")}</label>
+            <label className="block text-base font-medium text-gray-700">{t("update_password_page_new_password")}</label>
             <input
               type="password"
               value={newPassword}
@@ -195,7 +197,7 @@ const PasswordUpdate = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">{t("update_password_page_re_password")}</label>
+            <label className="block text-base font-medium text-gray-700">{t("update_password_page_re_password")}</label>
             <input
               type="password"
               value={confirmNewPassword}
@@ -207,7 +209,7 @@ const PasswordUpdate = () => {
 
           <button
             type="submit"
-            className="w-full bg-gray-900 text-white py-2 px-4 rounded-md font-semibold hover:bg-gray-700 transition duration-200"
+            className="w-full bg-primary text-primary-foreground py-2 px-4 rounded-md font-semibold border border-primary hover:text-primary hover:bg-primary-foreground transition duration-200"
           >
             {!isLoading && t("update_password_page_update_button")}
             {isLoading && (
@@ -223,8 +225,8 @@ const PasswordUpdate = () => {
         {showOTPModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
             <div className="bg-white text-center p-8 rounded-lg shadow-lg w-full max-w-md">
-              <h2 className="text-2xl font-semibold mb-4 text-gray-800">{t("update_password_page_otp_popup_heading")}</h2>
-              <p className='text-sm mb-4 text-gray-500'>{t("update_password_page_otp_popup_subheading")} <span className='text-gray-800'>{maskEmail(auth.authEmail)}</span></p>
+              <h2 className="text-2xl font-semibold mb-4 text-primary">{t("update_password_page_otp_popup_heading")}</h2>
+              <p className='text-base mb-4 text-gray-500'>{t("update_password_page_otp_popup_subheading")} <span className='text-gray-800'>{maskEmail(auth.authEmail)}</span></p>
               <div className="flex justify-between mb-8">
                 {otpDigits.map((digit, idx) => (
                   <input
@@ -244,7 +246,7 @@ const PasswordUpdate = () => {
               <div className="flex">
                 <button
                   onClick={handleOTPSubmit}
-                  className="px-4 py-2 bg-gray-900 w-full text-white rounded hover:bg-gray-700"
+                  className="px-4 py-2 bg-primary w-full text-primary-foreground rounded hover:text-primary hover:bg-primary-foreground"
                 >
                   {t("update_password_page_otp_popup_button")}
                 </button>
@@ -253,8 +255,8 @@ const PasswordUpdate = () => {
           </div>
         )}
 
-        {successMessage && <p className="mt-4 text-green-600 text-sm text-center">{successMessage}</p>}
-        {error && <p className="mt-4 text-red-600 text-sm text-center">{error}</p>}
+        {successMessage && <p className="mt-4 text-green-600 text-base text-center">{successMessage}</p>}
+        {error && <p className="mt-4 text-red-600 text-base text-center">{error}</p>}
       </div>
     </div>
   );

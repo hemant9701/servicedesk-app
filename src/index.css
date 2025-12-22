@@ -7,4 +7,9 @@
     @apply font-medium;
   }
 }
+:root {
+  /* fallback color */
+  --color-primary: 0 51 39; /* #003327 */
+  --color-primary-foreground: 255 255 255; /* #FFFFFF */
+}
 

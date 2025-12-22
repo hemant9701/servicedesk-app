@@ -1,22 +1,25 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { fetchDocuments } from '../services/apiServiceDocuments';
 import { downloadFiles } from "../services/apiServiceDownloads";
 import { ToastContainer, toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
-import { File, Eye, ArrowLeft, Circle, MapPin, Phone, Wrench, User, Calendar, ExternalLink, Image } from "lucide-react";
+import { File, Eye, ArrowLeft, Circle, MapPin, Phone, Wrench, User, Calendar, ExternalLink, Image, Loader, Download } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { setPrimaryTheme } from "../utils/setTheme";
 
 const SingleTicket = () => {
   const navigate = useNavigate();
   const { auth } = useAuth();
+  setPrimaryTheme(auth?.colorPrimary);
   const { ticketId } = useParams();
   const [ticket, setTicket] = useState(null);
   const [ticketWorkOrder, setTicketWorkOrder] = useState();
   const [doc, setDoc] = useState([]);
   //const [file, setFile] = useState('');
   const [loading, setLoading] = useState(true);
+  const [isURLLoading, setIsURLLoading] = useState(false);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('details'); // State to manage active tab
   const [fileThumbnails, setFileThumbnails] = useState({});
@@ -214,6 +217,36 @@ const SingleTicket = () => {
     });
   };
 
+  //// Function ////
+  const openDocumentInNewTab = useCallback(async (id) => {
+    if (!id || !auth?.authKey) return;
+
+    setIsURLLoading(true); // Show loading overlay
+
+    const endpoint = `api/DbFileView/View/?id=${id}`;
+    try {
+      const response = await fetchDocuments(
+        endpoint,
+        "GET",
+        auth.authKey,
+        null,
+        "image/png"
+      );
+
+      if (response) {
+        const blob = await response.blob?.() ?? response;
+        const blobUrl = URL.createObjectURL(blob);
+        window.open(blobUrl, '_blank', 'noopener,noreferrer');
+      } else {
+        console.error("Failed to fetch thumbnail:", response?.statusText);
+      }
+    } catch (error) {
+      console.error("Error fetching document thumbnail:", error);
+    } finally {
+      setIsURLLoading(false); // Hide loading overlay
+    }
+  }, [auth?.authKey]);
+
 
   if (loading) {
     return <div className="flex w-full items-center justify-center h-screen">
@@ -266,9 +299,9 @@ const SingleTicket = () => {
           <div className='grid grid-cols-1 md:grid-rows-3 gap-8'>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 row-start-1">
               <div className='shadow-sm border rounded-lg p-4 '>
-                <h4 className="block text-zinc-900 text-xs font-semibold leading-normal">{t("single_ticket_page_location_equipment")}</h4>
+                <h4 className="block text-zinc-900 text-base font-semibold leading-normal">{t("single_ticket_page_location_equipment")}</h4>
                 <hr className='my-2 w-32 border-gray-300' />
-                <ul className="list-none list-inside text-slate-500 text-xs font-medium">
+                <ul className="list-none list-inside text-slate-500 text-base font-medium">
                   {ticket?.project_db_address_street ? (<li className='flex items-center'><MapPin className='w-4 h-4 mr-2' />{ticket?.project_db_address_street}</li>) : ''}
                   {ticket?.project_db_address_zip || ticket?.project_db_address_city ? (<li className='ml-6 pb-1'>{ticket?.project_db_address_zip} {ticket?.project_db_address_city}</li>) : ''}
                   {ticket?.project_db_address_phone ? (<li className='flex items-center pb-1'><Phone className='w-4 h-4 mr-2' />{ticket?.project_db_address_phone}</li>) : ''}
@@ -292,9 +325,9 @@ const SingleTicket = () => {
               </div>
 
               <div className='shadow-sm border rounded-lg p-4 '>
-                <h4 className="text-zinc-900 text-xs font-semibold leading-normal">{t("single_ticket_page_created_by")}</h4>
+                <h4 className="text-zinc-900 text-base font-semibold leading-normal">{t("single_ticket_page_created_by")}</h4>
                 <hr className='my-2 w-32 border-gray-300' />
-                <ul className="list-none list-inside text-slate-500 text-xs font-medium">
+                <ul className="list-none list-inside text-slate-500 text-base font-medium">
                   <li className='flex items-center pb-1'><User className='w-4 h-4 mr-2' />{ticket?.contact_fullname}</li>
                   <li className='flex items-center'>
                     <Calendar className='w-4 h-4 mr-2' />
@@ -314,9 +347,9 @@ const SingleTicket = () => {
               </div>
 
               <div className='shadow-sm border rounded-lg p-4 '>
-                <h4 className="text-zinc-900 text-xs font-semibold leading-normal">{t('single_ticket_page_assigned_to')}</h4>
+                <h4 className="text-zinc-900 text-base font-semibold leading-normal">{t('single_ticket_page_assigned_to')}</h4>
                 <hr className='my-2 w-32 border-gray-300' />
-                <ul className="list-none list-inside text-slate-500 text-xs font-medium">
+                <ul className="list-none list-inside text-slate-500 text-base font-medium">
                   <li className='flex items-center pb-1'><User className='w-4 h-4 mr-2' />{ticket?.assigned_to_user_fullname?.trim() ? ticket.assigned_to_user_fullname : 'Not Assigned'}</li>
                   {ticket?.date_assigned && new Date(ticket.date_assigned).getFullYear() !== 1980 && (
                     <li className='flex items-center'>
@@ -338,17 +371,17 @@ const SingleTicket = () => {
             <div className={`grid grid-cols-1 ${ticketWorkOrder?.name ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-8 row-start-2`}>
               {/* <div className={`grid grid-cols-3 gap-8 row-start-2`}> */}
               <div className='shadow-sm border rounded-lg p-4 '>
-                <h4 className="text-zinc-900 text-xs font-semibold leading-normal">{t('single_ticket_page_severity')}</h4>
+                <h4 className="text-zinc-900 text-base font-semibold leading-normal">{t('single_ticket_page_severity')}</h4>
                 <hr className='my-2 w-32 border-gray-300' />
-                <span className="text-slate-500 text-xs font-medium">
+                <span className="text-slate-500 text-base font-medium">
                   {ticket?.task_priority_name}
                 </span>
               </div>
 
               <div className='shadow-sm border rounded-lg p-4 '>
-                <h4 className="text-zinc-900 text-xs font-semibold leading-normal">{t('single_ticket_page_type_status')}</h4>
+                <h4 className="text-zinc-900 text-base font-semibold leading-normal">{t('single_ticket_page_type_status')}</h4>
                 <hr className='my-2 w-32 border-gray-300' />
-                <ul className="list-none list-inside text-slate-500 text-xs font-medium">
+                <ul className="list-none list-inside text-slate-500 text-base font-medium">
                   <li className='pb-1'>
                     {ticket?.task_type_name}
                   </li>
@@ -361,9 +394,9 @@ const SingleTicket = () => {
 
               {ticketWorkOrder?.name && (
                 <div className='shadow-sm border rounded-lg p-4 '>
-                  <h4 className="text-zinc-900 text-xs font-semibold leading-normal">{t('single_ticket_page_linked_wo')}</h4>
+                  <h4 className="text-zinc-900 text-base font-semibold leading-normal">{t('single_ticket_page_linked_wo')}</h4>
                   <hr className='my-2 w-32 border-gray-300' />
-                  <ul className="list-none list-inside text-slate-500 text-xs font-medium">
+                  <ul className="list-none list-inside text-slate-500 text-base font-medium">
                     <li className='flex items-center pb-1 cursor-pointer' onClick={() => navigate(`/workorder/${ticketWorkOrder?.id}`)}>{ticketWorkOrder?.id2} <ExternalLink className="ml-2 w-5 h-5" /></li>
                     <li className='flex items-center pb-1'>{ticketWorkOrder?.job_type_name}</li>
                     <li className='flex items-center pb-1'>{ticketWorkOrder?.name}</li>
@@ -373,12 +406,12 @@ const SingleTicket = () => {
 
             <div className="row-start-3">
               <div className='shadow-sm border rounded-lg p-4 '>
-                <h4 className="block text-zinc-900 text-xs font-semibold leading-normal">{t('single_ticket_page_description')}</h4>
+                <h4 className="block text-zinc-900 text-base font-semibold leading-normal">{t('single_ticket_page_description')}</h4>
                 <hr className='my-2 w-32 border-gray-300' />
                 {ticket?.remark ? (
-                  <p className="mb-4 text-slate-500 text-xs font-medium">{ticket?.remark}</p>
+                  <p className="mb-4 text-slate-500 text-base font-medium">{ticket?.remark}</p>
                 ) : (
-                  <p className="mb-4 text-slate-500 text-xs font-medium">{t('single_ticket_page_no_description')}</p>
+                  <p className="mb-4 text-slate-500 text-base font-medium">{t('single_ticket_page_no_description')}</p>
                 )}
               </div>
             </div>
@@ -397,6 +430,15 @@ const SingleTicket = () => {
               pauseOnHover
               theme="colored"
             />
+            {
+              isURLLoading && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-white/10">
+                  <div className="text-white text-lg font-semibold animate-pulse">
+                    <Loader className="w-20 h-20 ml-2 text-blue-600 animate-spin" />
+                  </div>
+                </div>
+              )
+            }
             {doc?.length > 0 ? (
               <div className='grid grid-cols-1 md:grid-cols-4 gap-4'>
                 {doc.map(item => (
@@ -408,10 +450,10 @@ const SingleTicket = () => {
                           <img
                             src={fileThumbnails[item.id]}
                             alt={item.name}
-                            className="w-48 h-40 object-cover rounded-md mx-auto"
+                            className="w-full h-40 md:h-48 object-fill rounded-md mx-auto"
                           />
                         ) : (
-                          <div className="relative w-40 h-40 flex items-center justify-center mx-auto bg-gray-100 rounded-md">
+                          <div className="relative w-40 md:w-48 h-40 md:h-48 flex items-center justify-center mx-auto bg-gray-100 rounded-md">
                             {/* Loading overlay */}
                             <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-70 z-10">
                               <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-gray-500"></div>
@@ -422,13 +464,13 @@ const SingleTicket = () => {
                           </div>
                         )
                       ) : (
-                        <File className="w-40 h-40 text-gray-600 mx-auto" />
+                        <File className="w-40 md:w-48 h-40 md:h-48 text-gray-600 mx-auto" />
                       )}
                     </div>
                     <div className='flex flex-col'>
-                      <h4 className="text-gray-500 text-sm py-1 break-words">{item.name}</h4>
+                      <h4 className="text-gray-500 text-base py-1 break-words">{item.name}</h4>
 
-                      <p className="text-gray-500 text-sm">{new Date(item.date_add).toLocaleString('en-GB', {
+                      <p className="text-gray-500 text-base">{new Date(item.date_add).toLocaleString('en-GB', {
                         year: 'numeric',
                         month: '2-digit',
                         day: '2-digit',
@@ -438,7 +480,7 @@ const SingleTicket = () => {
                       })}</p>
 
                       {item.file_name ? (
-                        <label className="mt-2 flex space-x-2 items-start text-sm">
+                        <label className="mt-2 flex space-x-2 items-start text-base">
                           <input
                             type="checkbox"
                             onChange={() => toggleFileSelection(item)}
@@ -448,21 +490,29 @@ const SingleTicket = () => {
                         </label>) : null}
 
                       {/* Show "View Document" only if it's an image */}
-
-                      <a
-                        href={fileThumbnails[item.id] || ""}
-                        target="_blank"
-                        rel={item.mime_type?.startsWith("image/") ? "noopener noreferrer" : "noreferrer"}
-                        className={`flex items-center no-underline mt-2 text-sm ${fileThumbnails[item.id] ? "hover:underline" : "cursor-not-allowed pointer-events-none"
-                          }`}
-                        onClick={(e) => {
-                          if (!fileThumbnails[item.id]) {
-                            e.preventDefault(); // Prevent navigation if not loaded
-                          }
-                        }}
-                      >
-                        <Eye className="w-6 h-6 mr-2 text-gray-600" /> {t("single_ticket_page_view_document")}
-                      </a>
+                      { item.mime_type?.startsWith("image/") ? (
+                          <button
+                            target="_blank"
+                            rel={item.mime_type?.startsWith("image/") ? "noopener noreferrer" : "noreferrer"}
+                            className={`flex items-center no-underline mt-2 text-base ${fileThumbnails[item.id] ? "hover:underline" : "cursor-not-allowed pointer-events-none"
+                              }`}
+                            onClick={() => openDocumentInNewTab(item.id)}
+                          >
+                            <Eye className="w-6 h-6 mr-2 text-gray-600" />
+                            {t("single_ticket_page_view_document")}
+                          </button>
+                        ) : (
+                          <button
+                            target="_blank"
+                            rel="noreferrer"
+                            className={`flex items-center no-underline mt-2 text-base ${fileThumbnails[item.id] ? "hover:underline" : "cursor-not-allowed pointer-events-none"
+                              }`}
+                            onClick={() => openDocumentInNewTab(item.id)}
+                          >
+                            <Eye className="w-6 h-6 mr-2 text-gray-600" />
+                            {t("single_ticket_page_view_document")}
+                          </button>
+                        )}
                     </div>
                   </div>
                 ))}
@@ -477,13 +527,13 @@ const SingleTicket = () => {
                 {selectedFiles.length !== 0 && (
                   <button
                     onClick={handleDownloadSelected}
-                    className="w-48 px-5 py-3 bg-zinc-800 rounded-lg flex items-center justify-center text-pink-50 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
-                    {t("single_ticket_page_download_button")}
+                    className="w-48 px-4 py-2 bg-primary rounded-lg flex items-center justify-center text-primary-foreground text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
+                    {t("single_ticket_page_download_button")} <Download className="ml-2 w-6 h-5" />
                   </button>)}
                 <button
                   onClick={handleDownloadAll}
-                  className="w-48 px-5 py-3 ml-2 bg-zinc-800 rounded-lg flex items-center justify-center text-pink-50 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
-                  {t("single_ticket_page_download_all_button")}
+                  className="w-48 px-4 py-2 ml-2 bg-primary-foreground border border-2 border-primary rounded-lg flex items-center justify-center text-primary text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
+                  {t("single_ticket_page_download_all_button")} <Download className="ml-2 w-6 h-5" />
                 </button>
               </div>
             )}

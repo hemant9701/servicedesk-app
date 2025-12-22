@@ -6,10 +6,12 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { Loader, BadgeInfo, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, ArrowLeftToLine, ArrowRightToLine, Circle } from 'lucide-react';
 import { useTranslation } from "react-i18next";
+import { setPrimaryTheme } from "../utils/setTheme";
 
 const ViewTicketList = () => {
   const navigate = useNavigate();
   const { auth } = useAuth();
+  setPrimaryTheme(auth?.colorPrimary);
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
@@ -83,7 +85,7 @@ const ViewTicketList = () => {
         accessor: 'id2',
         Cell: ({ row }) => (
           <div className="text-center">
-            <span className="text-gray-800 font-medium">
+            <span className="font-medium">
               {row.original.id2}
             </span></div>
         ),
@@ -105,7 +107,7 @@ const ViewTicketList = () => {
       {
         Header: t('tickets_list_table_heading_type_text'), accessor: 'task_type_name',
         Cell: ({ row }) => (
-          <span className={`text-xs font-medium`}>
+          <span className={`text-base font-medium`}>
             {row.original.task_type_name}
           </span>
         ),
@@ -113,7 +115,7 @@ const ViewTicketList = () => {
       {
         Header: t('tickets_list_table_heading_status_text'), accessor: 'task_status_name',
         Cell: ({ row }) => (
-          <span className={`text-xs min-w-max inline-flex items-center font-medium pe-3 px-2 pb-1 pt-0.5 rounded-full ${statusColors[row.original.task_status_name] || "bg-gray-200 text-gray-800"}`}>
+          <span className={`text-base min-w-max inline-flex items-center font-medium pe-3 px-2 pb-1 pt-1 rounded-full ${statusColors[row.original.task_status_name] || "bg-gray-200 text-gray-800"}`}>
             <Circle className={`inline w-2 h-2 mr-1 rounded-full ${statusDotColors[row.original.task_status_name] || "bg-gray-800 text-gray-800"}`} /> {row.original.project_status_name}
             {row.original.task_status_name}
           </span>
@@ -189,8 +191,8 @@ const ViewTicketList = () => {
           </button>
         </div>
 
-        <div className="flex items-center mb-1 text-zinc-800 text-sm font-normal px-4 py-2">
-          <BadgeInfo className='mr-2 w-5 h-5 text-slate-300' /> {t("tickets_list_page_helping_text")}
+        <div className="bg-blue-100 flex items-center text-blue-500 text-base font-normal px-4 py-1 mb-2 rounded-lg">
+          <BadgeInfo className='mr-2 w-5 h-5 text-blue-500' /> {t("tickets_list_page_helping_text")}
         </div>
         <div className="overflow-x-auto">
           <table {...getTableProps()} className="min-w-full divide-y divide-gray-200 border border-gray-300">
@@ -205,7 +207,7 @@ const ViewTicketList = () => {
                       const { key: headerKey, ...restHeaderProps } = headerProps;
                       return (
                         <th key={headerKey || colIdx} {...restHeaderProps}
-                          className="p-2 whitespace-nowrap text-slate-500 text-xs font-medium leading-none">
+                          className="p-2 whitespace-nowrap text-slate-500 text-base font-medium leading-none">
                           {column.render('Header')}
                           {column.isSorted ? (
                             column.isSortedDesc ? (
@@ -228,12 +230,14 @@ const ViewTicketList = () => {
                   const rowProps = row.getRowProps();
                   const { key: rowKey, ...restRowProps } = rowProps;
                   return (
-                    <tr key={rowKey || row.original.id || rowIdx} {...restRowProps} className="cursor-pointer hover:bg-gray-200" onClick={() => navigate(`/ticket/${row.original.id}`)}>
+                    <tr key={rowKey || row.original.id || rowIdx} {...restRowProps} 
+                    className="cursor-pointer hover:bg-primary/50 hover:text-primary-foreground transition-colors duration-200 ease-in-out" 
+                    onClick={() => navigate(`/ticket/${row.original.id}`)}>
                       {row.cells.map((cell, cellIdx) => {
                         const cellProps = cell.getCellProps();
                         const { key: cellKey, ...restCellProps } = cellProps;
                         return (
-                          <td key={cellKey || cellIdx} {...restCellProps} className="self-stretch px-1 py-2 text-xs font-normal text-zinc-900">
+                          <td key={cellKey || cellIdx} {...restCellProps} className="self-stretch px-1 py-2 text-base font-normal">
                             {cell.render('Cell')}
                           </td>
                         );
@@ -250,24 +254,24 @@ const ViewTicketList = () => {
         {/* Pagination Controls - Only show if filteredTickets exceed pageSize (10) */}
         {!isLoading && tickets.length > 12 && (
           <div className="flex items-center justify-between p-4">
-            <span className="text-xs text-slate-700">
+            <span className="text-base text-slate-700">
               {t("ticket_list_table_pagination_page")} {pageIndex + 1} {t("ticket_list_table_pagination_of")} {pageOptions.length}
             </span>
             <div>
-              <button onClick={() => gotoPage(0)} disabled={!canPreviousPage} className="py-0.5 px-1 md:px-2 mr-1 text-slate-700 rounded-md border border-slate-700 disabled:border-gray-700">
+              <button onClick={() => gotoPage(0)} disabled={!canPreviousPage} className="py-0.5 px-1 md:px-2 mr-1 text-primary rounded-md border border-primary disabled:opacity-50">
                 <ArrowLeftToLine className="w-4" />
               </button>
-              <button onClick={() => previousPage()} disabled={!canPreviousPage} className="py-0.5 px-1 md:px-2 mr-1 text-slate-700 rounded-md border border-slate-700 disabled:border-gray-700">
+              <button onClick={() => previousPage()} disabled={!canPreviousPage} className="py-0.5 px-1 md:px-2 mr-1 text-primary rounded-md border border-primary disabled:opacity-50">
                 <ArrowLeft className="w-4" />
               </button>
-              <button onClick={() => nextPage()} disabled={!canNextPage} className="py-0.5 px-1 md:px-2 mr-1 text-slate-700 rounded-md border border-slate-700 disabled:border-gray-700">
+              <button onClick={() => nextPage()} disabled={!canNextPage} className="py-0.5 px-1 md:px-2 mr-1 text-primary rounded-md border border-primary disabled:opacity-50">
                 <ArrowRight className="w-4" />
               </button>
-              <button onClick={() => gotoPage(pageOptions.length - 1)} disabled={!canNextPage} className="py-0.5 px-1 md:px-2 mr-1 text-slate-700 rounded-md border border-slate-700 disabled:border-gray-700">
+              <button onClick={() => gotoPage(pageOptions.length - 1)} disabled={!canNextPage} className="py-0.5 px-1 md:px-2 mr-1 text-primary rounded-md border border-primary disabled:opacity-50">
                 <ArrowRightToLine className="w-4" />
               </button>
             </div>
-            <select name="table_pagination" id="table_pagination" value={pageSize} onChange={e => setPageSize(Number(e.target.value))} className="ml-1 p-1 md:p-1 text-xs text-slate-700 border border-slate-700 rounded-md max-w-32">
+            <select name="table_pagination" id="table_pagination" value={pageSize} onChange={e => setPageSize(Number(e.target.value))} className="ml-1 p-1 md:p-1 text-base text-slate-700 border border-slate-700 rounded-md max-w-32">
               {[12, 24, 36, 48].map(size => (
                 <option key={size} value={size}>
                   {t("ticket_list_table_pagination_show")} {size}

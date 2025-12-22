@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { ToastContainer, toast } from 'react-toastify';
 import { useTranslation } from "react-i18next";
+import { setPrimaryTheme } from "../utils/setTheme";
 
 import Select from 'react-select';
 import makeAnimated from 'react-select/animated';
@@ -19,6 +20,7 @@ const animatedComponents = makeAnimated();
 const CreateTicket = () => {
   const navigate = useNavigate();
   const { auth } = useAuth();
+  setPrimaryTheme(auth?.colorPrimary);
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -346,8 +348,6 @@ const CreateTicket = () => {
     }
   };
 
-
-
   const removeFile = (index) => {
     setFiles((prevFiles) => {
       const updatedFiles = prevFiles.filter((file) => file.name !== index.name);
@@ -452,24 +452,36 @@ const CreateTicket = () => {
 
 
   // Set the first ticketType when ticketTypes array changes
-  useEffect(() => {
-    if (ticketTypes.length > 0 && !ticketDetails.ticketType) {
-      setTicketDetails((prev) => ({
-        ...prev,
-        ticketType: ticketTypes[0].name,
-      }));
-    }
-  }, [ticketTypes, ticketDetails]);
+  // useEffect(() => {
+  //   if (ticketTypes.length > 0 && !ticketDetails.ticketType) {
+  //     setTicketDetails((prev) => ({
+  //       ...prev,
+  //       ticketType: ticketTypes[0].name,
+  //     }));
+  //   }
+  // }, [ticketTypes, ticketDetails]);
+
+  const ticketTypeOptions = ticketTypes.map((type) => ({
+    value: type.name,
+    label: type.name,
+  }));
+
 
   // Set the first severity when severities array changes
-  useEffect(() => {
-    if (severities.length > 0 && !ticketDetails.severity) {
-      setTicketDetails((prev) => ({
-        ...prev,
-        severity: severities[0].name,
-      }));
-    }
-  }, [severities, ticketDetails]);
+  // useEffect(() => {
+  //   if (severities.length > 0 && !ticketDetails.severity) {
+  //     setTicketDetails((prev) => ({
+  //       ...prev,
+  //       severity: severities[0].name,
+  //     }));
+  //   }
+  // }, [severities, ticketDetails]);
+
+  const severityOptions = severities.map((severity) => ({
+    value: severity.name,
+    label: severity.name,
+  }));
+
 
   const handleInputChange = (key, value) => {
     if (key === 'problemDescription') {
@@ -558,7 +570,7 @@ const CreateTicket = () => {
       Header: t('create_ticket_table_heading_status_text'),
       accessor: 'project_status_name',
       Cell: ({ row }) => (
-        <span className={`text-xs min-w-max inline-flex items-center font-medium pe-3 px-2 pb-1 pt-0.5 rounded-full ${statusColors[row.original.project_status_name] || "bg-gray-200 text-gray-800"}`}>
+        <span className={`text-base min-w-max inline-flex items-center font-medium pe-3 px-2 pb-1 pt-0.5 rounded-full ${statusColors[row.original.project_status_name] || "bg-gray-200 text-gray-800"}`}>
           <Circle className={`inline w-2 h-2 mr-1 rounded-full ${statusDotColors[row.original.project_status_name] || "bg-gray-800 text-gray-800"}`} />
           {row.original.project_status_name}
         </span>
@@ -647,7 +659,7 @@ const CreateTicket = () => {
             return (
               <td
                 key={column.id || column.accessor}
-                className={`px-2 py-4 whitespace-nowrap text-zinc-900 text-xs font-normal ${index === 0 ? 'flex' : ''}`}
+                className={`px-2 py-4 whitespace-nowrap text-zinc-900 text-base font-normal ${index === 0 ? 'flex' : ''}`}
                 style={index === 0 ? { paddingLeft: `${depth * 2 + 1}em` } : {}}
                 onClick={isSecondColumn ? (e) => e.stopPropagation() : undefined}
               >
@@ -843,7 +855,7 @@ const CreateTicket = () => {
         pauseOnHover
         theme="colored"
       />
-      <h1 className="justify-start text-zinc-900 text-3xl font-semibold mb-6">{t("create_ticket_page_title")}</h1>
+      <h1 className="justify-start text-primary text-3xl font-semibold mb-6">{t("create_ticket_page_title")}</h1>
 
       {/* Step Indicator Bar */}
       <div className='w-full border-b-2 mb-4 border-gray-200'>
@@ -876,7 +888,7 @@ const CreateTicket = () => {
                     ? <Check className='w-6 h-6' />
                     : <Circle className='w-4 h-4 bg-white rounded-full text-white' />
                   }
-                  <p className='text-xs md:text-md mt-2 text-slate-700 text-base font-medium absolute top-12 md:w-max'>
+                  <p className='text-base md:text-md mt-2 text-slate-700 text-base font-medium absolute top-12 md:w-max'>
                     {item.label}
                   </p>
                 </div>
@@ -901,23 +913,23 @@ const CreateTicket = () => {
               onChange={() => setIncludeArchived(!includeArchived)}
               className="w-5 h-5 mr-2 outline outline-1 outline-offset-[-1px] outline-slate-300"
             />
-            <label className="text-zinc-800 text-sm font-medium">{t('create_ticket_page_checkbox_label')}</label>
+            <label className="text-zinc-800 text-base font-medium">{t('create_ticket_page_checkbox_label')}</label>
           </div>
           {/* Search Filter UI */}
           <div className="mb-6">
-            <button onClick={() => setIsModalOpen(true)} className="flex justify-center items-center bg-white text-zinc-800 text-base font-medium leading-normal border border-zinc-800 w-48 px-5 py-3 rounded-md my-8">
+            <button onClick={() => setIsModalOpen(true)} className="flex justify-center items-center bg-white text-primary text-base font-medium leading-normal border border-primary w-48 px-5 py-3 rounded-md my-8">
               {t('create_ticket_page_filter_button')} <Filter size={24} className="ml-4" />
             </button>
 
             {isModalOpen && (
               <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-                <div className="relative w-80 p-4 bg-white rounded-lg shadow-md border space-y-4">
+                <div className="relative w-100 p-4 bg-white rounded-lg shadow-md border space-y-4">
                   <button onClick={() => { setIsModalOpen(false); setTempFilters(clearedFilters) }} className="absolute -top-1 -right-1 bg-white text-zinc-800 text-base font-medium leading-normal border border-zinc-800 px-2 rounded-full">
                     x
                   </button>
                   {/* Header */}
                   <div className="flex items-center justify-between border-b pb-2">
-                    <div className="flex justify-center items-center bg-white text-zinc-800 text-base font-medium leading-normal border border-zinc-800 w-48 px-4 py-2 rounded-md mb-2">
+                    <div className="flex justify-center items-center bg-white text-primary text-base font-medium leading-normal border border-primary w-48 px-4 py-2 rounded-md mb-2">
                       {t('create_ticket_page_filter_label')}
                       <Filter size={24} className="ml-4" />
                     </div>
@@ -933,7 +945,7 @@ const CreateTicket = () => {
                       value={tempFilters.locationLabel}
                       onChange={handleLocationChange}
                       placeholder={t("create_ticket_page_filter_location")}
-                      className="w-full pl-10 pr-3 py-2 border rounded-md text-gray-500 text-base font-normal focus:outline-none focus:ring-1 focus:ring-gray-400"
+                      className="w-full pl-10 pr-3 py-2 border rounded-md text-gray-500 text-base font-normal focus:outline-none focus:ring-1 focus:ring-primary"
                     />
                   </div>
                   {locationHints.length > 0 && (
@@ -942,7 +954,7 @@ const CreateTicket = () => {
                         <li
                           key={hint.id}
                           onClick={() => handleHintClick(hint)}
-                          className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm text-gray-700"
+                          className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-base text-gray-700"
                         >
                           {hint.label}
                         </li>
@@ -956,7 +968,7 @@ const CreateTicket = () => {
                         <input
                           type="text"
                           placeholder="Search by Sub-Location"
-                          className="w-full pl-10 pr-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
+                          className="w-full pl-10 pr-3 py-2 border rounded-md text-base focus:outline-none focus:ring-1 focus:ring-gray-400"
                         />
                       </div> */}
 
@@ -970,7 +982,7 @@ const CreateTicket = () => {
                       value={tempFilters.keyword}
                       onChange={(e) => setTempFilters(prev => ({ ...prev, keyword: e.target.value }))}
                       placeholder={t("create_ticket_page_filter_keyword")}
-                      className="w-full pl-10 pr-3 py-2 border rounded-md text-gray-500 text-base font-normal focus:outline-none focus:ring-1 focus:ring-gray-400"
+                      className="w-full pl-10 pr-3 py-2 border rounded-md text-gray-500 text-base font-normal focus:outline-none focus:ring-1 focus:ring-primary"
                     />
                   </div>
 
@@ -989,11 +1001,28 @@ const CreateTicket = () => {
                         control: (base) => ({
                           ...base,
                           border: 'none',
-                          boxShadow: 'none',
+                          boxShadow: 'none', // also remove focus ring
                         }),
-                        placeholder: (base) => ({
+                        option: (base, state) => ({
                           ...base,
-                          color: '#6b7280',
+                          whiteSpace: "nowrap", // prevent wrapping
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          color: state.isSelected
+                            ? 'rgb(var(--color-primary-foreground) / var(--tw-bg-opacity, 1))'
+                            : state.isFocused
+                              ? 'rgb(var(--color-primary-foreground) / var(--tw-bg-opacity, 1))'
+                              : 'rgb(var(--color-primary) / var(--tw-bg-opacity, 1))',
+                          backgroundColor: state.isSelected
+                            ? 'rgb(var(--color-primary) / 0.7)'
+                            : state.isFocused
+                              ? 'rgb(var(--color-primary) / 0.5)'
+                              : 'transparent',
+                          cursor: 'pointer',
+                        }),
+                        menu: (provided) => ({
+                          ...provided,
+                          width: '85%', // controls dropdown menu width
                         }),
                       }}
                     />
@@ -1014,11 +1043,28 @@ const CreateTicket = () => {
                         control: (base) => ({
                           ...base,
                           border: 'none',
-                          boxShadow: 'none',
+                          boxShadow: 'none', // also remove focus ring
                         }),
-                        placeholder: (base) => ({
+                        option: (base, state) => ({
                           ...base,
-                          color: '#6b7280',
+                          whiteSpace: "nowrap", // prevent wrapping
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          color: state.isSelected
+                            ? 'rgb(var(--color-primary-foreground) / var(--tw-bg-opacity, 1))'
+                            : state.isFocused
+                              ? 'rgb(var(--color-primary-foreground) / var(--tw-bg-opacity, 1))'
+                              : 'rgb(var(--color-primary) / var(--tw-bg-opacity, 1))',
+                          backgroundColor: state.isSelected
+                            ? 'rgb(var(--color-primary) / 0.7)'
+                            : state.isFocused
+                              ? 'rgb(var(--color-primary) / 0.5)'
+                              : 'transparent',
+                          cursor: 'pointer',
+                        }),
+                        menu: (provided) => ({
+                          ...provided,
+                          width: '85%', // controls dropdown menu width
                         }),
                       }}
                     />
@@ -1039,11 +1085,28 @@ const CreateTicket = () => {
                         control: (base) => ({
                           ...base,
                           border: 'none',
-                          boxShadow: 'none',
+                          boxShadow: 'none', // also remove focus ring
                         }),
-                        placeholder: (base) => ({
+                        option: (base, state) => ({
                           ...base,
-                          color: '#6b7280',
+                          whiteSpace: "nowrap", // prevent wrapping
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          color: state.isSelected
+                            ? 'rgb(var(--color-primary-foreground) / var(--tw-bg-opacity, 1))'
+                            : state.isFocused
+                              ? 'rgb(var(--color-primary-foreground) / var(--tw-bg-opacity, 1))'
+                              : 'rgb(var(--color-primary) / var(--tw-bg-opacity, 1))',
+                          backgroundColor: state.isSelected
+                            ? 'rgb(var(--color-primary) / 0.7)'
+                            : state.isFocused
+                              ? 'rgb(var(--color-primary) / 0.5)'
+                              : 'transparent',
+                          cursor: 'pointer',
+                        }),
+                        menu: (provided) => ({
+                          ...provided,
+                          width: '85%', // controls dropdown menu width
                         }),
                       }}
                     />
@@ -1051,10 +1114,10 @@ const CreateTicket = () => {
 
                   {/* Footer buttons */}
                   <div className="grid grid-cols-2 gap-4 justify-between pt-2">
-                    <button onClick={handleReset} disabled={isLoading} className="px-5 py-3 border rounded-md text-sm text-zinc-800 hover:bg-zinc-100">
+                    <button onClick={handleReset} disabled={isLoading} className="px-5 py-3 border border-primary rounded-md text-base text-primary hover:bg-primary hover:text-primary-foreground">
                       {t('create_ticket_page_filter_reset')}
                     </button>
-                    <button onClick={applyFilters} disabled={isLoading} className="px-5 py-3 bg-zinc-800 text-white rounded-md text-sm hover:bg-zinc-800">
+                    <button onClick={applyFilters} disabled={isLoading} className="px-5 py-3 bg-primary text-primary-foreground rounded-md text-base hover:bg-white hover:text-primary hover:border hover:border-primary">
                       {t('create_ticket_page_filter_confirm')}
                     </button>
                   </div>
@@ -1067,15 +1130,15 @@ const CreateTicket = () => {
           <div className="bg-white rounded-lg shadow-md">
             <h2 className="text-xl font-semibold mb-2 px-4 pt-4">{t("create_ticket_step-1_title")}</h2>
 
-            <div className="flex items-center mb-1 text-zinc-800 text-sm font-normal px-4 py-2">
-              <BadgeInfo className='mr-2 w-5 h-5 text-slate-300' /> {t("create_ticket_step-1_helping_text")}
+            <div className="bg-blue-100 flex items-center text-blue-500 text-base font-normal px-4 py-1 mb-2 rounded-lg">
+              <BadgeInfo className='mr-2 w-5 h-5 text-blue-500' /> {t("create_ticket_step-1_helping_text")}
             </div>
             {/* Contacts Table */}
             <div className="overflow-x-auto">
               <table {...getTableProps()} className="min-w-full divide-y divide-gray-200 border border-gray-300">
                 <thead className="bg-white">
                   {headerGroups.map((headerGroup, headerIndex) => (
-                    <tr {...headerGroup.getHeaderGroupProps()} key={headerIndex} className="bg-white">
+                    <tr key={(headerGroup.getHeaderGroupProps() || {}).key || headerIndex} {...(function () { const { key, ...r } = headerGroup.getHeaderGroupProps(); return r; })()} className="bg-white">
                       {headerGroup.headers.map((column, index) => {
                         const sortProps = column.getSortByToggleProps();
                         const headerProps = column.getHeaderProps(sortProps);
@@ -1085,7 +1148,7 @@ const CreateTicket = () => {
                           <th
                             key={column.id || column.accessor}
                             {...restHeaderProps}
-                            className={`px-2 py-3 text-left whitespace-nowrap text-slate-500 text-xs font-medium leading-none ${index !== 0 ? 'border-r border-gray-300' : ''}`}
+                            className={`px-2 py-3 text-left whitespace-nowrap text-slate-500 text-base font-medium leading-none ${index !== 0 ? 'border-r border-gray-300' : ''}`}
                           >
                             {column.render('Header')}
                             {column.isSorted ? (
@@ -1114,21 +1177,21 @@ const CreateTicket = () => {
       {step === 1 && (
         <div className="w-full max-w-3xl mx-auto">
           <h2 className="text-zinc-900 text-xl font-semibold mb-6">{t("create_ticket_step-2_title")}</h2>
-          <p className='mb-2 text-gray-400 text-sm font-medium leading-tight'>{t("create_ticket_step-2_subtitle")}</p>
+          <p className='mb-2 text-gray-400 text-base font-medium leading-tight'>{t("create_ticket_step-2_subtitle")}</p>
           <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
             <div className='shadow-sm border rounded-lg bg-white p-4 '>
-              <h4 className="text-zinc-900 text-xs font-semibold leading-normal">{t("create_ticket_step-2_address")}</h4>
+              <h4 className="text-zinc-900 text-base font-semibold leading-normal">{t("create_ticket_step-2_address")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
-              <ul className="text-sm list-none list-inside text-slate-500 text-xs font-medium">
+              <ul className="list-none list-inside text-slate-500 text-base font-medium">
                 <li className='flex items-center'><MapPin className='w-4 h-4 mr-2' />{selectedRow.db_address_street}</li>
                 <li className='ml-6 pb-1'>{selectedRow.db_address} {selectedRow.db_address_zip}</li>
               </ul>
             </div>
 
             <div className='shadow-sm border rounded-lg bg-white p-4 '>
-              <h4 className="text-zinc-900 text-xs font-semibold leading-normal">{t("create_ticket_step-2_equipment")}</h4>
+              <h4 className="text-zinc-900 text-base font-semibold leading-normal">{t("create_ticket_step-2_equipment")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
-              <ul className="text-sm list-none list-inside text-slate-500 text-xs font-medium">
+              <ul className="list-none list-inside text-slate-500 text-base font-medium">
                 <li className='flex items-center'><Wrench className='w-4 h-4 mr-2' />{selectedRow.name}</li>
                 <li className='ml-6 pb-1'>{selectedRow.equipment_family_name}</li>
                 <li className='ml-6 pb-1'>{selectedRow.equipment_brand_name}</li>
@@ -1137,9 +1200,9 @@ const CreateTicket = () => {
             </div>
 
             <div className='shadow-sm border rounded-lg bg-white p-4 '>
-              <h4 className="text-zinc-900 text-xs font-semibold leading-normal">{t("create_ticket_step-2_properties")}</h4>
+              <h4 className="text-zinc-900 text-base font-semibold leading-normal">{t("create_ticket_step-2_properties")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
-              <ul className="text-sm list-none list-inside text-slate-500 text-xs font-medium">
+              <ul className="list-none list-inside text-slate-500 text-base font-medium">
                 <li className='grid grid-cols-2 gap-2 items-end'>{t("create_ticket_step-2_barcode")}: <span className='font-semibold'>{selectedRow.barcode || 'NA'}</span></li>
                 <li className='grid grid-cols-2 gap-2 items-end'>{t("create_ticket_step-2_serial_number")}: <span className='font-semibold'>{selectedRow.serial_number || 'NA'}</span></li>
                 <li className='grid grid-cols-2 gap-2 items-end'>{t("create_ticket_step-2_our_ref")}: <span className='font-semibold'>{selectedRow.customer_reference || 'NA'}</span></li>
@@ -1150,87 +1213,152 @@ const CreateTicket = () => {
           <div className='w-full w-full mx-auto'>
             <hr className=' my-12 border-b-1 border-gray-200' />
           </div>
-          <form onSubmit={(e) => { e.preventDefault(); setStep(2); }}>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const wordCount = ticketName
+                .trim()
+                .split(/\s+/)
+                .filter(word => word.length >= 3)
+                .length;
+              if (wordCount) {
+                setStep(2);
+              }
+            }}
+          >
             <div className="mb-8">
               <div className="flex flex-row gap-2 md:gap-8">
                 <div className="relative basis-1/2">
-                  <TicketX className="absolute left-3 top-2.5 w-5 h-5 text-gray-500" />
-                  <select
-                    value={ticketDetails.ticketType}
-                    onChange={(e) => handleInputChange('ticketType', e.target.value)}
-                    className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-md text-gray-500 text-base font-normal leading-normal"
-                    required
+                  <TicketX className="absolute left-3 top-3 w-5 h-5 text-gray-500" />
+                  <Select
+                    closeMenuOnSelect={true}
+                    components={animatedComponents}
+                    options={ticketTypeOptions}
+                    isClearable={true}
+                    value={
+                      ticketDetails.ticketType
+                        ? ticketTypeOptions.find(opt => opt.value === ticketDetails.ticketType)
+                        : null
+                    }
+                    onChange={(selectedOption) =>
+                      handleInputChange(
+                        'ticketType',
+                        selectedOption ? selectedOption.value : ''
+                      )
+                    }
+                    placeholder={t('create_ticket_step-2_select_ticket_type')}
+                    className="w-full pl-10 py-1 text-gray-500 text-base font-normal leading-normal border rounded-md"
+                    classNamePrefix="react-select"
                     styles={{
                       control: (base) => ({
                         ...base,
                         border: 'none',
-                        boxShadow: 'none',
+                        boxShadow: 'none', // also remove focus ring
                       }),
-                      placeholder: (base) => ({
+                      option: (base, state) => ({
                         ...base,
-                        color: '#6b7280',
+                        whiteSpace: "nowrap", // prevent wrapping
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        color: state.isSelected
+                          ? 'rgb(var(--color-primary-foreground) / var(--tw-bg-opacity, 1))'
+                          : state.isFocused
+                            ? 'rgb(var(--color-primary-foreground) / var(--tw-bg-opacity, 1))'
+                            : 'rgb(var(--color-primary) / var(--tw-bg-opacity, 1))',
+                        backgroundColor: state.isSelected
+                          ? 'rgb(var(--color-primary) / 0.7)'
+                          : state.isFocused
+                            ? 'rgb(var(--color-primary) / 0.5)'
+                            : 'transparent',
+                        cursor: 'pointer',
+                      }),
+                      menu: (provided) => ({
+                        ...provided,
+                        width: '85%', // controls dropdown menu width
                       }),
                     }}
-                  >
-                    <option>{t("create_ticket_step-2_select_ticket_type")}</option>
-                    {ticketTypes.map((ticketType, index) => (
-                      <option key={index} value={ticketType.name}> {ticketType.name} </option>
-                    ))}
-                  </select>
+                  />
                 </div>
 
                 <div className="relative basis-1/2">
-                  <Thermometer className="absolute left-3 top-2.5 w-5 h-5 text-gray-500" />
-                  <select
-                    value={ticketDetails.severity}
-                    onChange={(e) => handleInputChange('severity', e.target.value)}
-                    className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-md text-gray-500 text-base font-normal leading-normal"
-                    required
+                  <Thermometer className="absolute left-3 top-3 w-5 h-5 text-gray-500" />
+                  <Select
+                    closeMenuOnSelect={true}
+                    components={animatedComponents}
+                    options={severityOptions}
+                    isClearable={true}
+                    value={
+                      ticketDetails.severity
+                        ? severityOptions.find((opt) => opt.value === ticketDetails.severity)
+                        : null
+                    }
+                    onChange={(severityOptions) =>
+                      handleInputChange('severity', severityOptions ? severityOptions.value : '')
+                    }
+                    placeholder={t('create_ticket_step-2_select_severity')}
+                    className="w-full pl-10 py-1 text-gray-500 text-base font-normal leading-normal border rounded-md"
+                    classNamePrefix="react-select"
                     styles={{
                       control: (base) => ({
                         ...base,
                         border: 'none',
-                        boxShadow: 'none',
+                        boxShadow: 'none', // also remove focus ring
                       }),
-                      placeholder: (base) => ({
+                      option: (base, state) => ({
                         ...base,
-                        color: '#6b7280',
+                        whiteSpace: "nowrap", // prevent wrapping
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        color: state.isSelected
+                          ? 'rgb(var(--color-primary-foreground) / var(--tw-bg-opacity, 1))'
+                          : state.isFocused
+                            ? 'rgb(var(--color-primary-foreground) / var(--tw-bg-opacity, 1))'
+                            : 'rgb(var(--color-primary) / var(--tw-bg-opacity, 1))',
+                        backgroundColor: state.isSelected
+                          ? 'rgb(var(--color-primary) / 0.7)'
+                          : state.isFocused
+                            ? 'rgb(var(--color-primary) / 0.5)'
+                            : 'transparent',
+                        cursor: 'pointer',
+                      }),
+                      menu: (provided) => ({
+                        ...provided,
+                        width: '85%', // controls dropdown menu width
                       }),
                     }}
-                  >
-                    <option>{t("create_ticket_step-2_select_severity")}</option>
-                    {severities.map((severity, index) => (
-                      <option key={index} value={severity.name}> {severity.name} </option>
-                    ))}
-                  </select>
+                  />
                 </div>
               </div>
             </div>
 
             <div className="mb-4">
-              <label className="block text-slate-700 text-sm font-medium leading-tight"><span className='text-sm text-red-500'>* </span>{t("create_ticket_step-2_issue_inputbox_label")}</label>
+              <label className="block text-slate-700 text-base font-medium leading-tight"><span className='text-red-500'>* </span>{t("create_ticket_step-2_issue_inputbox_label")}</label>
               <input
                 type="text"
+                minLength={3}
                 maxLength={50}
                 value={ticketName}
                 onChange={handleNameChange}
+                required
                 placeholder={t('create_ticket_step-2_issue_inputbox_placeholder')}
-                className="mt-1 p-2 text-gray-400 font-normal leading-normal text-base w-full border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="mt-1 p-2 text-gray-800 font-normal leading-normal text-base w-full border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
-              <p className="text-red-500 text-xs font-normal leading-normal mt-1 text-end">
+              <p className="text-red-500 text-base font-normal leading-normal mt-1 text-end">
                 {50 - ticketName.length} {t("create_ticket_step-2_characters_remaining_text")}
               </p>
             </div>
 
             <div className="mb-4">
               <textarea
+                minLength={5}
                 maxLength={255}
                 value={textarea}
+                required
                 onChange={(e) => handleInputChange('problemDescription', e.target.value)}
                 placeholder={t('create_ticket_step-2_description_textbox_placeholder')}
-                className="mt-1 p-2 h-32 text-gray-400 font-normal leading-normal text-base w-full border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="mt-1 p-2 h-32 text-gray-800 font-normal leading-normal text-base w-full border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
-              <p className="text-red-500 text-xs font-normal leading-normal mt-1 text-end">
+              <p className="text-red-500 text-base font-normal leading-normal mt-1 text-end">
                 {255 - textarea.length} {t("create_ticket_step-2_characters_remaining_text")}
               </p>
             </div>
@@ -1247,8 +1375,8 @@ const CreateTicket = () => {
                 onDragLeave={handleDragLeave}
               >
                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                  <UploadCloud className="w-8 h-8 mb-3 p-1.5 rounded-3xl text-zinc-800 bg-gray-200" />
-                  <p className="mb-2 text-zinc-800 text-sm leading-tight text-center">
+                  <UploadCloud className="w-8 h-8 mb-3 p-1.5 rounded-3xl text-zinc-800 bg-lime-300 outline outline-8 outline-lime-200/50" />
+                  <p className="mb-2 text-zinc-800 text-base leading-tight text-center">
                     <span className="font-medium">
                       {t("create_ticket_step-2_upload_inputfile_label_1")}
                     </span>
@@ -1256,7 +1384,7 @@ const CreateTicket = () => {
                       {t("create_ticket_step-2_upload_inputfile_label_2")}
                     </span>
                   </p>
-                  <p className="text-gray-500 text-xs font-normal leading-none">
+                  <p className="text-gray-500 text-base font-normal leading-none">
                     {t("create_ticket_step-2_upload_inputfile_name")}
                   </p>
                 </div>
@@ -1292,7 +1420,7 @@ const CreateTicket = () => {
                               className="w-32 h-32 object-cover rounded-md overflow-hidden"
                               onLoad={() => URL.revokeObjectURL(fileURL)} // ✅ revoke after load
                             />
-                            <p className="mt-2 text-sm break-words whitespace-normal text-gray-800">{file.name}</p>
+                            <p className="mt-2 text-base break-words whitespace-normal text-gray-800">{file.name}</p>
                           </div>
                         ) : (
                           <div>
@@ -1301,7 +1429,7 @@ const CreateTicket = () => {
                             ) : (
                               <File className="w-32 h-32 text-gray-600" />
                             )}
-                            <p className="mt-2 text-sm break-words whitespace-normal text-gray-800">{file.name}</p>
+                            <p className="mt-2 text-base break-words whitespace-normal text-gray-800">{file.name}</p>
                           </div>
                         )}
 
@@ -1321,10 +1449,10 @@ const CreateTicket = () => {
             </div>
 
             <div className="mt-4 flex justify-end">
-              <button type='button' onClick={() => setStep(0)} className="w-48 px-5 py-3 border border-2 bg-white rounded-lg flex items-center justify-center text-zinc-800 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
+              <button type='button' onClick={() => setStep(0)} className="w-48 px-5 py-3 border border-2 border-primary bg-white rounded-lg flex items-center justify-center text-primary text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
                 {t('create_ticket_popup_button_back')}
               </button>
-              <button type="submit" className="w-48 px-5 py-3 ml-2 bg-zinc-800 rounded-lg flex items-center justify-center text-pink-50 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
+              <button type="submit" className="w-48 px-5 py-3 ml-2 bg-primary text-primary-foreground rounded-lg flex items-center justify-center text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
                 {t('create_ticket_popup_button_next')}
               </button>
             </div>
@@ -1335,7 +1463,7 @@ const CreateTicket = () => {
       {step === 2 && (
         <div className="mt-4 p-2 md:p-6 w-full max-w-2xl mx-auto">
           <h2 className="text-zinc-900 text-xl font-semibold mb-4">{t("create_ticket_page_step-3_title")}</h2>
-          <div className="text-zinc-900 text-sm text-base font-normal mb-8">{t("create_ticket_page_step-3_subtitle")}</div>
+          <div className="text-zinc-900 text-base text-base font-normal mb-8">{t("create_ticket_page_step-3_subtitle")}</div>
 
           <form onSubmit={(e) => { e.preventDefault(); setStep(3); }}>
             {/* Calendar Picker */}
@@ -1371,7 +1499,7 @@ const CreateTicket = () => {
                 {/* Trigger Button */}
                 <div
                   onClick={() => setIsOpen(!isOpen)}
-                  className="inline-flex items-center justify-between w-60 px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none"
+                  className="inline-flex items-center justify-between w-60 px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none"
                 >
                   <span className="inline-flex items-center gap-2">
                     <Clock className="w-4 h-4 text-gray-500" />
@@ -1383,19 +1511,18 @@ const CreateTicket = () => {
                 {/* Dropdown Menu */}
                 {isOpen && (
                   <div className="absolute z-10 mt-2 w-60 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5">
-                    <ul className="p-2 text-sm text-gray-700 max-h-72 justify-items-center overflow-y-auto grid grid-cols-3 gap-1">
+                    <ul className="p-2 text-base text-gray-700 max-h-72 justify-items-center overflow-y-auto grid grid-cols-3 gap-1">
                       {timeSlots.map((time) => (
-                        <li key={time}>
+                        <li key={time} className={`w-full text-center p-1 rounded-lg border ${selectedTime === time
+                          ? 'bg-primary text-primary-foreground font-semibold'
+                          : 'hover:bg-primary hover:text-primary-foreground hover:text-white'
+                          }`}>
                           <button
                             type='button'
                             onClick={() => {
                               setSelectedTime(time);
                               setIsOpen(false);
                             }}
-                            className={`text-left p-1 rounded-lg border ${selectedTime === time
-                              ? 'bg-gray-800 text-white font-semibold'
-                              : 'hover:bg-gray-800 hover:text-white'
-                              }`}
                           >
                             {time}
                           </button>
@@ -1409,7 +1536,7 @@ const CreateTicket = () => {
             </div>
             <div className='text-zinc-900 text-base font-medium my-8'>
               {t("create_ticket_page_step-3_selected_date_time")}
-              <span className='underline ml-4 '>
+              <span className='underline ml-4 text-primary'>
                 {
                   (() => {
                     const day = date.getDate();
@@ -1421,17 +1548,17 @@ const CreateTicket = () => {
                     return `${day} ${capitalize(month)} ${year} `;
                   })()
                 }
-              </span> | <span className='underline'>{selectedTime || '08:00'}
+              </span> | <span className='underline text-primary'>{selectedTime || '08:00'}
               </span>
             </div>
 
 
             {/* Navigation Buttons */}
             <div className="mt-4 flex justify-end">
-              <button type='button' onClick={() => setStep(1)} className="w-48 px-5 py-3 border border-2 bg-white rounded-lg flex items-center justify-center text-zinc-800 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
+              <button type='button' onClick={() => setStep(1)} className="w-48 px-5 py-3 border border-2 border-primary bg-white rounded-lg flex items-center justify-center text-primary text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
                 {t('create_ticket_popup_button_back')}
               </button>
-              <button type="submit" className="w-48 px-5 py-3 ml-2 bg-zinc-800 rounded-lg flex items-center justify-center text-pink-50 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
+              <button type="submit" className="w-48 px-5 py-3 ml-2 bg-primary text-primary-foreground rounded-lg flex items-center justify-center text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
                 {t('create_ticket_popup_button_next')}
               </button>
             </div>
@@ -1457,10 +1584,10 @@ const CreateTicket = () => {
                 <p className='px-2'>{t("create_ticket_popup_text")}</p>
                 {/* Footer buttons */}
                 <div className="flex justify-between pt-2">
-                  <button type='button' onClick={() => navigate(`/`)} className="px-4 py-2 border border-2 bg-white rounded-lg flex items-center justify-center text-zinc-800 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
+                  <button type='button' onClick={() => navigate(`/`)} className="px-4 py-2 border border-2 border-primary bg-white rounded-lg flex items-center justify-center text-primary text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)] hover:bg-primary hover:text-primary-foreground">
                     {t('create_ticket_popup_button_back_home')}
                   </button>
-                  <button type='button' onClick={() => navigate(`/ticket/${responseId}`)} className="px-4 py-2 ml-2 bg-zinc-800 rounded-lg flex items-center justify-center text-pink-50 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
+                  <button type='button' onClick={() => navigate(`/ticket/${responseId}`)} className="px-4 py-2 ml-2 bg-primary text-primary-foreground rounded-lg flex items-center justify-center text-pink-50 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)] hover:bg-primary-foreground hover:text-primary">
                     {t('create_ticket_popup_button_view_ticket')}
                   </button>
                 </div>
@@ -1477,18 +1604,18 @@ const CreateTicket = () => {
 
           <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
             <div className='shadow-sm border rounded-lg bg-white p-4 '>
-              <h4 className="text-zinc-900 text-xs font-semibold leading-normal">{t("create_ticket_step-4_address")}</h4>
+              <h4 className="text-zinc-900 text-base font-semibold leading-normal">{t("create_ticket_step-4_address")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
-              <ul className="text-sm list-none list-inside text-slate-500 text-xs font-medium">
+              <ul className="list-none list-inside text-slate-500 text-base font-medium">
                 <li className='flex items-center'><MapPin className='w-4 h-4 mr-2' />{selectedRow?.db_address_street}</li>
                 <li className='ml-6 pb-1'>{selectedRow?.db_address} {selectedRow?.db_address_zip}</li>
               </ul>
             </div>
 
             <div className='shadow-sm border rounded-lg bg-white p-4 '>
-              <h4 className="text-zinc-900 text-xs font-semibold leading-normal">{t("create_ticket_step-4_equipment")}</h4>
+              <h4 className="text-zinc-900 text-base font-semibold leading-normal">{t("create_ticket_step-4_equipment")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
-              <ul className="text-sm list-none list-inside text-slate-500 text-xs font-medium">
+              <ul className="list-none list-inside text-slate-500 text-base font-medium">
                 <li className='flex items-center'><Wrench className='w-4 h-4 mr-2' />{selectedRow?.name}</li>
                 <li className='ml-6 pb-1'>{selectedRow?.equipment_family_name}</li>
                 <li className='ml-6 pb-1'>{selectedRow?.equipment_brand_name}</li>
@@ -1497,9 +1624,9 @@ const CreateTicket = () => {
             </div>
 
             <div className='shadow-sm border rounded-lg bg-white p-4 '>
-              <h4 className="text-zinc-900 text-xs font-semibold leading-normal">{t("create_ticket_step-4_properties")}</h4>
+              <h4 className="text-zinc-900 text-base font-semibold leading-normal">{t("create_ticket_step-4_properties")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
-              <ul className="text-sm list-none list-inside text-slate-500 text-xs font-medium">
+              <ul className="list-none list-inside text-slate-500 text-base font-medium">
                 <li className='grid grid-cols-2 gap-4 items-end'>{t("create_ticket_step-4_barcode")}: <span className='font-semibold'>{selectedRow?.barcode || 'NA'}</span></li>
                 <li className='grid grid-cols-2 gap-4 items-end'>{t("create_ticket_step-4_serial_number")}: <span className='font-semibold'>{selectedRow?.serial_number || 'NA'}</span></li>
                 <li className='grid grid-cols-2 gap-4 items-end'>{t("create_ticket_step-4_our_ref")}: <span className='font-semibold'>{selectedRow?.customer_reference || 'NA'}</span></li>
@@ -1508,16 +1635,16 @@ const CreateTicket = () => {
             </div>
 
             <div className='shadow-sm border rounded-lg bg-white p-4 '>
-              <h4 className='text-zinc-900 text-xs font-semibold leading-normal'>{t("create_ticket_step-4_preferred_date_time")}</h4>
+              <h4 className='text-zinc-900 text-base font-semibold leading-normal'>{t("create_ticket_step-4_preferred_date_time")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
-              <ul className="text-sm list-none list-inside text-slate-500 text-xs font-medium">
+              <ul className="list-none list-inside text-slate-500 text-base font-medium">
                 <li>{date.toLocaleDateString('en-GB')} {selectedTime}</li>
               </ul>
             </div>
             <div className='shadow-sm border rounded-lg bg-white p-4 '>
-              <h4 className='text-zinc-900 text-xs font-semibold leading-normal'>{t("create_ticket_step-4_severity")}</h4>
+              <h4 className='text-zinc-900 text-base font-semibold leading-normal'>{t("create_ticket_step-4_severity")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
-              <ul className="text-sm list-none list-inside text-slate-500 text-xs font-medium">
+              <ul className="list-none list-inside text-slate-500 text-base font-medium">
                 <li>
                   <span className={`font-medium me-2 ${severityType[ticketDetails.severity] || "text-gray-300"}`}>
                     {ticketDetails.severity}
@@ -1526,23 +1653,23 @@ const CreateTicket = () => {
               </ul>
             </div>
             <div className='shadow-sm border rounded-lg bg-white p-4 '>
-              <h4 className='text-zinc-900 text-xs font-semibold leading-normal'>{t("create_ticket_step-4_ticket_subject")}</h4>
+              <h4 className='text-zinc-900 text-base font-semibold leading-normal'>{t("create_ticket_step-4_ticket_subject")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
-              <ul className="text-sm list-none list-inside text-slate-500 text-xs font-medium">
+              <ul className="list-none list-inside text-slate-500 text-base font-medium">
                 <li>{ticketName}</li>
               </ul>
             </div>
 
             <div className='md:col-span-3 shadow-sm border bg-white rounded-lg p-4 '>
-              <h4 className='text-zinc-900 text-xs font-semibold leading-normal'>{t("create_ticket_step-4_description")}</h4>
+              <h4 className='text-zinc-900 text-base font-semibold leading-normal'>{t("create_ticket_step-4_description")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
-              <ul className="text-sm list-none list-inside text-slate-500 text-xs font-medium min-h-24">
+              <ul className="list-none list-inside text-slate-500 text-base font-medium min-h-24">
                 <li>{ticketDetails.problemDescription}</li>
               </ul>
 
             </div>
             <div className='md:col-span-3 shadow-sm border bg-white rounded-lg p-4 '>
-              <h4 className="text-zinc-900 text-xs font-semibold leading-normal my-2">{t("create_ticket_step-4_files_uploaded")}</h4>
+              <h4 className="text-zinc-900 text-base font-semibold leading-normal my-2">{t("create_ticket_step-4_files_uploaded")}</h4>
 
               {/* File Thumbnails Grid */}
               <div className="mt-2 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 min-h-8">
@@ -1557,12 +1684,12 @@ const CreateTicket = () => {
                       {isImage ? (
                         <div>
                           <img src={fileURL} alt="Preview" className="w-32 h-32 object-cover rounded-md overflow-hidden" />
-                          <p className="mt-2 text-sm break-words whitespace-normal text-gray-800">{file.name}</p>
+                          <p className="mt-2 text-base break-words whitespace-normal text-gray-800">{file.name}</p>
                         </div>
                       ) : (
                         <div className="">
                           {isPDF ? <FileText className="w-32 h-32 text-gray-600 object-cover rounded-md overflow-hidden" /> : <File className="w-32 h-32 text-gray-600 object-cover rounded-md overflow-hidden" />}
-                          <p className="mt-2 text-sm break-words whitespace-normal text-gray-800">{file.name}</p>
+                          <p className="mt-2 text-base break-words whitespace-normal text-gray-800">{file.name}</p>
                         </div>
                       )}
                     </div>
@@ -1574,11 +1701,11 @@ const CreateTicket = () => {
           </div>
           <div className="mt-4 flex justify-end">
             <button type='button' onClick={() => setStep(2)} disabled={submitLoading}
-              className="w-48 px-5 py-3 border border-2 bg-white rounded-lg flex items-center justify-center text-zinc-800 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
+              className="w-48 px-5 py-3 border border-2 border-primary bg-white rounded-lg flex items-center justify-center text-primary text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
               {t('create_ticket_popup_button_back')}
             </button>
             <button onClick={handleSubmitTicket} disabled={submitLoading}
-              className={`w-48 px-5 py-3 ml-2 rounded-lg flex items-center justify-center text-pink-50 text-base font-medium leading-normal ${submitLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-zinc-800 hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]'}`}>
+              className={`w-48 px-5 py-3 ml-2 bg-primary text-primary-foreground rounded-lg flex items-center justify-center text-base font-medium leading-normal ${submitLoading ? 'bg-primary text-primary-foreground cursor-not-allowed' : 'bg-primary hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]'}`}>
               {t('create_ticket_popup_button_confirm')}
             </button>
           </div>

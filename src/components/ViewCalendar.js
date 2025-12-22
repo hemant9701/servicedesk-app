@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { BadgeInfo, Loader, FileText, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, ArrowLeftToLine, ArrowRightToLine, Filter } from 'lucide-react';
 import { useTranslation } from "react-i18next";
 import { startOfMonth, endOfMonth, format } from 'date-fns';
+import { setPrimaryTheme } from "../utils/setTheme";
 import Select from 'react-select';
 import makeAnimated from 'react-select/animated';
 const animatedComponents = makeAnimated();
@@ -15,6 +16,7 @@ const animatedComponents = makeAnimated();
 const ViewCalendars = () => {
   const navigate = useNavigate();
   const { auth } = useAuth();
+  setPrimaryTheme(auth?.colorPrimary);
   const [contents, setContents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -274,7 +276,7 @@ const ViewCalendars = () => {
         accessor: 'jobs_id2',
         Cell: ({ row }) => (
           <span
-            className="text-zinc-900 text-xs font-semibold" >
+            className="text-base font-semibold" >
             {row.original.jobs_id2}
           </span>
         )
@@ -436,7 +438,7 @@ const ViewCalendars = () => {
 
   return (
     <div className="w-full mx-auto p-6">
-      <h1 className="text-zinc-900 text-3xl font-semibold mb-6">{t('calendar_page_title')}</h1>
+      <h1 className="text-primary text-3xl font-semibold mb-6">{t('calendar_page_title')}</h1>
 
       {/* Back Button */}
       <button
@@ -477,7 +479,7 @@ const ViewCalendars = () => {
                 value={tempFilters.locationLabel}
                 onChange={handleLocationChange}
                 placeholder={t('calendar_page_filter_location_placeholder')}
-                className="w-full px-2 py-2.5 text-base font-normal leading-normal border border-gray-300 rounded-md focus:outline-none focus:border-indigo-500"
+                className="w-full px-2 py-2.5 text-base font-normal leading-normal border border-gray-300 rounded-md focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
               />
               {locationHints.length > 0 && (
                 <ul className="absolute z-10 bg-white border mt-1 rounded-md w-full shadow-md">
@@ -485,7 +487,7 @@ const ViewCalendars = () => {
                     <li
                       key={hint.id}
                       onClick={() => handleHintClick(hint)}
-                      className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm text-gray-700"
+                      className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-base text-gray-700"
                     >
                       {hint.label}
                     </li>
@@ -512,21 +514,28 @@ const ViewCalendars = () => {
                   control: (base) => ({
                     ...base,
                     border: 'none',
-                    boxShadow: 'none',
+                    boxShadow: 'none', // also remove focus ring
                   }),
                   option: (base, state) => ({
                     ...base,
+                    whiteSpace: "nowrap", // prevent wrapping
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
                     color: state.isSelected
-                      ? '#ffffff'
+                      ? 'rgb(var(--color-primary-foreground) / var(--tw-bg-opacity, 1))'
                       : state.isFocused
-                        ? '#fff'
-                        : '#374151',
+                        ? 'rgb(var(--color-primary-foreground) / var(--tw-bg-opacity, 1))'
+                        : 'rgb(var(--color-primary) / var(--tw-bg-opacity, 1))',
                     backgroundColor: state.isSelected
-                      ? '#374151'
+                      ? 'rgb(var(--color-primary) / 0.7)'
                       : state.isFocused
-                        ? '#9CA3AF'
+                        ? 'rgb(var(--color-primary) / 0.5)'
                         : 'transparent',
                     cursor: 'pointer',
+                  }),
+                  menu: (provided) => ({
+                    ...provided,
+                    width: '85%', // controls dropdown menu width
                   }),
                 }}
               />
@@ -550,21 +559,28 @@ const ViewCalendars = () => {
                   control: (base) => ({
                     ...base,
                     border: 'none',
-                    boxShadow: 'none',
+                    boxShadow: 'none', // also remove focus ring
                   }),
                   option: (base, state) => ({
                     ...base,
+                    whiteSpace: "nowrap", // prevent wrapping
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
                     color: state.isSelected
-                      ? '#ffffff'
+                      ? 'rgb(var(--color-primary-foreground) / var(--tw-bg-opacity, 1))'
                       : state.isFocused
-                        ? '#fff'
-                        : '#374151',
+                        ? 'rgb(var(--color-primary-foreground) / var(--tw-bg-opacity, 1))'
+                        : 'rgb(var(--color-primary) / var(--tw-bg-opacity, 1))',
                     backgroundColor: state.isSelected
-                      ? '#374151'
+                      ? 'rgb(var(--color-primary) / 0.7)'
                       : state.isFocused
-                        ? '#9CA3AF'
+                        ? 'rgb(var(--color-primary) / 0.5)'
                         : 'transparent',
                     cursor: 'pointer',
+                  }),
+                  menu: (provided) => ({
+                    ...provided,
+                    width: '85%', // controls dropdown menu width
                   }),
                 }}
               />
@@ -582,18 +598,18 @@ const ViewCalendars = () => {
               </label>
             </div> */}
             <div className="flex gap-2">
-              <button type="button" onClick={handleReset} className="w-full border border-gray-900 text-gray-900 px-4 py-2 rounded-md hover:bg-zinc-900 hover:text-white">
+              <button type="button" onClick={handleReset} className="w-full border border-primary text-primary px-4 py-2 rounded-md hover:bg-primary hover:text-primary-foreground transition">
                 {t('calendar_page_filter_reset')}
               </button>
-              <button type="submit" className="w-full bg-zinc-900 text-white px-4 py-2 rounded-md hover:bg-white hover:text-zinc-900 border border-zinc-900">
+              <button type="submit" className="w-full bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary-foreground hover:text-primary border border-primary transition">
                 {t('calendar_page_filter_apply')}
               </button>
             </div>
           </form>
         </div>
         <div>
-          <div className="flex items-center mb-1 text-zinc-800 text-sm font-normal px-4 py-2">
-            <BadgeInfo className='mr-2 w-5 h-5 text-slate-300' /> {t("calendar_page_calendar_helping_text")}
+          <div className="bg-blue-100 flex items-center text-blue-500 text-base font-normal px-4 py-1 mb-2 rounded-lg">
+            <BadgeInfo className='mr-2 w-5 h-5 text-blue-500' /> {t("calendar_page_calendar_helping_text")}
           </div>
           <div className="relative bg-white rounded-lg shadow-[0_0_10px_2px_rgba(0,0,0,0.1)]">
             {loadingDates && (
@@ -613,7 +629,7 @@ const ViewCalendars = () => {
 
               tileClassName={({ date: tileDate, view }) => {
                 if (view === 'month' && datesWithData.includes(tileDate.toDateString())) {
-                  return 'rounded-date';
+                  return 'rounded-date text-primary font-semibold';
                 }
                 return null;
               }}
@@ -657,52 +673,66 @@ const ViewCalendars = () => {
         </h2>
         {rows?.length > 0 ? (
           <>
-            <div className="flex items-center mb-1 text-zinc-800 text-sm font-normal px-4 py-2">
-              <BadgeInfo className='mr-2 w-5 h-5 text-slate-300' /> {t("calendar_page_table_helping_text")}
+            <div className="bg-blue-100 flex items-center text-blue-500 text-base font-normal px-4 py-1 mb-2 rounded-lg">
+              <BadgeInfo className='mr-2 w-5 h-5 text-blue-500' /> {t("calendar_page_table_helping_text")}
             </div>
             <div className="overflow-x-visible">
               <table {...getTableProps()} className="min-w-full bg-white divide-y divide-gray-200 border border-gray-300 shadow-lg">
                 <thead className="bg-white">
-                  {headerGroups.map(headerGroup => (
-                    <tr {...headerGroup.getHeaderGroupProps()} className="divide-x divide-gray-300">
-                      {headerGroup.headers.map(column => (
-                        <th {...column.getHeaderProps(column.getSortByToggleProps())}
-                          className="p-2 whitespace-nowrap text-left text-slate-500 text-xs font-medium leading-none">
-                          {column.render('Header')}
-                          {column.isSorted ? (
-                            column.isSortedDesc ? (
-                              <ArrowDown className="inline w-4 h-4 ml-1" />
-                            ) : (
-                              <ArrowUp className="inline w-4 h-4 ml-1" />
-                            )
-                          ) : null}
-                        </th>
-                      ))}
-                    </tr>
-                  ))}
+                  {headerGroups.map((headerGroup, hgIdx) => {
+                    const headerGroupProps = headerGroup.getHeaderGroupProps();
+                    const { key: headerGroupKey, ...restHeaderGroupProps } = headerGroupProps;
+                    return (
+                      <tr key={headerGroupKey || hgIdx} {...restHeaderGroupProps} className="divide-x divide-gray-300">
+                        {headerGroup.headers.map((column, colIdx) => {
+                          const headerProps = column.getHeaderProps(column.getSortByToggleProps());
+                          const { key: headerKey, ...restHeaderProps } = headerProps;
+                          return (
+                            <th key={headerKey || column.id || colIdx} {...restHeaderProps}
+                              className="p-2 whitespace-nowrap text-left text-slate-500 text-base font-medium leading-none">
+                              {column.render('Header')}
+                              {column.isSorted ? (
+                                column.isSortedDesc ? (
+                                  <ArrowDown className="inline w-4 h-4 ml-1" />
+                                ) : (
+                                  <ArrowUp className="inline w-4 h-4 ml-1" />
+                                )
+                              ) : null}
+                            </th>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
                 </thead>
                 <tbody {...getTableBodyProps()} className="bg-white divide-y divide-gray-200">
                   {!isLoading &&
                     rows.map(row => {
                       prepareRow(row);
+                      const { key: rowKey, ...restRowProps } = row.getRowProps();
                       return (
                         <React.Fragment key={row.original.id}>
                           <tr
-                            {...row.getRowProps()}
-                            className="cursor-pointer hover:bg-gray-200"
+                            {...restRowProps}
+                            className="cursor-pointer hover:bg-primary/50 hover:text-primary-foreground transition-colors duration-200 ease-in-out"
                           >
-                            {row.cells.map((cell, index) => (
-                              <td
-                                {...cell.getCellProps()}
-                                className={`self-stretch px-1 py-2 text-xs font-normal text-zinc-900 ${index === 0 ? 'text-center' : 'cursor-pointer'
-                                  }`}
-                                onClick={
-                                  index === 0 ? undefined : () => navigate(`/workorder/${row.original.jobs_id}`)
-                                }
-                              >
-                                {cell.render('Cell')}
-                              </td>
-                            ))}
+                            {row.cells.map((cell, index) => {
+                              const cellProps = cell.getCellProps();
+                              const { key: cellKey, ...restCellProps } = cellProps;
+                              return (
+                                <td
+                                  key={cellKey || index}
+                                  {...restCellProps}
+                                  className={`self-stretch px-1 py-2 text-base font-normal ${index === 0 ? 'text-center' : 'cursor-pointer'
+                                    }`}
+                                  onClick={
+                                    index === 0 ? undefined : () => navigate(`/workorder/${row.original.jobs_id}`)
+                                  }
+                                >
+                                  {cell.render('Cell')}
+                                </td>
+                              );
+                            })}
                           </tr>
 
                           {expandedRowId === row.original.jobs_id && (
@@ -720,7 +750,7 @@ const ViewCalendars = () => {
                                     <tr>
                                       <td colSpan={row.cells.length} className="bg-gray-50 p-4">
                                         <div className="p-1">
-                                          <table className="table-auto w-full text-xs font-normal text-left border-collapse">
+                                          <table className="table-auto w-full text-base font-normal text-left border-collapse">
                                             <thead>
                                               <tr className="text-gray-700 border-b">
                                                 <th className="pb-2">Ref</th>
@@ -771,7 +801,7 @@ const ViewCalendars = () => {
         {/* Pagination Controls - Only show if filteredTickets exceed pageSize (10) */}
         {filteredContents.length > 12 && (
           <div className="flex items-center justify-between p-4">
-            <span className="text-sm text-gray-700">
+            <span className="text-base text-gray-700">
               {t("calendar_table_pagination_page")} {pageIndex + 1} {t("calendar_table_pagination_of")} {pageOptions.length}
             </span>
             <div>

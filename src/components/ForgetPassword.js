@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { setPrimaryTheme } from "../utils/setTheme";
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
@@ -12,9 +13,10 @@ const ForgotPassword = () => {
 
   useEffect(() => {
     if (window.welloServiceDesk) {
-      const { logo_primary, domain } = window.welloServiceDesk;
+      const { logo_primary, domain, color_primary } = window.welloServiceDesk;
       setLogo(logo_primary);
       setDomain(domain);
+      setPrimaryTheme(color_primary);
     }
   }, []);
 
@@ -48,12 +50,12 @@ const ForgotPassword = () => {
         <div className="flex justify-center mb-2">
           <img src={logo} alt="Logo" className="w-40" />
         </div>
-        <h2 className="text-2xl font-semibold mb-6 text-gray-700">Forgot Password</h2>
+        <h2 className="text-2xl font-semibold mb-6 text-primary">Forgot Password</h2>
         {message && <p className="text-green-600 mb-4">{message}</p>}
         {error && <p className="text-red-600 mb-4">{error}</p>}
         <form onSubmit={handleForgotPassword}>
           {/* <div className="mb-6">
-            <label htmlFor="domain" className="block text-sm font-medium text-gray-600">Domain</label>
+            <label htmlFor="domain" className="block text-base font-medium text-gray-600">Domain</label>
             <input
               type="text"
               id="domain"
@@ -64,7 +66,7 @@ const ForgotPassword = () => {
             />
           </div> */}
           <div className="mb-6">
-            <label htmlFor="email" className="block text-sm font-medium text-gray-600">Email</label>
+            <label htmlFor="email" className="block text-base font-medium text-primary">Email</label>
             <input
               type="email"
               id="email"
@@ -79,7 +81,7 @@ const ForgotPassword = () => {
           </button>
           <button type="button"
             onClick={() => navigate(-1)} // Navigate back one step in history
-            className="w-full text-center bg-gray-500 text-white py-2 rounded-md hover:bg-gray-600 mt-2"
+            className="w-full text-center bg-primary text-primary-foreground py-2 rounded-md hover:bg-primary/50 mt-2"
           >
             Back
           </button>

@@ -6,12 +6,14 @@ import { useTable, useSortBy, usePagination } from 'react-table';
 import { ToastContainer, toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
-import { CalendarClock, File, FileText, Loader, Eye, ArrowLeft, ArrowUpRight, ArrowDownLeft, Circle, MapPin, Phone, Image, Wrench, ArrowDown, ArrowUp, ArrowLeftToLine, ArrowRightToLine, ArrowRight, BadgeInfo } from "lucide-react";
+import { CalendarClock, File, FileText, Loader, Eye, ArrowLeft, ArrowUpRight, ArrowDownLeft, Circle, MapPin, Phone, Image, Wrench, ArrowDown, ArrowUp, ArrowLeftToLine, ArrowRightToLine, ArrowRight, BadgeInfo, Download } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { setPrimaryTheme } from "../utils/setTheme";
 
 const SingleInstallation = () => {
   const navigate = useNavigate();
   const { auth } = useAuth();
+  setPrimaryTheme(auth?.colorPrimary);
   const { InstallationId } = useParams();
   const [installation, setInstallation] = useState(null);
   const [rootParentDetails, setRootParentDetails] = useState(null);
@@ -20,6 +22,7 @@ const SingleInstallation = () => {
   const [wordOrder, setWordOrder] = useState([]);
   //const [file, setFile] = useState('');
   const [loading, setLoading] = useState(true);
+  const [isURLLoading, setIsURLLoading] = useState(false);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('details'); // State to manage active tab
   const [fileThumbnails, setFileThumbnails] = useState({});
@@ -284,7 +287,7 @@ const SingleInstallation = () => {
       {
         Header: t('single_equipment_page_work_order_table_type_text'), accessor: 'job_type_name',
         Cell: ({ row }) => (
-          <span className={`text-xs font-medium`}>
+          <span className={`text-base font-medium`}>
             {row.original.job_type_name}
           </span>
         ),
@@ -292,7 +295,7 @@ const SingleInstallation = () => {
       {
         Header: t('single_equipment_page_work_order_table_status_text'), accessor: 'job_status_name',
         Cell: ({ row }) => (
-          <span className={`text-xs min-w-max inline-flex items-center font-medium pe-3 px-2 pb-1 pt-0.5 rounded-full ${statusColors[row.original.job_status_name] || "bg-gray-200 text-gray-800"}`}>
+          <span className={`text-base min-w-max inline-flex items-center font-medium pe-3 px-2 pb-1 pt-0.5 rounded-full ${statusColors[row.original.job_status_name] || "bg-gray-200 text-gray-800"}`}>
             <Circle className={`inline w-2 h-2 mr-1 rounded-full ${statusDotColors[row.original.job_status_name] || "bg-gray-800 text-gray-800"}`} />
             {row.original.job_status_name}
           </span>
@@ -461,6 +464,36 @@ const SingleInstallation = () => {
     }));
   };
 
+  //// Function ////
+const openDocumentInNewTab = useCallback(async (id) => {
+    if (!id || !auth?.authKey) return;
+
+    setIsURLLoading(true); // Show loading overlay
+
+    const endpoint = `api/DbFileView/View/?id=${id}`;
+    try {
+      const response = await fetchDocuments(
+        endpoint,
+        "GET",
+        auth.authKey,
+        null,
+        "image/png"
+      );
+
+      if (response) {
+        const blob = await response.blob?.() ?? response;
+        const blobUrl = URL.createObjectURL(blob);
+        window.open(blobUrl, '_blank', 'noopener,noreferrer');
+      } else {
+        console.error("Failed to fetch thumbnail:", response?.statusText);
+      }
+    } catch (error) {
+      console.error("Error fetching document thumbnail:", error);
+    } finally {
+      setIsURLLoading(false); // Hide loading overlay
+    }
+  }, [auth?.authKey]);
+
 
   if (loading) {
     return <div className="flex w-full items-center justify-center h-screen">
@@ -539,9 +572,9 @@ const SingleInstallation = () => {
         {activeTab === 'details' ? (
           <div className='grid grid-cols-1 md:grid-cols-3 gap-4 md:px-12 md:pb-12'>
             <div className='shadow-sm border rounded-lg p-4 '>
-              <h4 className="block text-zinc-900 text-xs font-semibold leading-normal">{t("single_equipment_page_equipment")}</h4>
+              <h4 className="block text-zinc-900 text-base font-semibold leading-normal">{t("single_equipment_page_equipment")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
-              <ul className="list-none list-inside text-slate-500 text-xs font-medium">
+              <ul className="list-none list-inside text-slate-500 text-base font-medium">
                 <li className='flex items-center'><Wrench className='w-4 h-4 mr-2' />{installation?.name}</li>
                 <li className='ml-6 pb-1'>{installation?.equipment_family_name}</li>
                 <li className='ml-6 pb-1'>{installation?.equipment_brand_name}</li>
@@ -550,9 +583,9 @@ const SingleInstallation = () => {
             </div>
 
             <div className='shadow-sm border rounded-lg p-4 '>
-              <h4 className="block text-zinc-900 text-xs font-semibold leading-normal">{t("single_equipment_page_type_status")}</h4>
+              <h4 className="block text-zinc-900 text-base font-semibold leading-normal">{t("single_equipment_page_type_status")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
-              <ul className="list-none list-inside text-slate-500 text-xs font-medium">
+              <ul className="list-none list-inside text-slate-500 text-base font-medium">
                 <li>{installation?.equipment_family_name}</li>
                 <li className='mt-2.5'>
                   <span className={`pe-3 px-2 pb-1 pt-0.5 rounded-full ${statusColors[installation?.project_status_name] || "bg-gray-200 text-gray-800"}`}>
@@ -564,9 +597,9 @@ const SingleInstallation = () => {
             </div>
 
             <div className='shadow-sm border rounded-lg p-4 '>
-              <h4 className="block text-zinc-900 text-xs font-semibold leading-normal">{t("single_equipment_page_properties")}</h4>
+              <h4 className="block text-zinc-900 text-base font-semibold leading-normal">{t("single_equipment_page_properties")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
-              <ul className="list-none list-inside text-slate-500 text-xs font-medium">
+              <ul className="list-none list-inside text-slate-500 text-base font-medium">
                 <li className='grid grid-cols-2 gap-4'>{t("single_equipment_page_barcode")}: <span className='font-semibold text-gray-700'>{installation?.barcode}</span></li>
                 <li className='grid grid-cols-2 gap-4'>{t("single_equipment_page_serial_number")}: <span className='font-semibold text-gray-700'>{installation?.serial_number}</span></li>
                 <li className='grid grid-cols-2 gap-4'>{t("single_equipment_page_our_ref")}: <span className='font-semibold text-gray-700'>{installation?.customer_reference}</span></li>
@@ -575,20 +608,20 @@ const SingleInstallation = () => {
             </div>
 
             <div className='md:col-span-3 shadow-sm border rounded-lg p-4 '>
-              <h4 className="block text-zinc-900 text-xs font-semibold leading-normal">{t("single_equipment_page_shutdown_consequence")}</h4>
+              <h4 className="block text-zinc-900 text-base font-semibold leading-normal">{t("single_equipment_page_shutdown_consequence")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
-              <ul className="list-none list-inside text-slate-500 text-xs font-medium">
+              <ul className="list-none list-inside text-slate-500 text-base font-medium">
                 <li>{installation?.shutdown_consequence}</li>
               </ul>
             </div>
 
             {(rootParentDetails?.name || installation?.company_name) && (
               <div className='shadow-sm border rounded-lg p-4'>
-                <h4 className="block text-zinc-900 text-xs font-semibold leading-normal">
+                <h4 className="block text-zinc-900 text-base font-semibold leading-normal">
                   {rootParentDetails?.name ? t("Location") : t("single_equipment_page_location")}
                 </h4>
                 <hr className='my-2 w-32 border-gray-300' />
-                <ul className="list-none list-inside text-slate-500 text-xs font-medium">
+                <ul className="list-none list-inside text-slate-500 text-base font-medium">
                   <li className='flex items-center'>
                     <MapPin className='w-4 h-4 mr-2' />
                     {rootParentDetails?.name || installation?.name}
@@ -614,17 +647,17 @@ const SingleInstallation = () => {
             )}
 
             <div className='shadow-sm border rounded-lg p-4 '>
-              <h4 className="block text-zinc-900 text-xs font-semibold leading-normal">{t("single_equipment_page_extra_location_info")}</h4>
+              <h4 className="block text-zinc-900 text-base font-semibold leading-normal">{t("single_equipment_page_extra_location_info")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
-              <ul className="list-none list-inside text-slate-500 text-xs font-medium">
+              <ul className="list-none list-inside text-slate-500 text-base font-medium">
                 <li>{installation?.total_time_planned}</li>
               </ul>
             </div>
 
             <div className='shadow-sm border rounded-lg p-4 '>
-              <h4 className="block text-zinc-900 text-xs font-semibold leading-normal">{t("single_equipment_page_company_address")}</h4>
+              <h4 className="block text-zinc-900 text-base font-semibold leading-normal">{t("single_equipment_page_company_address")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
-              <ul className="list-none list-inside text-slate-500 text-xs font-medium">
+              <ul className="list-none list-inside text-slate-500 text-base font-medium">
                 <li className='flex items-center'><MapPin className='w-4 h-4 mr-2' />{installation?.db_address_street}</li>
                 <li className='ml-6 pb-1'>{installation?.db_address_zip} {installation?.db_address_city}</li>
                 {installation?.contact_mobile &&
@@ -647,7 +680,15 @@ const SingleInstallation = () => {
               pauseOnHover
               theme="colored"
             />
-
+  {
+          isURLLoading && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-white/10">
+              <div className="text-white text-lg font-semibold animate-pulse">
+                <Loader className="w-20 h-20 ml-2 text-blue-600 animate-spin" />
+              </div>
+            </div>
+          )
+        }
             {doc?.length > 0 ? (
               <div className='grid grid-cols-1 md:grid-cols-4 gap-4 px-12 pb-12'>
                 {doc.map(item => (
@@ -659,10 +700,10 @@ const SingleInstallation = () => {
                           <img
                             src={fileThumbnails[item.id]}
                             alt={item.name}
-                            className="w-48 h-40 object-cover rounded-md mx-auto"
+                            className="w-full h-40 md:h-48 object-cover rounded-md mx-auto"
                           />
                         ) : (
-                          <div className="relative w-40 h-40 flex items-center justify-center mx-auto bg-gray-100 rounded-md">
+                          <div className="relative w-40 md:w-48 h-40 md:h-48 flex items-center justify-center mx-auto bg-gray-100 rounded-md">
                             {/* Loading overlay */}
                             <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-70 z-10">
                               <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-gray-500"></div>
@@ -673,16 +714,16 @@ const SingleInstallation = () => {
                           </div>
                         )
                       ) : (
-                        <File className="w-40 h-40 text-gray-600 mx-auto" />
+                        <File className="w-40 md:w-48 h-40 md:h-48 text-gray-600 mx-auto" />
                       )}
                     </div>
                     <div className='flex flex-col'>
-                      <h4 className="text-gray-500 text-sm py-1 break-words">{item.name}</h4>
+                      <h4 className="text-gray-500 text-base py-1 break-words">{item.name}</h4>
 
-                      <p className="text-gray-500 text-sm">{new Date(item.date_add).toLocaleString()}</p>
+                      <p className="text-gray-500 text-base">{new Date(item.date_add).toLocaleString()}</p>
 
                       {item.file_name ? (
-                        <label className="mt-2 flex space-x-2 items-start text-sm">
+                        <label className="mt-2 flex space-x-2 items-start text-base">
                           <input
                             type="checkbox"
                             onChange={() => toggleFileSelection(item)}
@@ -692,21 +733,29 @@ const SingleInstallation = () => {
                         </label>) : null}
 
                       {/* Show "View Document" only if it's an image */}
-
-                      <a
-                        href={fileThumbnails[item.id] || ""}
+                      {item.mime_type?.startsWith("image/") ? (
+                      <button
                         target="_blank"
                         rel={item.mime_type?.startsWith("image/") ? "noopener noreferrer" : "noreferrer"}
-                        className={`flex items-center no-underline mt-2 text-sm ${fileThumbnails[item.id] ? "hover:underline" : "cursor-not-allowed pointer-events-none"
+                        className={`flex items-center no-underline mt-2 text-base ${fileThumbnails[item.id] ? "hover:underline" : "cursor-not-allowed pointer-events-none"
                           }`}
-                        onClick={(e) => {
-                          if (!fileThumbnails[item.id]) {
-                            e.preventDefault(); // Prevent navigation if not loaded
-                          }
-                        }}
+                        onClick={() => openDocumentInNewTab(item.id)}
                       >
-                        <Eye className="w-6 h-6 mr-2 text-gray-600" /> {t("single_equipment_page_view_document")}
-                      </a>
+                        <Eye className="w-6 h-6 mr-2 text-gray-600" />
+                        {t("single_equipment_page_view_document")}
+                      </button>
+                    ) : (
+                      <button
+                        target="_blank"
+                        rel="noreferrer"
+                        className={`flex items-center no-underline mt-2 text-base ${fileThumbnails[item.id] ? "hover:underline" : "cursor-not-allowed pointer-events-none"
+                          }`}
+                        onClick={() => openDocumentInNewTab(item.id)}
+                      >
+                        <Eye className="w-6 h-6 mr-2 text-gray-600" />
+                        {t("single_equipment_page_view_document")}
+                      </button>
+                    )}
                     </div>
                   </div>
                 ))}
@@ -721,13 +770,13 @@ const SingleInstallation = () => {
                 {selectedFiles.length !== 0 && (
                   <button
                     onClick={handleDownloadSelected}
-                    className="w-48 px-5 py-3 bg-zinc-800 rounded-lg flex items-center justify-center text-pink-50 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
-                    {t("single_equipment_page_download_button")}
+                    className="w-48 px-4 py-2 bg-primary rounded-lg flex items-center justify-center text-primary-foreground text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
+                    <Download className="mr-2 w-6 h-5" /> {t("single_equipment_page_download_button")}
                   </button>)}
                 <button
                   onClick={handleDownloadAll}
-                  className="w-48 px-5 py-3 ml-2 bg-zinc-800 rounded-lg flex items-center justify-center text-pink-50 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
-                  {t("single_equipment_page_download_all_button")}
+                  className="w-48 px-4 py-2 ml-2 bg-primary-foreground border border-2 border-primary rounded-lg flex items-center justify-center text-primary text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
+                  <Download className="mr-2 w-6 h-5" /> {t("single_equipment_page_download_all_button")}
                 </button>
               </div>
             )}
@@ -735,48 +784,62 @@ const SingleInstallation = () => {
         ) : activeTab === 'wordOrder' ? (
           <>
             <div className="overflow-x-auto">
-              <div className="flex items-center mb-1 text-zinc-800 text-sm font-normal px-4 py-2">
+              <div className="flex items-center mb-1 text-zinc-800 text-base font-normal px-4 py-2">
                 <BadgeInfo className='mr-2 w-5 h-5 text-slate-300' /> {t("single_equipment_page_helping_text")}
               </div>
               <table {...getTableProps()} className="min-w-full divide-y divide-gray-200 border border-gray-300">
                 <thead className="bg-gray-100">
-                  {headerGroups.map(headerGroup => (
-                    <tr {...headerGroup.getHeaderGroupProps()} className="bg-white divide-x divide-gray-300">
-                      {headerGroup.headers.map(column => (
-                        <th {...column.getHeaderProps(column.getSortByToggleProps())}
-                          className="p-2 whitespace-nowrap text-left text-slate-500 text-xs font-medium leading-none">
-                          {column.render("Header")}
-                          {column.isSorted ? (
-                            column.isSortedDesc ? (
-                              <ArrowDown className="inline w-4 h-4 ml-1" />
-                            ) : (
-                              <ArrowUp className="inline w-4 h-4 ml-1" />
-                            )
-                          ) : null}
-                        </th>
-                      ))}
-                    </tr>
-                  ))}
+                  {headerGroups.map((headerGroup, hgIdx) => {
+                    const headerGroupProps = headerGroup.getHeaderGroupProps();
+                    const { key: headerGroupKey, ...restHeaderGroupProps } = headerGroupProps;
+                    return (
+                      <tr key={headerGroupKey || hgIdx} {...restHeaderGroupProps} className="bg-white divide-x divide-gray-300">
+                        {headerGroup.headers.map((column, colIdx) => {
+                          const headerProps = column.getHeaderProps(column.getSortByToggleProps());
+                          const { key: headerKey, ...restHeaderProps } = headerProps;
+                          return (
+                            <th key={headerKey || column.id || colIdx} {...restHeaderProps}
+                              className="p-2 whitespace-nowrap text-left text-slate-500 text-base font-medium leading-none">
+                              {column.render("Header")}
+                              {column.isSorted ? (
+                                column.isSortedDesc ? (
+                                  <ArrowDown className="inline w-4 h-4 ml-1" />
+                                ) : (
+                                  <ArrowUp className="inline w-4 h-4 ml-1" />
+                                )
+                              ) : null}
+                            </th>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
                 </thead>
                 <tbody {...getTableBodyProps()} className="bg-white divide-y divide-gray-200">
                   {!loading &&
                     page.map(row => {
                       prepareRow(row);
+                      const { key: rowKey, ...restRowProps } = row.getRowProps();
                       return (
                         <React.Fragment key={row.id}>
-                          <tr {...row.getRowProps()} className="hover:bg-gray-200">
-                            {row.cells.map((cell, index) => (
-                              <td
-                                {...cell.getCellProps()}
-                                className={`self-stretch p-2 text-xs font-normal text-zinc-900 ${index !== 1 ? 'cursor-pointer' : ''
-                                  }`}
-                                onClick={
-                                  index !== 1 ? () => navigate(`/workorder/${row.original.id}`) : undefined
-                                }
-                              >
-                                {cell.render('Cell')}
-                              </td>
-                            ))}
+                          <tr {...restRowProps} className="hover:bg-gray-200">
+                            {row.cells.map((cell, index) => {
+                              const cellProps = cell.getCellProps();
+                              const { key: cellKey, ...restCellProps } = cellProps;
+                              return (
+                                <td
+                                  key={cellKey || index}
+                                  {...restCellProps}
+                                  className={`self-stretch p-2 text-base font-normal text-zinc-900 ${index !== 1 ? 'cursor-pointer' : ''
+                                    }`}
+                                  onClick={
+                                    index !== 1 ? () => navigate(`/workorder/${row.original.id}`) : undefined
+                                  }
+                                >
+                                  {cell.render('Cell')}
+                                </td>
+                              );
+                            })} 
                           </tr>
 
                           {expandedRowId === row.original.id && (
@@ -794,10 +857,10 @@ const SingleInstallation = () => {
                                     <tr>
                                       <td colSpan={row.cells.length} className="bg-gray-50 p-4">
                                         <div className="p-1">
-                                          <h4 className="text-sm font-semibold border-b-2 border-gray-200 pb-2 mb-2">
+                                          <h4 className="text-base font-semibold border-b-2 border-gray-200 pb-2 mb-2">
                                             {t('single_equipment_page_work_order_list_planned_date_technician')}
                                           </h4>
-                                          <div className="flex gap-16 text-xs font-normal">
+                                          <div className="flex gap-16 text-base font-normal">
                                             <div>
                                               {Array.from(
                                                 new Set(
@@ -852,7 +915,7 @@ const SingleInstallation = () => {
                                     <tr>
                                       <td colSpan={row.cells.length} className="bg-gray-50 p-4">
                                         <div className="p-1">
-                                          <table className="table-auto w-full text-xs font-normal text-left border-collapse">
+                                          <table className="table-auto w-full text-base font-normal text-left border-collapse">
                                             <thead>
                                               <tr className="text-gray-700 border-b">
                                                 <th className="pb-2">{t("single_equipment_page_work_order_list_remarks_ref")}</th>
@@ -898,7 +961,7 @@ const SingleInstallation = () => {
             {/* Pagination Controls - Only show if filteredWorkOrder exceed pageSize (10) */}
             {wordOrder.length > 12 && (
               <div className="flex items-center justify-between px-4 py-2">
-                <span className="text-xs text-slate-700">
+                <span className="text-base text-slate-700">
                   {t("single_equipment_page_work_order_list_table_pagination_page")} {pageIndex + 1} {t("single_equipment_page_work_order_list_table_pagination_of")} {pageOptions.length}
                 </span>
                 <div>
@@ -915,7 +978,7 @@ const SingleInstallation = () => {
                     <ArrowRightToLine className="w-4" />
                   </button>
                 </div>
-                <select value={pageSize} onChange={e => setPageSize(Number(e.target.value))} className="ml-1 p-1 md:p-1 text-xs text-slate-700 border border-slate-700 rounded-md max-w-32">
+                <select value={pageSize} onChange={e => setPageSize(Number(e.target.value))} className="ml-1 p-1 md:p-1 text-base text-slate-700 border border-slate-700 rounded-md max-w-32">
                   {[12, 24, 36, 48].map(size => (
                     <option key={size} value={size}>
                       {t("single_equipment_page_work_order_list_table_pagination_show")} {size}
@@ -928,9 +991,9 @@ const SingleInstallation = () => {
         ) : (
           <div className='grid grid-cols-1 md:grid-cols-3 gap-4 px-2 md:px-12 pb-12'>
             <div className='md:col-span-3 shadow-sm border rounded-lg p-4 '>
-              <h4 className="block text-zinc-900 text-sm font-semibold leading-normal">{t("single_equipment_page_contract_warranty_information")}</h4>
+              <h4 className="block text-zinc-900 text-base font-semibold leading-normal">{t("single_equipment_page_contract_warranty_information")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
-              <ul className="list-none list-inside text-slate-500 text-xs font-medium">
+              <ul className="list-none list-inside text-slate-500 text-base font-medium">
                 <li className='grid grid-cols-2 md:grid-cols-3 items-end gap-1'>{t("single_equipment_page_contract_build_date")}:
                   <span className='font-semibold'>
                     {installation?.date_built &&
@@ -984,7 +1047,7 @@ const SingleInstallation = () => {
 
             {Array.isArray(contractDetails.Corrective) && contractDetails.Corrective.length > 0 && (
               <div className='md:col-span-3 shadow-sm border rounded-lg p-4'>
-                <h4 className="block text-zinc-900 text-sm font-semibold leading-normal">
+                <h4 className="block text-zinc-900 text-base font-semibold leading-normal">
                   {t("single_equipment_page_contract_corrective_contract_info")}
                 </h4>
                 <hr className='mt-2 mb-4 w-32 border-gray-300' />
@@ -995,11 +1058,11 @@ const SingleInstallation = () => {
                   ).map((contract, index) => (
                     <React.Fragment key={index}>
                       <div className='shadow-sm border rounded-lg p-4'>
-                        <h4 className="block text-zinc-900 text-xs font-semibold leading-normal">
+                        <h4 className="block text-zinc-900 text-base font-semibold leading-normal">
                           {contract.contract_name}
                         </h4>
                         <hr className='my-2 w-32 border-gray-300' />
-                        <ul className="list-none list-inside text-slate-500 text-xs font-medium">
+                        <ul className="list-none list-inside text-slate-500 text-base font-medium">
                           <li className='grid grid-cols-3 gap-1'>
                             {t("single_equipment_page_contract_start_date")}: <span className='font-semibold'>
                               {contract.date_start && new Date(contract.date_start).getFullYear() !== 1980
@@ -1015,7 +1078,6 @@ const SingleInstallation = () => {
                             {t("single_equipment_page_contract_end_date")}: <span className='font-semibold'>
                               {contract.date_end && new Date(contract.date_end).getFullYear() !== 1980
                                 ? new Date(contract.date_end).toLocaleDateString(undefined, {
-
                                   day: "2-digit",
                                   month: "2-digit",
                                   year: "numeric",
@@ -1032,22 +1094,22 @@ const SingleInstallation = () => {
                       </div>
 
                       <div className='shadow-sm border rounded-lg p-4'>
-                        <h4 className="block text-zinc-900 text-xs font-semibold leading-normal">
+                        <h4 className="block text-zinc-900 text-base font-semibold leading-normal">
                           {t("single_equipment_page_contract_SLA_info")}
                         </h4>
                         <hr className='my-2 w-32 border-gray-300' />
-                        <ul className="list-none list-inside text-slate-500 text-xs font-medium">
+                        <ul className="list-none list-inside text-slate-500 text-base font-medium">
                           <li>{contract.sla_name}</li>
                           <li>{contract.sla_coverage_type}</li>
                         </ul>
                       </div>
 
                       <div className='shadow-sm border rounded-lg p-4'>
-                        <h4 className="block text-zinc-900 text-xs font-semibold leading-normal">
+                        <h4 className="block text-zinc-900 text-base font-semibold leading-normal">
                           {t("single_equipment_page_contract_SLA_deadlines")}
                         </h4>
                         <hr className='my-2 w-32 border-gray-300' />
-                        <ul className="list-none list-inside text-slate-500 text-xs font-medium">
+                        <ul className="list-none list-inside text-slate-500 text-base font-medium">
                           <li className='grid grid-cols-2 gap-4'>
                             {t("single_equipment_page_contract_response_time")}: <span className='font-semibold'>{contract.sla_respone_time}</span>
                           </li>
@@ -1085,7 +1147,7 @@ const SingleInstallation = () => {
 
             {Array.isArray(contractDetails?.Preventive) && contractDetails.Preventive.length > 0 && (
               <div className='md:col-span-3 shadow-sm border rounded-lg p-4 '>
-                <h4 className="block text-zinc-900 text-sm font-semibold leading-normal">{t("single_equipment_page_contract_preventive_contract_info")}</h4>
+                <h4 className="block text-zinc-900 text-base font-semibold leading-normal">{t("single_equipment_page_contract_preventive_contract_info")}</h4>
                 <hr className='mt-2 mb-4 w-32 border-gray-300' />
 
                 {contractDetails.Preventive.map((preventive, index) => {
@@ -1099,10 +1161,12 @@ const SingleInstallation = () => {
                       {index !== 0 && <hr className='my-8 border-gray-300' />}
 
                       <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-                        <div className='shadow-sm border rounded-lg p-4 '>
-                          <h4 className="block text-zinc-900 text-xs font-semibold leading-normal">{preventive.contract_type_name}</h4>
+                        <div className='shadow-sm border border-primary rounded-lg p-4 '>
+                          <h4 className="block text-primary text-base font-semibold leading-normal">
+                            {preventive.contract_type_name}
+                          </h4>
                           <hr className='my-2 w-32 border-gray-300' />
-                          <ul className="list-none list-inside text-slate-500 text-xs font-medium">
+                          <ul className="list-none list-inside text-slate-500 text-base font-medium">
                             <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_start_date")} <span className='font-semibold'>
                               {preventive.date_start &&
                                 new Date(preventive.date_start).getFullYear() !== 1980
@@ -1128,7 +1192,7 @@ const SingleInstallation = () => {
                             <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_status")} <span className='font-semibold'>{preventive.contract_status_name}</span></li>
                           </ul>
                           <hr className='my-2 border-gray-300' />
-                          <ul className="list-none list-inside text-slate-500 text-xs font-medium">
+                          <ul className="list-none list-inside text-slate-500 text-base font-medium">
                             <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_contract_ref")} <span className='font-semibold'>{preventive.id2}</span></li>
                             <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_contract_type")} <span className='font-semibold'>{preventive.contract_type_name}</span></li>
                           </ul>
@@ -1138,10 +1202,9 @@ const SingleInstallation = () => {
                         {Array.isArray(serviceModelsToShow) &&
                           serviceModelsToShow.map((model, modelIndex) => (
                             <div key={modelIndex} className='shadow-sm border rounded-lg p-4 '>
-                              <h4 className="block text-zinc-900 text-xs font-semibold leading-normal">Service Model - {model?.id2}</h4>
+                              <h4 className="block text-zinc-900 text-base font-semibold leading-normal">{model?.service_model_name} - {model?.id2}</h4>
                               <hr className='my-2 w-32 border-gray-300' />
-                              <ul className="list-none list-inside text-slate-500 text-xs font-medium">
-                                <li>{model?.service_model_name}</li>
+                              <ul className="list-none list-inside text-slate-500 text-base font-medium">
                                 <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_start_date")} <span className='font-semibold'>
                                   {model?.date_start &&
                                     new Date(model?.date_start).getFullYear() !== 1980

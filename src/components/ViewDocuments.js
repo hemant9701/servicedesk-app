@@ -11,6 +11,7 @@ import {
 import { ToastContainer, toast } from 'react-toastify';
 import { useAuth } from '../AuthContext.js';
 import { useTranslation } from "react-i18next";
+import { setPrimaryTheme } from "../utils/setTheme";
 
 import Select from 'react-select';
 import makeAnimated from 'react-select/animated';
@@ -21,6 +22,7 @@ const url = process.env.REACT_APP_API_URL || 'https://servicedeskapi.wello.solut
 const ViewDocuments = () => {
   const navigate = useNavigate();
   const { auth } = useAuth();
+  setPrimaryTheme(auth?.colorPrimary);
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -461,7 +463,7 @@ const ViewDocuments = () => {
       accessor: 'file_extention',
       Cell: ({ row }) =>
         row.original.file_name ? (
-          <span className='text-xs'>
+          <span className='text-base'>
             {row.original.file_extention}
           </span>
         ) : null
@@ -653,7 +655,7 @@ const ViewDocuments = () => {
         theme="colored"
       />
 
-      <h1 className="text-zinc-900 text-3xl font-semibold mb-6">{t("documents_page_title")}</h1>
+      <h1 className="text-primary text-3xl font-semibold mb-6">{t("documents_page_title")}</h1>
       {/* Back Button */}
       <button
         onClick={() => navigate('/')} // Navigate back one step in history
@@ -684,7 +686,7 @@ const ViewDocuments = () => {
               value={tempFilters.locationLabel}
               onChange={handleLocationChange}
               placeholder={t('documents_table_filter_location')}
-              className="w-full pl-12 pr-3.5 py-3 text-gray-500 text-base font-normal leading-normal border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
+              className="w-full pl-12 pr-3.5 py-3 text-gray-500 text-base font-normal leading-normal border rounded-md text-base focus:outline-none focus:ring-1 focus:ring-gray-400"
             />
           </div>
           {locationHints.length > 0 && (
@@ -693,7 +695,7 @@ const ViewDocuments = () => {
                 <li
                   key={hint.id}
                   onClick={() => handleHintClick(hint)}
-                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm text-gray-700"
+                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-base text-gray-700"
                 >
                   {hint.label}
                 </li>
@@ -708,7 +710,7 @@ const ViewDocuments = () => {
             value={street}
             onChange={(e) => setStreet(e.target.value)}
             placeholder={t('documents_table_filter_street')}
-            className="w-full pl-12 pr-3.5 py-3 text-gray-500 text-base font-normal leading-normal border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
+            className="w-full pl-12 pr-3.5 py-3 text-gray-500 text-base font-normal leading-normal border rounded-md text-base focus:outline-none focus:ring-1 focus:ring-gray-400"
           />
         </div>
         <div className="relative">
@@ -718,7 +720,7 @@ const ViewDocuments = () => {
             value={city}
             onInput={(e) => setCity(e.target.value)}
             placeholder={t('documents_table_filter_city')}
-            className="w-full pl-12 pr-3.5 py-3 text-gray-500 text-base font-normal leading-normal border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
+            className="w-full pl-12 pr-3.5 py-3 text-gray-500 text-base font-normal leading-normal border rounded-md text-base focus:outline-none focus:ring-1 focus:ring-gray-400"
           />
         </div>
         <div className="relative">
@@ -738,17 +740,24 @@ const ViewDocuments = () => {
               }),
               option: (base, state) => ({
                 ...base,
+                whiteSpace: "nowrap", // prevent wrapping
+                overflow: "hidden",
+                textOverflow: "ellipsis",
                 color: state.isSelected
-                  ? '#ffffff' // white text when selected
+                  ? 'rgb(var(--color-primary-foreground) / var(--tw-bg-opacity, 1))'
                   : state.isFocused
-                    ? '#fff' // Tailwind blue-700 on hover
-                    : '#374151', // Tailwind gray-700 default
+                    ? 'rgb(var(--color-primary-foreground) / var(--tw-bg-opacity, 1))'
+                    : 'rgb(var(--color-primary) / var(--tw-bg-opacity, 1))',
                 backgroundColor: state.isSelected
-                  ? '#374151' // Tailwind blue-500
+                  ? 'rgb(var(--color-primary) / 0.7)'
                   : state.isFocused
-                    ? '#9CA3AF' // Tailwind blue-100
+                    ? 'rgb(var(--color-primary) / 0.5)'
                     : 'transparent',
                 cursor: 'pointer',
+              }),
+              menu: (provided) => ({
+                ...provided,
+                width: '85%', // controls dropdown menu width
               }),
             }}
           />
@@ -773,17 +782,24 @@ const ViewDocuments = () => {
               }),
               option: (base, state) => ({
                 ...base,
+                whiteSpace: "nowrap", // prevent wrapping
+                overflow: "hidden",
+                textOverflow: "ellipsis",
                 color: state.isSelected
-                  ? '#ffffff' // white text when selected
+                  ? 'rgb(var(--color-primary-foreground) / var(--tw-bg-opacity, 1))'
                   : state.isFocused
-                    ? '#fff' // Tailwind blue-700 on hover
-                    : '#374151', // Tailwind gray-700 default
+                    ? 'rgb(var(--color-primary-foreground) / var(--tw-bg-opacity, 1))'
+                    : 'rgb(var(--color-primary) / var(--tw-bg-opacity, 1))',
                 backgroundColor: state.isSelected
-                  ? '#374151' // Tailwind blue-500
+                  ? 'rgb(var(--color-primary) / 0.7)'
                   : state.isFocused
-                    ? '#9CA3AF' // Tailwind blue-100
+                    ? 'rgb(var(--color-primary) / 0.5)'
                     : 'transparent',
                 cursor: 'pointer',
+              }),
+              menu: (provided) => ({
+                ...provided,
+                width: '85%', // controls dropdown menu width
               }),
             }}
           />
@@ -810,27 +826,34 @@ const ViewDocuments = () => {
                 }),
                 option: (base, state) => ({
                   ...base,
+                  whiteSpace: "nowrap", // prevent wrapping
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
                   color: state.isSelected
-                    ? '#ffffff' // white text when selected
+                    ? 'rgb(var(--color-primary-foreground) / var(--tw-bg-opacity, 1))'
                     : state.isFocused
-                      ? '#fff' // Tailwind blue-700 on hover
-                      : '#374151', // Tailwind gray-700 default
+                      ? 'rgb(var(--color-primary-foreground) / var(--tw-bg-opacity, 1))'
+                      : 'rgb(var(--color-primary) / var(--tw-bg-opacity, 1))',
                   backgroundColor: state.isSelected
-                    ? '#374151' // Tailwind blue-500
+                    ? 'rgb(var(--color-primary) / 0.7)'
                     : state.isFocused
-                      ? '#9CA3AF' // Tailwind blue-100
+                      ? 'rgb(var(--color-primary) / 0.5)'
                       : 'transparent',
                   cursor: 'pointer',
+                }),
+                menu: (provided) => ({
+                  ...provided,
+                  width: '85%', // controls dropdown menu width
                 }),
               }}
             />
           </div>
         </div>
         <div className="flex items-end gap-x-2">
-          <button onClick={handleReset} className="w-[50%] md:min-w-48 px-5 py-3 border border-zinc-900 rounded-md text-sm text-gray-700 hover:bg-zinc-800 hover:text-white">
+          <button onClick={handleReset} className="w-[50%] md:min-w-48 px-5 py-3 border border-primary rounded-md text-base text-primary hover:bg-primary hover:text-primary-foreground">
             {t("documents_table_filter_reset_button")}
           </button>
-          <button onClick={handleSearch} className="w-[50%] md:min-w-48 px-5 py-3 border border-zinc-900 rounded-md text-sm text-white bg-zinc-800 hover:text-gray-900 hover:bg-white">
+          <button onClick={handleSearch} className="w-[50%] md:min-w-48 px-5 py-3 border border-primary rounded-md text-base text-primary-foreground bg-primary hover:text-primary hover:bg-primary-foreground">
             {t("documents_table_filter_apply_button")}
           </button>
         </div>
@@ -839,7 +862,7 @@ const ViewDocuments = () => {
       <div className="shadow-md rounded-lg mb-4">
         <div className="flex items-end justify-end gap-x-2 py-2 pr-2">
           <button
-            className="text-zinc-800 px-2 py-1"
+            className="text-primary px-2 py-1"
             onClick={() => setViewMode(viewMode === 'table' ? 'grid' : 'table')}
           >
             {viewMode === 'table' ? <LayoutGrid className="w-10 h-10" /> : <Table className="w-10 h-10" />}
@@ -848,34 +871,35 @@ const ViewDocuments = () => {
             selectedFiles.length !== 0 && (
               <button
                 onClick={handleDownloadSelected}
-                className="md:min-w-48 px-2 md:px-5 py-3 bg-zinc-800 rounded-lg flex items-center justify-center text-pink-50 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]"
+                className="md:min-w-48 px-2 md:px-5 py-2 border border-2 border-primary bg-primary rounded-lg flex items-center justify-center text-primary-foreground text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]"
               >
-                {t("documents_table_download_button")} <Download className="ml-2 w-6 h-5" />
+                <Download className="mr-2 w-6 h-5" /> {t("documents_table_download_button")}
               </button>
             )
           )}
           <button
             onClick={handleDownloadAll}
-            className="md:min-w-48 px-2 md:px-5 py-3 bg-zinc-800 rounded-lg flex items-center justify-center text-pink-50 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]"
+            className="md:min-w-48 px-2 md:px-5 py-2 border border-2 border-primary bg-primary-foreground rounded-lg flex items-center justify-center text-primary text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]"
           >
-            {t("documents_table_downloadall_button")} <Download className="ml-2 w-6 h-5" />
+            <Download className="mr-2 w-6 h-5" /> {t("documents_table_downloadall_button")}
           </button>
         </div>
+
+        {
+          isURLLoading && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-white/10">
+              <div className="text-white text-lg font-semibold animate-pulse">
+                <Loader className="w-20 h-20 ml-2 text-blue-600 animate-spin" />
+              </div>
+            </div>
+          )
+        }
 
         {/* Table displaying data */}
         {viewMode === 'table' && (
           <>
-            {
-              isURLLoading && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-white/10">
-                  <div className="text-white text-lg font-semibold animate-pulse">
-                    <Loader className="w-20 h-20 ml-2 text-blue-600 animate-spin" />
-                  </div>
-                </div>
-              )
-            }
-            <div className="flex items-center mb-1 text-zinc-800 text-sm font-normal px-4 py-2">
-              <BadgeInfo className='mr-2 w-5 h-5 text-slate-300' /> {t("documents_page_helping_text")}
+            <div className="bg-blue-100 flex items-center text-blue-500 text-base font-normal px-4 py-1 mb-2 rounded-lg">
+              <BadgeInfo className='mr-2 w-5 h-5 text-blue-500' /> {t("documents_page_helping_text")}
             </div>
             <div className="overflow-x-hidden">
               <table {...getTableProps()} className="min-w-full divide-y divide-gray-200 border border-gray-300">
@@ -892,7 +916,7 @@ const ViewDocuments = () => {
                             <th
                               key={headerKey || colIdx}
                               {...restHeaderProps}
-                              className="p-2 whitespace-nowrap text-left text-slate-500 text-xs font-medium leading-none"
+                              className="p-2 whitespace-nowrap text-left text-slate-500 text-base font-medium leading-none"
                             >
                               {column.render('Header')}
                               {column.isSorted ? (
@@ -916,7 +940,8 @@ const ViewDocuments = () => {
                     const { key: rowKey, ...restRowProps } = rowProps;
                     return (
                       !isLoading && (
-                        <tr key={rowKey || row.original.id || rowIdx} {...restRowProps} className="cursor-pointer hover:bg-gray-200">
+                        <tr key={rowKey || row.original.id || rowIdx} {...restRowProps}
+                          className="cursor-pointer hover:bg-primary/50 hover:text-primary-foreground transition-colors duration-200 ease-in-out">
                           {row.cells.map((cell, cellIdx) => {
                             const cellProps = cell.getCellProps();
                             const { key: cellKey, ...restCellProps } = cellProps;
@@ -924,7 +949,7 @@ const ViewDocuments = () => {
                               <td
                                 key={cellKey || cellIdx}
                                 {...restCellProps}
-                                className={`self-stretch px-1 py-2 text-xs font-normal text-zinc-900 ${cellIdx === 0 ? 'text-center' : ''}`}
+                                className={`self-stretch px-1 py-2 text-base font-normal ${cellIdx === 0 ? 'text-center' : ''}`}
                               >
                                 {cell.render('Cell')}
                               </td>
@@ -941,24 +966,24 @@ const ViewDocuments = () => {
             {/* Pagination Controls */}
             {!isLoading && contacts.length > 12 && (
               <div className="flex items-center justify-between p-2">
-                <span className="text-xs text-slate-700">
+                <span className="text-base text-primary">
                   {t("documents_table_pagination_page")} {pageIndex + 1} {t("documents_table_pagination_of")} {pageOptions.length}
                 </span>
                 <div>
-                  <button onClick={() => gotoPage(0)} disabled={!canPreviousPage} className="py-0.5 px-1 md:px-2 mr-1 text-slate-700 rounded-md border border-slate-700 disabled:border-gray-700">
+                  <button onClick={() => gotoPage(0)} disabled={!canPreviousPage} className="py-0.5 px-1 md:px-2 mr-1 text-primary rounded-md border border-primary  disabled:opacity-50">
                     <ArrowLeftToLine className="w-4" />
                   </button>
-                  <button onClick={() => previousPage()} disabled={!canPreviousPage} className="py-0.5 px-1 md:px-2 mr-1 text-slate-700 rounded-md border border-slate-700 disabled:border-gray-700">
+                  <button onClick={() => previousPage()} disabled={!canPreviousPage} className="py-0.5 px-1 md:px-2 mr-1 text-primary rounded-md border border-primary disabled:opacity-50">
                     <ArrowLeft className="w-4" />
                   </button>
-                  <button onClick={() => nextPage()} disabled={!canNextPage} className="py-0.5 px-1 md:px-2 mr-1 text-slate-700 rounded-md border border-slate-700 disabled:border-gray-700">
+                  <button onClick={() => nextPage()} disabled={!canNextPage} className="py-0.5 px-1 md:px-2 mr-1 text-primary rounded-md border border-primary disabled:opacity-50">
                     <ArrowRight className="w-4" />
                   </button>
-                  <button onClick={() => gotoPage(pageOptions.length - 1)} disabled={!canNextPage} className="py-0.5 px-1 md:px-2 mr-1 text-slate-700 rounded-md border border-slate-700 disabled:border-gray-700">
+                  <button onClick={() => gotoPage(pageOptions.length - 1)} disabled={!canNextPage} className="py-0.5 px-1 md:px-2 mr-1 text-primary rounded-md border border-primary disabled:opacity-50">
                     <ArrowRightToLine className="w-4" />
                   </button>
                 </div>
-                <select value={pageSize} onChange={e => setPageSize(Number(e.target.value))} className="ml-1 p-1 md:p-1 text-xs text-slate-700 border border-slate-700 rounded-md max-w-32">
+                <select value={pageSize} onChange={e => setPageSize(Number(e.target.value))} className="ml-1 p-1 md:p-1 text-base text-primary border border-primary rounded-md max-w-32">
                   {[12, 24, 36, 48].map(size => (
                     <option key={size} value={size}>
                       {t("documents_table_pagination_show")} {size}
@@ -972,6 +997,7 @@ const ViewDocuments = () => {
 
         {viewMode === 'grid' && (
           <>
+            {isLoading && <Loader className="ml-2 text-blue-600 animate-spin" />}
             <div className='grid grid-cols-1 md:grid-cols-4 gap-4 p-8'>
               {paginatedContacts?.length > 0 ? (
                 paginatedContacts.map(item => (
@@ -982,72 +1008,62 @@ const ViewDocuments = () => {
                         <img
                           src={fileThumbnails[item.id]}
                           alt={item.name}
-                          className="w-48 h-40 object-cover rounded-md mx-auto opacity-0 transition-opacity duration-500 ease-in-out"
+                          className="w-full h-40 md:h-48 object-fill rounded-md mx-auto opacity-0 transition-opacity duration-500 ease-in-out"
                           onLoad={(e) => e.currentTarget.classList.remove("opacity-0")}
                         />
                       ) : thumbnailLoading[item.id] ? (
-                        <div className="relative w-40 h-40 flex items-center justify-center mx-auto bg-gray-100 rounded-md overflow-hidden">
+                        <div className="relative w-40 md:w-48 h-40 md:h-48 flex items-center justify-center mx-auto bg-gray-100 rounded-md overflow-hidden">
                           <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-70 z-10">
                             <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-gray-500"></div>
                           </div>
                           <Image className="w-20 h-20 text-gray-300" />
                         </div>
                       ) : (
-                        <div className="w-40 h-40 flex items-center justify-center mx-auto rounded-md">
+                        <div className="w-40 md:w-48 h-40 md:h-48 flex items-center justify-center mx-auto rounded-md">
                           <Image className="w-20 h-20 text-gray-300" />
                         </div>
                       )
                     ) : (
-                      <File className="w-48 h-40 text-gray-600 mx-auto" />
+                      <File className="w-40 md:w-48 h-40 md:h-48 text-gray-600 mx-auto" />
                     )}
 
-                    <h4 className="text-gray-500 text-sm py-1 break-words">{item.name}</h4>
-                    <p className="text-gray-500 text-sm">{new Date(item.date_add).toLocaleString("en-GB")}</p>
+                    <h4 className="text-gray-500 text-base py-1 break-words">{item.name}</h4>
+                    <p className="text-gray-500 text-base">{new Date(item.date_add).toLocaleString("en-GB")}</p>
 
                     {item.file_name && (
-                      <label className="mt-2 flex space-x-2 items-start text-sm">
+                      <label className="mt-2 flex space-x-2 items-start text-base">
                         <input
                           type="checkbox"
                           onChange={() => toggleFileSelection(item)}
                           checked={selectedFiles.some((file) => file.id === item.id)}
                           className='mt-1'
                         />
-                        <span className='text-sm'>{t("documents_table_download_checkbox")}</span>
+                        <span className='text-base'>{t("documents_table_download_checkbox")}</span>
                       </label>
                     )}
 
                     {item.mime_type?.startsWith("image/") ? (
-                      <a
-                        href={fileThumbnails[item.id] || ""}
+                      <button
                         target="_blank"
                         rel={item.mime_type?.startsWith("image/") ? "noopener noreferrer" : "noreferrer"}
-                        className={`flex items-center no-underline mt-2 text-sm ${fileThumbnails[item.id] ? "hover:underline" : "cursor-not-allowed pointer-events-none"
+                        className={`flex items-center no-underline mt-2 text-base ${fileThumbnails[item.id] ? "hover:underline" : "cursor-not-allowed pointer-events-none"
                           }`}
-                        onClick={(e) => {
-                          if (!fileThumbnails[item.id]) {
-                            e.preventDefault(); // Prevent navigation if not loaded
-                          }
-                        }}
+                        onClick={() => openDocumentInNewTab(item.id)}
                       >
-                        <Eye className="w-4 h-4 mr-2 text-gray-600" />
+                        <Eye className="w-6 h-6 mr-2 text-gray-600" />
                         {t("documents_table_view_document_text")}
-                      </a>
+                      </button>
                     ) : (
-                      <a
-                        href={fileThumbnails[item.id] || ""}
+                      <button
                         target="_blank"
                         rel="noreferrer"
-                        className={`flex items-center no-underline mt-2 text-sm ${fileThumbnails[item.id] ? "hover:underline" : "cursor-not-allowed pointer-events-none"
+                        className={`flex items-center no-underline mt-2 text-base ${fileThumbnails[item.id] ? "hover:underline" : "cursor-not-allowed pointer-events-none"
                           }`}
-                        onClick={(e) => {
-                          if (!fileThumbnails[item.id]) {
-                            e.preventDefault(); // Prevent navigation if not loaded
-                          }
-                        }}
+                        onClick={() => openDocumentInNewTab(item.id)}
                       >
-                        <Eye className="w-4 h-4 mr-2 text-gray-600" />
+                        <Eye className="w-6 h-6 mr-2 text-gray-600" />
                         {t("documents_table_view_document_text")}
-                      </a>
+                      </button>
                     )}
                   </div>
                 ))
@@ -1066,24 +1082,24 @@ const ViewDocuments = () => {
 
             {contacts.length > 12 && (
               <div className="flex items-center justify-between p-2">
-                <span className="text-xs text-slate-700">
+                <span className="text-base text-primary">
                   {t("documents_table_pagination_page")} {gridPageIndex + 1} {t("documents_table_pagination_of")} {gridPageOptions.length}
                 </span>
                 <div>
-                  <button onClick={() => gotoGridPage(0)} disabled={!canGridPreviousPage} className="py-0.5 px-1 md:px-2 mr-1 text-slate-700 rounded-md border border-slate-700 disabled:border-gray-700">
+                  <button onClick={() => gotoGridPage(0)} disabled={!canGridPreviousPage} className="py-0.5 px-1 md:px-2 mr-1 text-primary rounded-md border border-primary disabled:opacity-50">
                     <ArrowLeftToLine className="w-4" />
                   </button>
-                  <button onClick={() => previousGridPage()} disabled={!canGridPreviousPage} className="py-0.5 px-1 md:px-2 mr-1 text-slate-700 rounded-md border border-slate-700 disabled:border-gray-700">
+                  <button onClick={() => previousGridPage()} disabled={!canGridPreviousPage} className="py-0.5 px-1 md:px-2 mr-1 text-primary rounded-md border border-primary disabled:opacity-50">
                     <ArrowLeft className="w-4" />
                   </button>
-                  <button onClick={() => nextGridPage()} disabled={!canGridNextPage} className="py-0.5 px-1 md:px-2 mr-1 text-slate-700 rounded-md border border-slate-700 disabled:border-gray-700">
+                  <button onClick={() => nextGridPage()} disabled={!canGridNextPage} className="py-0.5 px-1 md:px-2 mr-1 text-primary rounded-md border border-primary disabled:opacity-50">
                     <ArrowRight className="w-4" />
                   </button>
-                  <button onClick={() => gotoGridPage(gridPageOptions.length - 1)} disabled={!canGridNextPage} className="py-0.5 px-1 md:px-2 mr-1 text-slate-700 rounded-md border border-slate-700 disabled:border-gray-700">
+                  <button onClick={() => gotoGridPage(gridPageOptions.length - 1)} disabled={!canGridNextPage} className="py-0.5 px-1 md:px-2 mr-1 text-primary rounded-md border border-primary disabled:opacity-50">
                     <ArrowRightToLine className="w-4" />
                   </button>
                 </div>
-                <select value={gridPageSize} onChange={e => setGridPageSize(Number(e.target.value))} className="ml-1 p-1 md:p-1 text-xs text-slate-700 border border-slate-700 rounded-md max-w-32">
+                <select value={gridPageSize} onChange={e => setGridPageSize(Number(e.target.value))} className="ml-1 p-1 md:p-1 text-base text-primary border border-primary rounded-md max-w-32">
                   {[12, 24, 36, 48].map(size => (
                     <option key={size} value={size}>
                       {t("documents_table_pagination_show")} {size}

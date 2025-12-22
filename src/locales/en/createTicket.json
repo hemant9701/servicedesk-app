@@ -13,7 +13,7 @@
   "create_ticket_page_filter_status": "Select by Status",
   "create_ticket_page_filter_models": "Select by Models",
   "create_ticket_page_filter_reset": "Reset Filters",
-  "create_ticket_page_filter_confirm": "Confirm",
+  "create_ticket_page_filter_confirm": "Search",
   "create_ticket_step-1_title": "Equipments",
   "create_ticket_step-1_helping_text": "Don't see your equipment? Check to include archived equipment in your search.",
   "create_ticket_table_heading_name_text": "Name",

@@ -16,6 +16,21 @@ export const AuthProvider = ({ children }) => {
     }
   });
 
+  const [colorPrimary, setColorPrimary] = useState(() => {
+    try {
+      return (window.welloServiceDesk && window.welloServiceDesk.color_primary) || null;
+    } catch (e) {
+      return null;
+    }
+  });
+
+  useEffect(() => {
+    if (window.welloServiceDesk) {
+      const { color_primary } = window.welloServiceDesk || {};
+      setColorPrimary(color_primary || null);
+    }
+  }, []);
+
   // Sync logout across tabs
   useEffect(() => {
     const handleStorageChange = (event) => {
@@ -76,7 +91,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ auth, login, logout, updateAuthToken }}>
+    <AuthContext.Provider value={{ auth, login, logout, updateAuthToken, color_primary: colorPrimary }}>
       {children}
     </AuthContext.Provider>
   );

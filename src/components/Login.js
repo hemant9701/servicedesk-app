@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { LogIn, Eye, EyeOff, Languages } from 'lucide-react';
 import { ToastContainer, toast } from 'react-toastify';
+import { setPrimaryTheme } from "../utils/setTheme";
 import en from '../locales/en/login.json';
 import fr from '../locales/fr/login.json';
 import nl from '../locales/nl/login.json';
@@ -23,9 +24,9 @@ const Login = () => {
 
   useEffect(() => {
     if (window.welloServiceDesk) {
-      const { logo_primary, token } = window.welloServiceDesk;
+      const { logo_primary, token, color_primary } = window.welloServiceDesk;
       setLogo(logo_primary);
-      //setDomain(token);
+      setPrimaryTheme(color_primary);
       setToken(token)
     }
   }, []);
@@ -138,8 +139,8 @@ const Login = () => {
       />
       <div className="w-full max-w-sm mx-auto">
         <div className="bg-white p-4 shadow sm:rounded-lg">
-          <div className="flex justify-center mb-4 border border-1 border-gray-300 rounded-lg">
-            <img src={logo} alt="Logo" className="w-40" />
+          <div className="flex justify-center mb-4 py-1">
+            <img src={logo} alt="Logo" className="w-48" />
           </div>
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
@@ -187,12 +188,12 @@ const Login = () => {
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
                 />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
+                <label htmlFor="remember-me" className="ml-2 block text-base text-gray-900">
                   {t("login_remenber_me")}
                 </label>
               </div>
 
-              {/* <div className="text-sm">
+              {/* <div className="text-base">
                 <Link to="/forgot-password" className="font-medium text-indigo-600 hover:text-indigo-500">
                   Forgot your password?
                 </Link>
@@ -202,7 +203,7 @@ const Login = () => {
             <div>
               <button
                 type="submit"
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gray-900 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                className="bg-primary text-primary-foreground w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-base font-medium hover:bg-primary/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
               >
                 {t("login_form_button")} <LogIn className='w-4 h-4 ms-1' />
               </button>
@@ -216,8 +217,10 @@ const Login = () => {
           </div>
 
           <select
+            name='language-select'
             value={selectedLang}
             onChange={(e) => setSelectedLang(e.target.value)}
+            className='p-1 rounded-md'
           >
             {Object.entries(languageOptions).map(([code, label]) => (
               <option key={code} value={code}>{label}</option>

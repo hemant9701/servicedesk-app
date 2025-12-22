@@ -1,15 +1,16 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { useTable, useSortBy, useExpanded, usePagination } from 'react-table';
-//import { fetchData } from '../services/apiService.js';
 import { fetchDocuments } from '../services/apiServiceDocuments';
 import { useNavigate } from 'react-router-dom';
 import { Loader, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, ArrowLeftToLine, ArrowRightToLine, BadgeInfo, Circle, CalendarClock, FileText } from 'lucide-react';
 import { useAuth } from '../AuthContext';
 import { useTranslation } from "react-i18next";
+import { setPrimaryTheme } from "../utils/setTheme";
 
 const ViewWorkOrderList = () => {
   const navigate = useNavigate();
   const { auth } = useAuth();
+  setPrimaryTheme(auth?.colorPrimary);
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
@@ -184,7 +185,7 @@ const ViewWorkOrderList = () => {
         Header: t('work_order_list_table_heading_reference_text'), accessor: 'id2',
         Cell: ({ row }) => (
           <div className="text-center">
-            <span className="text-gray-800 font-medium">
+            <span className="font-medium">
               {row.original.id2}
             </span>
           </div>
@@ -213,7 +214,7 @@ const ViewWorkOrderList = () => {
       {
         Header: t('work_order_list_table_heading_status_text'), accessor: 'job_status_name',
         Cell: ({ row }) => (
-          <span className={`text-xs min-w-max inline-flex items-center font-medium pe-3 px-2 pb-1 pt-0.5 rounded-full ${statusColors[row.original.job_status_name] || "bg-gray-200 text-gray-800"}`}>
+          <span className={`text-base min-w-max inline-flex items-center font-medium pe-3 px-2 pb-1 pt-1 rounded-full ${statusColors[row.original.job_status_name] || "bg-gray-200 text-gray-800"}`}>
             <Circle className={`inline w-2 h-2 mr-1 rounded-full ${statusDotColors[row.original.job_status_name] || "bg-gray-800 text-gray-800"}`} /> {row.original.project_status_name}
             {row.original.job_status_name}
           </span>
@@ -300,8 +301,8 @@ const ViewWorkOrderList = () => {
 
         </div>
 
-        <div className="flex items-center mb-1 text-zinc-800 text-sm font-normal px-4 py-2">
-          <BadgeInfo className='mr-2 w-5 h-5 text-slate-300' /> {t("work_order_list_page_helping_text")}
+        <div className="bg-blue-100 flex items-center text-blue-500 text-base font-normal px-4 py-1 mb-2 rounded-lg">
+          <BadgeInfo className='mr-2 w-5 h-5 text-blue-500' /> {t("work_order_list_page_helping_text")}
         </div>
 
         {/* Table displaying filtered jobs */}
@@ -321,7 +322,7 @@ const ViewWorkOrderList = () => {
                         <th
                           key={headerKey || column.id || column.accessor || colIdx}
                           {...restHeaderProps}
-                          className={`px-2 py-3 text-left whitespace-nowrap text-slate-500 text-xs font-medium leading-none ${colIdx !== 0 ? 'border-r border-gray-300' : ''}`}
+                          className={`px-2 py-3 text-left whitespace-nowrap text-slate-500 text-base font-medium leading-none ${colIdx !== 0 ? 'border-r border-gray-300' : ''}`}
                         >
                           {column.render('Header')}
                           {column.isSorted ? (
@@ -353,7 +354,7 @@ const ViewWorkOrderList = () => {
                     //       <td
                     //         key={cellKey || cellIdx}
                     //         {...restCellProps}
-                    //         className={`self-stretch px-1 py-2 text-xs font-normal text-zinc-900 ${cellIdx !== 0 ? 'cursor-pointer' : ''}`}
+                    //         className={`self-stretch px-1 py-2 text-base font-normal text-zinc-900 ${cellIdx !== 0 ? 'cursor-pointer' : ''}`}
                     //         onClick={cellIdx !== 0 ? () => navigate(`/workorder/${row.original.id}`) : undefined}
                     //       >
                     //         {cell.render('Cell')}
@@ -363,7 +364,7 @@ const ViewWorkOrderList = () => {
                     // </tr>
                     <React.Fragment key={rowKey || row.original.id || rowIdx}>
                       {/* Normal row */}
-                      <tr {...restRowProps} className="hover:bg-gray-200">
+                      <tr {...restRowProps} className="cursor-pointer hover:bg-primary/50 hover:text-primary-foreground transition-colors duration-200 ease-in-out">
                         {row.cells.map((cell, cellIdx) => {
                           const cellProps = cell.getCellProps();
                           const { key: cellKey, ...restCellProps } = cellProps;
@@ -372,7 +373,7 @@ const ViewWorkOrderList = () => {
                             <td
                               key={cellKey || cellIdx}
                               {...restCellProps}
-                              className={`self-stretch px-1 py-2 text-xs font-normal text-zinc-900 ${cellIdx !== 0 ? 'cursor-pointer' : ''}`}
+                              className={`self-stretch px-1 py-2 text-base font-normal ${cellIdx !== 0 ? 'cursor-pointer' : ''}`}
                               onClick={cellIdx !== 0 ? () => navigate(`/workorder/${row.original.id}`) : undefined}
                             >
                               {cell.render("Cell")}
@@ -396,10 +397,10 @@ const ViewWorkOrderList = () => {
                                 <tr>
                                   <td colSpan={row.cells.length} className="bg-gray-50 p-4">
                                     <div className="p-1">
-                                      <h4 className="text-sm font-semibold border-b-2 border-gray-200 pb-2 mb-2">
+                                      <h4 className="text-base font-semibold border-b-2 border-gray-200 pb-2 mb-2">
                                         {t("Planned date and Technician")}
                                       </h4>
-                                      <div className="flex gap-16 text-xs font-normal">
+                                      <div className="flex gap-16 text-base font-normal">
                                         <div>
                                           {Array.from(
                                             new Set(
@@ -456,7 +457,7 @@ const ViewWorkOrderList = () => {
                                 <tr>
                                   <td colSpan={row.cells.length} className="bg-gray-50 p-4">
                                     <div className="p-1">
-                                      <table className="table-auto w-full text-xs font-normal text-left border-collapse">
+                                      <table className="table-auto w-full text-base font-normal text-left border-collapse">
                                         <thead>
                                           <tr className="text-gray-700 border-b">
                                             <th className="pb-2">Ref</th>
@@ -505,24 +506,24 @@ const ViewWorkOrderList = () => {
         {/* Pagination Controls - Only show if filteredWorkOrder exceed pageSize (10) */}
         {!isLoading && jobs.length > 12 && (
           <div className="flex items-center justify-between p-4">
-            <span className="text-xs text-slate-700">
+            <span className="text-base text-slate-700">
               {t("work_order_list_table_pagination_page")} {pageIndex + 1} {t("work_order_list_table_pagination_of")} {pageOptions.length}
             </span>
             <div>
-              <button onClick={() => gotoPage(0)} disabled={!canPreviousPage} className="py-0.5 px-1 md:px-2 mr-1 text-slate-700 rounded-md border border-slate-700 disabled:border-gray-700">
+              <button onClick={() => gotoPage(0)} disabled={!canPreviousPage} className="py-0.5 px-1 md:px-2 mr-1 text-primary rounded-md border border-primary disabled:opacity-50">
                 <ArrowLeftToLine className="w-4" />
               </button>
-              <button onClick={() => previousPage()} disabled={!canPreviousPage} className="py-0.5 px-1 md:px-2 mr-1 text-slate-700 rounded-md border border-slate-700 disabled:border-gray-700">
+              <button onClick={() => previousPage()} disabled={!canPreviousPage} className="py-0.5 px-1 md:px-2 mr-1 text-primary rounded-md border border-primary disabled:opacity-50">
                 <ArrowLeft className="w-4" />
               </button>
-              <button onClick={() => nextPage()} disabled={!canNextPage} className="py-0.5 px-1 md:px-2 mr-1 text-slate-700 rounded-md border border-slate-700 disabled:border-gray-700">
+              <button onClick={() => nextPage()} disabled={!canNextPage} className="py-0.5 px-1 md:px-2 mr-1 text-primary rounded-md border border-primary disabled:opacity-50">
                 <ArrowRight className="w-4" />
               </button>
-              <button onClick={() => { gotoPage(pageOptions.length - 1) }} disabled={!canNextPage} className="py-0.5 px-1 md:px-2 mr-1 text-slate-700 rounded-md border border-slate-700 disabled:border-gray-700">
+              <button onClick={() => { gotoPage(pageOptions.length - 1) }} disabled={!canNextPage} className="py-0.5 px-1 md:px-2 mr-1 text-primary rounded-md border border-primary disabled:opacity-50">
                 <ArrowRightToLine className="w-4" />
               </button>
             </div>
-            <select value={pageSize} onChange={e => setPageSize(Number(e.target.value))} className="ml-1 p-1 md:p-1 text-xs text-slate-700 border border-slate-700 rounded-md max-w-32">
+            <select value={pageSize} onChange={e => setPageSize(Number(e.target.value))} className="ml-1 p-1 md:p-1 text-base text-slate-700 border border-slate-700 rounded-md max-w-32">
               {[12, 24, 36, 48].map(size => (
                 <option key={size} value={size}>
                   {t("work_order_list_table_pagination_show")} {size}

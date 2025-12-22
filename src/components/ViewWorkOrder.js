@@ -1,28 +1,32 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { fetchDocuments } from '../services/apiServiceDocuments';
 import { downloadFiles } from "../services/apiServiceDownloads";
 import { useNavigate } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
-import { File, Eye, Phone, ArrowLeft, Circle, Wrench, User, MapPin, Image } from "lucide-react";
+import { File, Eye, Phone, ArrowLeft, Circle, Wrench, User, MapPin, Image, Loader, Download } from "lucide-react";
 import { useAuth } from '../AuthContext';
 import { useTranslation } from "react-i18next";
+import { setPrimaryTheme } from "../utils/setTheme";
 
 const SingleWordOrder = () => {
   const navigate = useNavigate();
+  const { auth } = useAuth();
+  setPrimaryTheme(auth?.colorPrimary);
   const { workOrderId } = useParams();
   const [workOrder, setWorkOrder] = useState(null);
   const [doc, setDoc] = useState([]);
   const [subWO, setSubWO] = useState([]);
   const [planned, setPlanned] = useState([]);
+  const [remarks, setRemarks] = useState([]);
   //const [file, setFile] = useState('');
   const [loading, setLoading] = useState(true);
+  const [isURLLoading, setIsURLLoading] = useState(false);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('details'); // State to manage active tab
   const [fileThumbnails, setFileThumbnails] = useState({});
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [downloadMsg, setDownloadMsg] = useState('');
-  const { auth } = useAuth();
   const { t } = useTranslation('singleWorkOrder');
 
   const url = process.env.REACT_APP_API_URL || 'https://servicedeskapi.wello.solutions/';
@@ -87,8 +91,19 @@ const SingleWordOrder = () => {
       }
     };
 
+    const getworkOrderRemarks = async () => {
+      try {
+        const responseRemarks = await fetchDocuments(`api/JobsView/GetAllTechnicianRemarksOfJob?jobs_id=${workOrderId}`);
+        setRemarks(responseRemarks || []);
+      } catch (err) {
+        console.error("Error fetching documents:", err);
+        setError(t('single_work_order_page_err_failed_to_fetch_thumbnail'));
+      }
+    };
+
     getworkOrderDetails();
     getworkOrderPlanned();
+    getworkOrderRemarks();
   }, [workOrderId, auth, t]);
 
   useEffect(() => {
@@ -192,6 +207,37 @@ const SingleWordOrder = () => {
     );
   };
 
+  //// Function ////
+  const openDocumentInNewTab = useCallback(async (id) => {
+    if (!id || !auth?.authKey) return;
+
+    setIsURLLoading(true); // Show loading overlay
+
+    const endpoint = `api/DbFileView/View/?id=${id}`;
+    try {
+      const response = await fetchDocuments(
+        endpoint,
+        "GET",
+        auth.authKey,
+        null,
+        "image/png"
+      );
+
+      if (response) {
+        const blob = await response.blob?.() ?? response;
+        const blobUrl = URL.createObjectURL(blob);
+        window.open(blobUrl, '_blank', 'noopener,noreferrer');
+      } else {
+        console.error("Failed to fetch thumbnail:", response?.statusText);
+      }
+    } catch (error) {
+      console.error("Error fetching document thumbnail:", error);
+    } finally {
+      setIsURLLoading(false); // Hide loading overlay
+    }
+  }, [auth?.authKey]);
+
+
   if (loading) {
     return <div className="flex w-full items-center justify-center h-screen">
       <div className="relative">
@@ -251,8 +297,8 @@ const SingleWordOrder = () => {
           <>
             <div className='grid grid-cols-1 md:grid-cols-[1fr_0.9fr_1.1fr] gap-4'>
               <div className='shadow-sm border rounded-lg p-4 '>
-                <h4 className="block text-zinc-900 text-xs font-semibold leading-normal pb-2">{t("single_work_order_page_equipment")}</h4>
-                <ul className="list-none list-inside text-slate-500 text-xs font-medium">
+                <h4 className="block text-zinc-900 text-base font-semibold leading-normal pb-2">{t("single_work_order_page_equipment")}</h4>
+                <ul className="list-none list-inside text-slate-500 text-base font-medium">
                   <li className='flex items-center'><MapPin className='w-4 h-4 mr-2' />{workOrder?.db_address_street}</li>
                   <li className='ml-6 pb-1'>{workOrder?.db_address_zip} {workOrder?.db_address_city}</li>
                   {workOrder?.contact_mobile && (
@@ -270,8 +316,8 @@ const SingleWordOrder = () => {
               </div>
 
               <div className='shadow-sm border rounded-lg p-4 '>
-                <h4 className="block text-zinc-900 text-xs font-semibold leading-normal pb-2">{t("single_work_order_page_contact")}</h4>
-                <ul className="list-none list-inside text-slate-500 text-xs font-medium">
+                <h4 className="block text-zinc-900 text-base font-semibold leading-normal pb-2">{t("single_work_order_page_contact")}</h4>
+                <ul className="list-none list-inside text-slate-500 text-base font-medium">
                   {workOrder?.contact_fullname && (
                     <li className='flex items-center'><User className='w-4 h-4 mr-2' />{workOrder?.contact_fullname}</li>
                   )}
@@ -284,8 +330,8 @@ const SingleWordOrder = () => {
               </div>
 
               <div className='shadow-sm border rounded-lg p-4 '>
-                <h4 className="block text-zinc-900 text-xs font-semibold leading-normal pb-2">{t("single_work_order_page_sla_info")}</h4>
-                <ul className="list-none list-inside text-slate-500 text-xs font-medium">
+                <h4 className="block text-zinc-900 text-base font-semibold leading-normal pb-2">{t("single_work_order_page_sla_info")}</h4>
+                <ul className="list-none list-inside text-slate-500 text-base font-medium">
                   <li className="grid grid-cols-2 gap-2">
                     <span>{t("single_work_order_page_response_time")}</span>
                     <span>
@@ -327,15 +373,15 @@ const SingleWordOrder = () => {
               </div>
 
               <div className='shadow-sm border rounded-lg p-4 '>
-                <h4 className="block text-zinc-900 text-xs font-semibold leading-normal pb-2">{t("single_work_order_page_priority")}</h4>
-                <ul className="list-none list-inside text-slate-500 text-xs font-medium">
+                <h4 className="block text-zinc-900 text-base font-semibold leading-normal pb-2">{t("single_work_order_page_priority")}</h4>
+                <ul className="list-none list-inside text-slate-500 text-base font-medium">
                   <li>{workOrder?.job_priority_name}</li>
                 </ul>
               </div>
 
               <div className='shadow-sm border rounded-lg p-4 '>
-                <h4 className="block text-zinc-900 text-xs font-semibold leading-normal pb-2">{t("single_work_order_page_type_status")}</h4>
-                <ul className="list-none list-inside text-slate-500 text-xs font-medium">
+                <h4 className="block text-zinc-900 text-base font-semibold leading-normal pb-2">{t("single_work_order_page_type_status")}</h4>
+                <ul className="list-none list-inside text-slate-500 text-base font-medium">
                   <li>
                     {workOrder?.job_type_name}
                   </li>
@@ -349,8 +395,8 @@ const SingleWordOrder = () => {
               </div>
 
               <div className='shadow-sm border rounded-lg p-4 '>
-                <h4 className="block text-zinc-900 text-xs font-semibold leading-normal pb-2">{t("single_work_order_page_total_planned_time")}</h4>
-                <ul className="list-none list-inside text-slate-500 text-xs font-medium">
+                <h4 className="block text-zinc-900 text-base font-semibold leading-normal pb-2">{t("single_work_order_page_total_planned_time")}</h4>
+                <ul className="list-none list-inside text-slate-500 text-base font-medium">
                   <li>{Math.floor(workOrder?.total_time_planned / 60).toString().padStart(2, '0')}Hr {(workOrder?.total_time_planned % 60).toString().padStart(2, '0')}Min</li>
                 </ul>
               </div>
@@ -362,28 +408,28 @@ const SingleWordOrder = () => {
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="border-b-2">
                       <tr>
-                        <th className="px-4 py-2 text-left text-zinc-900 text-xs font-semibold leading-normal">
+                        <th className="px-4 py-2 text-left text-zinc-900 text-base font-semibold leading-normal">
                           {t("single_work_order_page_planned_date")}
                         </th>
-                        <th className="px-4 py-2 text-left text-zinc-900 text-xs font-semibold leading-normal">
+                        <th className="px-4 py-2 text-left text-zinc-900 text-base font-semibold leading-normal">
 
                         </th>
-                        <th className="px-4 py-2 text-left text-zinc-900 text-xs font-semibold leading-normal">
+                        <th className="px-4 py-2 text-left text-zinc-900 text-base font-semibold leading-normal">
                           {t("single_work_order_page_planned_duration")}
                         </th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {planned.map(item => (
-                        <tr className="hover:bg-gray-50">
-                          <td className="px-4 py-2 text-slate-500 text-xs font-medium">
+                        <tr className="hover:bg-primary/50 hover:text-primary-foreground transition-colors duration-200 ease-in-out">
+                          <td className="px-4 py-2 text-base font-medium">
                             {(() => {
                               const date = new Date(item.date_from);
                               return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear().toString().slice(-2)}`;
                             })()}
                           </td>
 
-                          <td className="px-4 py-2 text-slate-500 text-xs font-medium">
+                          <td className="px-4 py-2 text-base font-medium">
                             {new Date(item.date_from).toLocaleTimeString('en-GB', {
                               timeZone: 'UTC',
                               hour: '2-digit',
@@ -392,7 +438,7 @@ const SingleWordOrder = () => {
                             })} {item.user_firstname || 'John'} {item.user_lastname || 'Doe'}
                           </td>
 
-                          <td className="px-4 py-2 text-slate-500 text-xs font-medium">
+                          <td className="px-4 py-2 text-base font-medium">
                             {(() => {
                               const closed = new Date(item.date_to);
                               const created = new Date(item.date_from);
@@ -411,17 +457,43 @@ const SingleWordOrder = () => {
                   </table>
                 </div>
               ) : (
-                <p className="text-slate-500 text-xs font-medium">{t("single_work_order_page_no_record")}</p>
+                <p className="text-slate-500 text-base font-medium">{t("single_work_order_page_no_record")}</p>
               )}
             </div>
 
             <div className='shadow-sm border rounded-lg p-4 mt-4'>
-              <h4 className="block text-zinc-900 text-xs font-semibold leading-normal pb-2">{t("single_work_order_page_description")}</h4>
-              {workOrder.description ? (<p className="mb-4 text-slate-500 text-xs font-medium">{workOrder.description}</p>) : (<p className="mb-4 text-slate-500 text-xs font-medium">{t("single_work_order_page_no_description")}</p>)}
+              <h4 className="block text-zinc-900 text-base font-semibold leading-normal pb-2">{t("single_work_order_page_description")}</h4>
+              {workOrder.description ? (<p className="mb-4 text-slate-500 text-base font-medium">{workOrder.description}</p>) : (<p className="mb-4 text-slate-500 text-base font-medium">{t("single_work_order_page_no_description")}</p>)}
             </div>
-            {workOrder?.remakes && <div className='shadow-sm border rounded-lg p-4 mt-4'>
-              <h4 className="block text-zinc-900 text-xs font-semibold leading-normal pb-2">{t("single_work_order_page_description")}</h4>
-              <p className="mb-4 text-slate-500 text-xs font-medium">{workOrder.remakes}</p>
+            {workOrder?.nb_notes > 0 && <div className='shadow-sm border rounded-lg p-4 mt-4'>
+              <h4 className="block text-zinc-900 text-base font-semibold leading-normal pb-2">{t("Technician Remarks")}</h4>
+              {Array.isArray(remarks) && remarks.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {remarks.map(item => (
+                        <tr className="hover:bg-primary/50 hover:text-primary-foreground transition-colors duration-200 ease-in-out">
+                          <td className="px-4 py-2 text-base font-medium">
+                            {new Date(item.date_add).toLocaleDateString('en-GB', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: '2-digit',
+                            })}
+                          </td>
+
+                          <td className="px-4 py-2 text-base font-medium">
+                            {item.user_fullname || ' '}
+                          </td>
+
+                          <td className="px-4 py-2 text-base font-medium">
+                            {item.notes}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : ''}
             </div>}
           </>
         ) : activeTab === 'documents' ? (
@@ -438,6 +510,15 @@ const SingleWordOrder = () => {
               pauseOnHover
               theme="colored"
             />
+            {
+              isURLLoading && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-white/10">
+                  <div className="text-white text-lg font-semibold animate-pulse">
+                    <Loader className="w-20 h-20 ml-2 text-blue-600 animate-spin" />
+                  </div>
+                </div>
+              )
+            }
             {doc?.length > 0 ? (
               <div className='grid grid-cols-1 md:grid-cols-4 gap-4'>
                 {doc.map(item => (
@@ -449,10 +530,10 @@ const SingleWordOrder = () => {
                           <img
                             src={fileThumbnails[item.id]}
                             alt={item.name}
-                            className="w-48 h-40 object-cover rounded-md mx-auto"
+                            className="w-full h-40 md:h-48 object-fill rounded-md mx-auto"
                           />
                         ) : (
-                          <div className="relative w-40 h-40 flex items-center justify-center mx-auto bg-gray-100 rounded-md">
+                          <div className="relative w-40 md:w-48 h-40 md:h-48 flex items-center justify-center mx-auto bg-gray-100 rounded-md">
                             {/* Loading overlay */}
                             <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-70 z-10">
                               <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-gray-500"></div>
@@ -463,23 +544,23 @@ const SingleWordOrder = () => {
                           </div>
                         )
                       ) : (
-                        <File className="w-40 h-40 text-gray-600 mx-auto" />
+                        <File className="w-40 md:w-48 h-40 md:h-48 text-gray-600 mx-auto" />
                       )}
                     </div>
                     <div className='flex flex-col'>
-                      <h4 className="text-gray-500 text-sm py-1 break-words">{item.name}</h4>
+                      <h4 className="text-gray-500 text-base py-1 break-words">{item.name}</h4>
 
-                      <p className="text-gray-500 text-sm">{new Date(item.date_add).toLocaleString('en-GB', {
+                      <p className="text-gray-500 text-base">{new Date(item.date_add).toLocaleString('en-GB', {
                         day: "2-digit",
-                          month: "2-digit",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          hour12: false,
+                        month: "2-digit",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: false,
                       })}</p>
 
                       {item.file_name ? (
-                        <label className="mt-2 flex space-x-2 items-start text-sm">
+                        <label className="mt-2 flex space-x-2 items-start text-base">
                           <input
                             type="checkbox"
                             onChange={() => toggleFileSelection(item)}
@@ -489,21 +570,29 @@ const SingleWordOrder = () => {
                         </label>) : null}
 
                       {/* Show "View Document" only if it's an image */}
-
-                      <a
-                        href={fileThumbnails[item.id] || ""}
-                        target="_blank"
-                        rel={item.mime_type?.startsWith("image/") ? "noopener noreferrer" : "noreferrer"}
-                        className={`flex items-center no-underline mt-2 text-sm ${fileThumbnails[item.id] ? "hover:underline" : "cursor-not-allowed pointer-events-none"
-                          }`}
-                        onClick={(e) => {
-                          if (!fileThumbnails[item.id]) {
-                            e.preventDefault(); // Prevent navigation if not loaded
-                          }
-                        }}
-                      >
-                        <Eye className="w-6 h-6 mr-2 text-gray-600" /> {t("single_work_order_page_view_document")}
-                      </a>
+                      {item.mime_type?.startsWith("image/") ? (
+                        <button
+                          target="_blank"
+                          rel={item.mime_type?.startsWith("image/") ? "noopener noreferrer" : "noreferrer"}
+                          className={`flex items-center no-underline mt-2 text-base ${fileThumbnails[item.id] ? "hover:underline" : "cursor-not-allowed pointer-events-none"
+                            }`}
+                          onClick={() => openDocumentInNewTab(item.id)}
+                        >
+                          <Eye className="w-6 h-6 mr-2 text-gray-600" />
+                          {t("single_work_order_page_view_document")}
+                        </button>
+                      ) : (
+                        <button
+                          target="_blank"
+                          rel="noreferrer"
+                          className={`flex items-center no-underline mt-2 text-base ${fileThumbnails[item.id] ? "hover:underline" : "cursor-not-allowed pointer-events-none"
+                            }`}
+                          onClick={() => openDocumentInNewTab(item.id)}
+                        >
+                          <Eye className="w-6 h-6 mr-2 text-gray-600" />
+                          {t("single_work_order_page_view_document")}
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -518,13 +607,13 @@ const SingleWordOrder = () => {
                 {selectedFiles.length !== 0 && (
                   <button
                     onClick={handleDownloadSelected}
-                    className="w-48 px-5 py-3 bg-zinc-800 rounded-lg flex items-center justify-center text-pink-50 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
-                    {t("single_work_order_page_download_button")}
+                    className="w-48 px-4 py-2 bg-primary rounded-lg flex items-center justify-center text-primary-foreground text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
+                    {t("single_work_order_page_download_button")} <Download className="ml-2 w-6 h-5" />
                   </button>)}
                 <button
                   onClick={handleDownloadAll}
-                  className="w-48 px-5 py-3 ml-2 bg-zinc-800 rounded-lg flex items-center justify-center text-pink-50 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
-                  {t("single_work_order_page_download_all_button")}
+                  className="w-48 px-4 py-2 ml-2 bg-primary-foreground border border-2 border-primary rounded-lg flex items-center justify-center text-primary text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
+                  {t("single_work_order_page_download_all_button")} <Download className="ml-2 w-6 h-5" />
                 </button>
               </div>
             )}
@@ -535,16 +624,16 @@ const SingleWordOrder = () => {
               <table className="min-w-full divide-y divide-gray-200 border border-gray-300">
                 <thead className="bg-gray-100">
                   <tr className="bg-white divide-x divide-gray-300">
-                    <th className="p-2 whitespace-nowrap text-left text-slate-500 text-xs font-medium leading-none">
+                    <th className="p-2 whitespace-nowrap text-left text-slate-500 text-base font-medium leading-none">
                       {t("single_work_order_page_sub_wo_status")}
                     </th>
-                    <th className="p-2 whitespace-nowrap text-left text-slate-500 text-xs font-medium leading-none">
+                    <th className="p-2 whitespace-nowrap text-left text-slate-500 text-base font-medium leading-none">
                       {t("single_work_order_page_sub_wo_name")}
                     </th>
-                    <th className="p-2 whitespace-nowrap text-left text-slate-500 text-xs font-medium leading-none">
+                    <th className="p-2 whitespace-nowrap text-left text-slate-500 text-base font-medium leading-none">
                       {t("single_work_order_page_sub_wo_reference")}
                     </th>
-                    <th className="p-2 whitespace-nowrap text-left text-slate-500 text-xs font-medium leading-none">
+                    <th className="p-2 whitespace-nowrap text-left text-slate-500 text-base font-medium leading-none">
                       {t("single_work_order_page_sub_wo_type")}
                     </th>
                   </tr>
@@ -552,17 +641,17 @@ const SingleWordOrder = () => {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {subWO && subWO.length > 0 && (
                     subWO.map((item) => (
-                      <tr key={item.id} className="hover:bg-gray-200">
-                        <td className="self-stretch p-2 text-xs font-normal text-zinc-900 whitespace-nowrap">
+                      <tr key={item.id} className="hover:bg-primary/50 hover:text-primary-foreground transition-colors duration-200 ease-in-out">
+                        <td className="self-stretch p-2 text-base font-normal whitespace-nowrap">
                           {item.job_status_name}
                         </td>
-                        <td className="self-stretch p-2 text-xs font-normal text-zinc-900 whitespace-nowrap">
+                        <td className="self-stretch p-2 text-base font-normal whitespace-nowrap">
                           {item.project_name}
                         </td>
-                        <td className="self-stretch p-2 text-xs font-normal text-zinc-900 whitespace-nowrap">
+                        <td className="self-stretch p-2 text-base font-normal whitespace-nowrap">
                           {item.job_reference}
                         </td>
-                        <td className="self-stretch p-2 text-xs font-normal text-zinc-900 whitespace-nowrap">
+                        <td className="self-stretch p-2 text-base font-normal whitespace-nowrap">
                           {item.job_type_name}
                         </td>
                       </tr>

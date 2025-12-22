@@ -9,6 +9,11 @@ module.exports = {
       fontFamily: {
         sans: ['Inter', ...defaultTheme.fontFamily.sans],
       },
+      colors: {
+        primary: "rgb(var(--color-primary) / <alpha-value>)",
+        "primary-foreground":
+          "rgb(var(--color-primary-foreground) / <alpha-value>)",
+      },
       boxShadow: {
         md: '0 3px 10px 1px rgba(0, 0, 0, 0.15), 0 3px 6px -3px rgba(0, 0, 0, 0.1)',
       },

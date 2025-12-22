@@ -121,8 +121,8 @@ a {
 
 .react-calendar__tile {
   padding: 10px 0;
-  font-size: 15px;
-  border-radius: 4px;
+  font-size: 16px;
+  border-radius: 50%;
   transition: background-color 0.3s;
 }
 
@@ -133,19 +133,22 @@ a {
 }
 
 .react-calendar__tile:enabled:hover {
-  background-color: #e0f2fe; 
+  background-color: rgb(var(--color-primary) / 0.5); 
+  color: rgb(var(--color-primary-foreground));
 }
 
 .react-calendar__tile--now {
-  background-color: #eff6ff; 
+  background-color: rgb(var(--color-primary)/0.5); 
   font-weight: bold;
-  color: #191919; 
+  border-radius: 50%;
+  color: rgb(var(--color-primary-foreground)); 
 }
 
 .react-calendar__tile--active {
-  background-color: #191919; 
+  background-color: rgb(var(--color-primary)/0.5);
+  border: 2px solid rgb(var(--color-primary));
   border-radius: 50%;
-  color: #eff6ff;
+  color: rgb(var(--color-primary-foreground));
 }
 
 .react-calendar__month-view__days__day--weekend {
@@ -162,13 +165,12 @@ abbr:where([title]) {
 
 /* Your custom circular date style */
 .react-calendar__tile.rounded-date {
-  border: 1px solid #1F272D; /* Tailwind's indigo-600 */
-  /* color: #6b7280; */
+  border: 2px solid rgb(var(--color-primary));
   border-radius: 50%; /* ensures a full circle */
 }
 
 .react-calendar__tile--active:enabled:hover, .react-calendar__tile--active:enabled:focus {
-  background-color: #454545; /* Blue-500 */
+  background-color: rgb(var(--color-primary) / 0.5);
 }
 
 .react-calendar__tile--neighboringMonth {
@@ -176,5 +178,10 @@ abbr:where([title]) {
 }
 
 .react-calendar__month-view__weekdays__weekday {
-    padding: 1em;
+  padding: 1em;
+}
+
+.react-calendar__navigation button:enabled:hover,
+.react-calendar__navigation button:enabled:focus {
+  background-color: rgb(var(--color-primary) / 0.08);
 }
