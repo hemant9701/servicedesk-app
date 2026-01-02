@@ -287,7 +287,7 @@ const SingleWordOrder = () => {
               className={`px-2 md:px-4 py-2 mr-2 text-md md:text-lg font-medium leading-7 ${activeTab === 'sub-wo' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-slate-500'}`}
               onClick={() => setActiveTab('sub-wo')}
             >
-              {t("Sub-WO List")}
+              {t("single_work_order_page_sub_wo_list")}
             </button>
           )
           }
@@ -299,17 +299,21 @@ const SingleWordOrder = () => {
               <div className='shadow-sm border rounded-lg p-4 '>
                 <h4 className="block text-zinc-900 text-base font-semibold leading-normal pb-2">{t("single_work_order_page_equipment")}</h4>
                 <ul className="list-none list-inside text-slate-500 text-base font-medium">
-                  <li className='flex items-center'><MapPin className='w-4 h-4 mr-2' />{workOrder?.db_address_street}</li>
-                  <li className='ml-6 pb-1'>{workOrder?.db_address_zip} {workOrder?.db_address_city}</li>
+                  <li className='flex items-center'>
+                    <span className="w-8 flex"><MapPin className='w-4 h-4 mr-2' /></span>
+                    <span className="flex-1">{workOrder?.db_address_street}</span>
+                  </li>
+                  <li className='ml-8 pb-1'>{workOrder?.db_address_zip} {workOrder?.db_address_city}</li>
                   {workOrder?.contact_mobile && (
                     <li className='flex items-center'>
-                      <Phone className="w-4 h-4 mr-1" /> <a href={`tel:${workOrder.contact_mobile}`} className='no-underline'>{workOrder.contact_mobile}</a>
+                      <span className="w-8 flex"><Phone className="w-4 h-4 mr-1" /></span>
+                      <span className="flex-1"><a href={`tel:${workOrder.contact_mobile}`} className='no-underline'>{workOrder.contact_mobile}</a></span>
                     </li>
                   )}
                   {workOrder?.name && (
                     <li className='flex items-center' >
-                      <Wrench className='w-4 h-4 mr-2' />
-                      {workOrder?.name}
+                      <span className="w-8 flex"><Wrench className='w-4 h-4 mr-2' /></span>
+                      <span className="flex-1">{workOrder?.name}</span>
                     </li>
                   )}
                 </ul>
@@ -397,7 +401,7 @@ const SingleWordOrder = () => {
               <div className='shadow-sm border rounded-lg p-4 '>
                 <h4 className="block text-zinc-900 text-base font-semibold leading-normal pb-2">{t("single_work_order_page_total_planned_time")}</h4>
                 <ul className="list-none list-inside text-slate-500 text-base font-medium">
-                  <li>{Math.floor(workOrder?.total_time_planned / 60).toString().padStart(2, '0')}Hr {(workOrder?.total_time_planned % 60).toString().padStart(2, '0')}Min</li>
+                  <li>{Math.floor(workOrder?.total_time_planned / 60).toString().padStart(2, '0')}h {(workOrder?.total_time_planned % 60).toString().padStart(2, '0')}m</li>
                 </ul>
               </div>
             </div>
@@ -412,7 +416,7 @@ const SingleWordOrder = () => {
                           {t("single_work_order_page_planned_date")}
                         </th>
                         <th className="px-4 py-2 text-left text-zinc-900 text-base font-semibold leading-normal">
-
+                          {t("single_work_order_page_planned_by")}
                         </th>
                         <th className="px-4 py-2 text-left text-zinc-900 text-base font-semibold leading-normal">
                           {t("single_work_order_page_planned_duration")}
@@ -530,7 +534,7 @@ const SingleWordOrder = () => {
                           <img
                             src={fileThumbnails[item.id]}
                             alt={item.name}
-                            className="w-full h-40 md:h-48 object-fill rounded-md mx-auto"
+                            className="w-full h-40 md:h-48 object-cover rounded-md mx-auto"
                           />
                         ) : (
                           <div className="relative w-40 md:w-48 h-40 md:h-48 flex items-center justify-center mx-auto bg-gray-100 rounded-md">
@@ -585,8 +589,7 @@ const SingleWordOrder = () => {
                         <button
                           target="_blank"
                           rel="noreferrer"
-                          className={`flex items-center no-underline mt-2 text-base ${fileThumbnails[item.id] ? "hover:underline" : "cursor-not-allowed pointer-events-none"
-                            }`}
+                          className="flex items-center no-underline mt-2 text-base hover:underline"
                           onClick={() => openDocumentInNewTab(item.id)}
                         >
                           <Eye className="w-6 h-6 mr-2 text-gray-600" />
@@ -607,12 +610,12 @@ const SingleWordOrder = () => {
                 {selectedFiles.length !== 0 && (
                   <button
                     onClick={handleDownloadSelected}
-                    className="w-48 px-4 py-2 bg-primary rounded-lg flex items-center justify-center text-primary-foreground text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
+                    className="w-48 px-4 py-2 bg-primary border border-2 border-primary rounded-lg flex items-center justify-center text-primary-foreground text-base font-medium leading-normal hover:bg-primary/20 hover:text-primary hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
                     {t("single_work_order_page_download_button")} <Download className="ml-2 w-6 h-5" />
                   </button>)}
                 <button
                   onClick={handleDownloadAll}
-                  className="w-48 px-4 py-2 ml-2 bg-primary-foreground border border-2 border-primary rounded-lg flex items-center justify-center text-primary text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
+                  className="w-48 px-4 py-2 ml-2 bg-primary-foreground border border-2 border-primary rounded-lg flex items-center justify-center text-primary text-base font-medium leading-normal hover:bg-primary/20 hover:text-primary hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
                   {t("single_work_order_page_download_all_button")} <Download className="ml-2 w-6 h-5" />
                 </button>
               </div>

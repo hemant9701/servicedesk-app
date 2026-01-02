@@ -232,7 +232,7 @@ const ViewTicketList = () => {
                   return (
                     <tr key={rowKey || row.original.id || rowIdx} {...restRowProps} 
                     className="cursor-pointer hover:bg-primary/50 hover:text-primary-foreground transition-colors duration-200 ease-in-out" 
-                    onClick={() => navigate(`/ticket/${row.original.id}`)}>
+                    onClick={() =>  window.open(`${window.location.origin}/service-desk/ticket/${row.original.id}`, "_blank")}>
                       {row.cells.map((cell, cellIdx) => {
                         const cellProps = cell.getCellProps();
                         const { key: cellKey, ...restCellProps } = cellProps;

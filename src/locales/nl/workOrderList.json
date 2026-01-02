@@ -13,5 +13,10 @@
   "work_order_list_table_pagination_page": "Pagina",
   "work_order_list_table_pagination_show": "Toon",
   "work_order_list_toggle_completed_text": "Gesloten werkorders",
-  "work_order_list_toggle_pending_text": "Openstaande werkorders"
+  "work_order_list_toggle_pending_text": "Openstaande werkorders",
+  "work_order_list_table_page_planned_date_technician": "Geplande datum en technicus",
+  "work_order_list_table_page_remarks_ref": "Ref",  
+  "work_order_list_table_page_remarks_technician": "Technicus",
+  "work_order_list_table_page_remarks_date": "Datum",
+  "work_order_list_table_page_remarks_technicians_remarks": "Opmerkingen van de technicus"
 }

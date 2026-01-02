@@ -5,7 +5,7 @@
   "navbar_documents_list_link": "Documents",
   "navbar_equipments_list_link": "Équipements",
   "navbar_home_page_link": "Accueil",
-  "navbar_lang_en": "anglais",
+  "navbar_lang_en": "Anglais",
   "navbar_lang_fr": "Français",
   "navbar_lang_nl": "Nederlands",
   "navbar_language_label": "Sélectionnez une langue",
@@ -13,5 +13,5 @@
   "navbar_support_page_link": "Support",
   "navbar_tickets_list_link": "Tickets",
   "navbar_users_list_link": "Utilisateurs",
-  "navbar_work_order_list_link": "Intervention (WO)"
+  "navbar_work_order_list_link": "Interventions (WO)"
 }

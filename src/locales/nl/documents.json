@@ -3,7 +3,7 @@
   "documents_page_helping_text": "Klik op het selectievakje om bestanden te selecteren die u wilt downloaden.",
   "documents_page_title": "Documenten",
   "documents_table_download_button": "Downloaden",
-  "documents_table_download_checkbox": "Selecteer om het document te downloaden.",
+  "documents_table_download_checkbox": "Selecteer om het document te downloaden",
   "documents_table_filter_city": "Stad",
   "documents_table_filter_file_type": "Selecteer bestandstype",
   "documents_table_filter_keyword": "Sleutelwoord",
@@ -23,5 +23,6 @@
   "documents_table_view_document_text": "Document bekijken",
   "documents_table_heading_select_all_text": "Alles selecteren",
   "documents_table_filter_apply_button": "Bevestigen",
-  "documents_table_downloadall_button": "Alles downloaden"
+  "documents_table_downloadall_button": "Alles downloaden",
+  "documents_table_view_download_text": "Bekijken & Downloaden"
 }

@@ -347,7 +347,7 @@ export default function DashboardSidebar() {
                         <div className="flex justify-between items-center rounded-lg gap-1 px-1 py-2">
                             {!isCollapsed && (
                                 <div className="flex items-center gap-1 font-semibold">
-                                    <span className="px-1.5 py-2 w-8 h-8 text-xs rounded-full bg-primary text-primary-foreground">{getFirstLetters(auth.userName)}</span>
+                                    <span className="flex justify-center px-1.5 py-2 w-8 h-8 text-xs rounded-full bg-primary text-primary-foreground">{getFirstLetters(auth.userName)}</span>
                                     <span className="text-primary">{auth.userName}</span>
                                 </div>
                             )}

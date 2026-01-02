@@ -465,7 +465,7 @@ const SingleInstallation = () => {
   };
 
   //// Function ////
-const openDocumentInNewTab = useCallback(async (id) => {
+  const openDocumentInNewTab = useCallback(async (id) => {
     if (!id || !auth?.authKey) return;
 
     setIsURLLoading(true); // Show loading overlay
@@ -575,10 +575,13 @@ const openDocumentInNewTab = useCallback(async (id) => {
               <h4 className="block text-zinc-900 text-base font-semibold leading-normal">{t("single_equipment_page_equipment")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
               <ul className="list-none list-inside text-slate-500 text-base font-medium">
-                <li className='flex items-center'><Wrench className='w-4 h-4 mr-2' />{installation?.name}</li>
-                <li className='ml-6 pb-1'>{installation?.equipment_family_name}</li>
-                <li className='ml-6 pb-1'>{installation?.equipment_brand_name}</li>
-                <li className='ml-6 pb-1'>{installation?.equipment_model_name}</li>
+                <li className='flex items-center'>
+                  <span className="w-8 flex"><Wrench className='w-4 h-4 mr-2' /></span>
+                  <span className="flex-1">{installation?.name}</span>
+                </li>
+                <li className='ml-8 pb-1'>{installation?.equipment_family_name}</li>
+                <li className='ml-8 pb-1'>{installation?.equipment_brand_name}</li>
+                <li className='ml-8 pb-1'>{installation?.equipment_model_name}</li>
               </ul>
             </div>
 
@@ -600,10 +603,10 @@ const openDocumentInNewTab = useCallback(async (id) => {
               <h4 className="block text-zinc-900 text-base font-semibold leading-normal">{t("single_equipment_page_properties")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
               <ul className="list-none list-inside text-slate-500 text-base font-medium">
-                <li className='grid grid-cols-2 gap-4'>{t("single_equipment_page_barcode")}: <span className='font-semibold text-gray-700'>{installation?.barcode}</span></li>
-                <li className='grid grid-cols-2 gap-4'>{t("single_equipment_page_serial_number")}: <span className='font-semibold text-gray-700'>{installation?.serial_number}</span></li>
-                <li className='grid grid-cols-2 gap-4'>{t("single_equipment_page_our_ref")}: <span className='font-semibold text-gray-700'>{installation?.customer_reference}</span></li>
-                <li className='grid grid-cols-2 gap-4'>{t("single_equipment_page_supplier_ref")}: <span className='font-semibold text-gray-700'>{installation?.id2}</span></li>
+                <li className='grid grid-cols-2 gap-4'>{t("single_equipment_page_barcode")}: <span className='font-semibold text-gray-700 break-all'>{installation?.barcode}</span></li>
+                <li className='grid grid-cols-2 gap-4'>{t("single_equipment_page_serial_number")}: <span className='font-semibold text-gray-700 break-all'>{installation?.serial_number}</span></li>
+                <li className='grid grid-cols-2 gap-4'>{t("single_equipment_page_our_ref")}: <span className='font-semibold text-gray-700 break-all'>{installation?.customer_reference}</span></li>
+                <li className='grid grid-cols-2 gap-4'>{t("single_equipment_page_supplier_ref")}: <span className='font-semibold text-gray-700 break-all'>{installation?.id2}</span></li>
               </ul>
             </div>
 
@@ -626,20 +629,20 @@ const openDocumentInNewTab = useCallback(async (id) => {
                     <MapPin className='w-4 h-4 mr-2' />
                     {rootParentDetails?.name || installation?.name}
                   </li>
-                  <li className='ml-6 pb-1'>
+                  <li className='ml-8 pb-1'>
                     {rootParentDetails?.db_address_street || installation?.db_address_street}
                     {' '}
                     {rootParentDetails?.db_address_street_number || ''}
                   </li>
-                  <li className='ml-6 pb-1'>
+                  <li className='ml-8 pb-1'>
                     {rootParentDetails?.db_address_zip || installation?.db_address_zip}
                     {' '}
                     {rootParentDetails?.db_address_city || installation?.db_address_city}
                   </li>
                   {(rootParentDetails?.contact_mobile || installation?.contact_mobile) && (
                     <li className='flex items-center'>
-                      <Phone className="w-4 h-4 mr-1" />
-                      {rootParentDetails?.contact_mobile || installation?.contact_mobile}
+                      <span className="w-8 flex"><Phone className="w-4 h-4 mr-1" /></span>
+                      <span className="flex-1">{rootParentDetails?.contact_mobile || installation?.contact_mobile}</span>
                     </li>
                   )}
                 </ul>
@@ -658,10 +661,17 @@ const openDocumentInNewTab = useCallback(async (id) => {
               <h4 className="block text-zinc-900 text-base font-semibold leading-normal">{t("single_equipment_page_company_address")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
               <ul className="list-none list-inside text-slate-500 text-base font-medium">
-                <li className='flex items-center'><MapPin className='w-4 h-4 mr-2' />{installation?.db_address_street}</li>
-                <li className='ml-6 pb-1'>{installation?.db_address_zip} {installation?.db_address_city}</li>
+                <li className='flex items-center'>
+                  <span className="w-8 flex">
+                    <MapPin className='w-4 h-4 mr-2' /></span>
+                  <span className="flex-1">{installation?.db_address_street}</span>
+                </li>
+                <li className='ml-8 pb-1'>{installation?.db_address_zip} {installation?.db_address_city}</li>
                 {installation?.contact_mobile &&
-                  <li className='flex items-center'><Phone className="w-4 h-4 mr-1" />{installation?.contact_mobile}</li>}
+                  <li className='flex items-center'>
+                    <span className="w-8 flex"><Phone className="w-4 h-4 mr-1" /></span>
+                    <span className="flex-1">{installation?.contact_mobile}</span>
+                  </li>}
               </ul>
             </div>
 
@@ -680,15 +690,15 @@ const openDocumentInNewTab = useCallback(async (id) => {
               pauseOnHover
               theme="colored"
             />
-  {
-          isURLLoading && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-white/10">
-              <div className="text-white text-lg font-semibold animate-pulse">
-                <Loader className="w-20 h-20 ml-2 text-blue-600 animate-spin" />
-              </div>
-            </div>
-          )
-        }
+            {
+              isURLLoading && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-white/10">
+                  <div className="text-white text-lg font-semibold animate-pulse">
+                    <Loader className="w-20 h-20 ml-2 text-blue-600 animate-spin" />
+                  </div>
+                </div>
+              )
+            }
             {doc?.length > 0 ? (
               <div className='grid grid-cols-1 md:grid-cols-4 gap-4 px-12 pb-12'>
                 {doc.map(item => (
@@ -734,28 +744,27 @@ const openDocumentInNewTab = useCallback(async (id) => {
 
                       {/* Show "View Document" only if it's an image */}
                       {item.mime_type?.startsWith("image/") ? (
-                      <button
-                        target="_blank"
-                        rel={item.mime_type?.startsWith("image/") ? "noopener noreferrer" : "noreferrer"}
-                        className={`flex items-center no-underline mt-2 text-base ${fileThumbnails[item.id] ? "hover:underline" : "cursor-not-allowed pointer-events-none"
-                          }`}
-                        onClick={() => openDocumentInNewTab(item.id)}
-                      >
-                        <Eye className="w-6 h-6 mr-2 text-gray-600" />
-                        {t("single_equipment_page_view_document")}
-                      </button>
-                    ) : (
-                      <button
-                        target="_blank"
-                        rel="noreferrer"
-                        className={`flex items-center no-underline mt-2 text-base ${fileThumbnails[item.id] ? "hover:underline" : "cursor-not-allowed pointer-events-none"
-                          }`}
-                        onClick={() => openDocumentInNewTab(item.id)}
-                      >
-                        <Eye className="w-6 h-6 mr-2 text-gray-600" />
-                        {t("single_equipment_page_view_document")}
-                      </button>
-                    )}
+                        <button
+                          target="_blank"
+                          rel={item.mime_type?.startsWith("image/") ? "noopener noreferrer" : "noreferrer"}
+                          className={`flex items-center no-underline mt-2 text-base ${fileThumbnails[item.id] ? "hover:underline" : "cursor-not-allowed pointer-events-none"
+                            }`}
+                          onClick={() => openDocumentInNewTab(item.id)}
+                        >
+                          <Eye className="w-6 h-6 mr-2 text-gray-600" />
+                          {t("single_equipment_page_view_document")}
+                        </button>
+                      ) : (
+                        <button
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center no-underline mt-2 text-base hover:underline"
+                          onClick={() => openDocumentInNewTab(item.id)}
+                        >
+                          <Eye className="w-6 h-6 mr-2 text-gray-600" />
+                          {t("single_equipment_page_view_document")}
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -770,12 +779,12 @@ const openDocumentInNewTab = useCallback(async (id) => {
                 {selectedFiles.length !== 0 && (
                   <button
                     onClick={handleDownloadSelected}
-                    className="w-48 px-4 py-2 bg-primary rounded-lg flex items-center justify-center text-primary-foreground text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
+                    className="w-48 px-4 py-2 bg-primary border border-2 border-primary rounded-lg flex items-center justify-center text-primary-foreground text-base font-medium leading-normal hover:bg-primary/20 hover:text-primary hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
                     <Download className="mr-2 w-6 h-5" /> {t("single_equipment_page_download_button")}
                   </button>)}
                 <button
                   onClick={handleDownloadAll}
-                  className="w-48 px-4 py-2 ml-2 bg-primary-foreground border border-2 border-primary rounded-lg flex items-center justify-center text-primary text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
+                  className="w-48 px-4 py-2 ml-2 bg-primary-foreground border border-2 border-primary rounded-lg flex items-center justify-center text-primary text-base font-medium leading-normal hover:bg-primary/20 hover:text-primary hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
                   <Download className="mr-2 w-6 h-5" /> {t("single_equipment_page_download_all_button")}
                 </button>
               </div>
@@ -839,7 +848,7 @@ const openDocumentInNewTab = useCallback(async (id) => {
                                   {cell.render('Cell')}
                                 </td>
                               );
-                            })} 
+                            })}
                           </tr>
 
                           {expandedRowId === row.original.id && (
@@ -1209,7 +1218,6 @@ const openDocumentInNewTab = useCallback(async (id) => {
                                   {model?.date_start &&
                                     new Date(model?.date_start).getFullYear() !== 1980
                                     ? new Date(model?.date_start).toLocaleString(undefined, {
-
                                       day: "2-digit",
                                       month: "2-digit",
                                       year: "numeric",
@@ -1220,7 +1228,6 @@ const openDocumentInNewTab = useCallback(async (id) => {
                                   {model?.date_end &&
                                     new Date(model?.date_end).getFullYear() !== 1980
                                     ? new Date(model?.date_end).toLocaleString(undefined, {
-
                                       day: "2-digit",
                                       month: "2-digit",
                                       year: "numeric",
@@ -1255,7 +1262,6 @@ const openDocumentInNewTab = useCallback(async (id) => {
                                   {model?.next_expected_job_date &&
                                     new Date(model?.next_expected_job_date).getFullYear() !== 1980
                                     ? new Date(model?.next_expected_job_date).toLocaleString(undefined, {
-
                                       day: "2-digit",
                                       month: "2-digit",
                                       year: "numeric",

@@ -346,22 +346,6 @@ const ViewWorkOrderList = () => {
                   const rowProps = row.getRowProps();
                   const { key: rowKey, ...restRowProps } = rowProps;
                   return (
-                    // <tr key={rowKey || row.original.id || rowIdx} {...restRowProps} className="hover:bg-gray-200">
-                    //   {row.cells.map((cell, cellIdx) => {
-                    //     const cellProps = cell.getCellProps();
-                    //     const { key: cellKey, ...restCellProps } = cellProps;
-                    //     return (
-                    //       <td
-                    //         key={cellKey || cellIdx}
-                    //         {...restCellProps}
-                    //         className={`self-stretch px-1 py-2 text-base font-normal text-zinc-900 ${cellIdx !== 0 ? 'cursor-pointer' : ''}`}
-                    //         onClick={cellIdx !== 0 ? () => navigate(`/workorder/${row.original.id}`) : undefined}
-                    //       >
-                    //         {cell.render('Cell')}
-                    //       </td>
-                    //     );
-                    //   })}
-                    // </tr>
                     <React.Fragment key={rowKey || row.original.id || rowIdx}>
                       {/* Normal row */}
                       <tr {...restRowProps} className="cursor-pointer hover:bg-primary/50 hover:text-primary-foreground transition-colors duration-200 ease-in-out">
@@ -373,8 +357,8 @@ const ViewWorkOrderList = () => {
                             <td
                               key={cellKey || cellIdx}
                               {...restCellProps}
-                              className={`self-stretch px-1 py-2 text-base font-normal ${cellIdx !== 0 ? 'cursor-pointer' : ''}`}
-                              onClick={cellIdx !== 0 ? () => navigate(`/workorder/${row.original.id}`) : undefined}
+                              className={`self-stretch p-2 text-base font-normal ${cellIdx !== 0 ? 'cursor-pointer' : ''}`}
+                              onClick={cellIdx !== 0 ? () => window.open(`${window.location.origin}/service-desk/workorder/${row.original.id}`, "_blank") : undefined}
                             >
                               {cell.render("Cell")}
                             </td>
@@ -398,7 +382,7 @@ const ViewWorkOrderList = () => {
                                   <td colSpan={row.cells.length} className="bg-gray-50 p-4">
                                     <div className="p-1">
                                       <h4 className="text-base font-semibold border-b-2 border-gray-200 pb-2 mb-2">
-                                        {t("Planned date and Technician")}
+                                        {t("work_order_list_table_page_planned_date_technician")}
                                       </h4>
                                       <div className="flex gap-16 text-base font-normal">
                                         <div>
@@ -460,10 +444,10 @@ const ViewWorkOrderList = () => {
                                       <table className="table-auto w-full text-base font-normal text-left border-collapse">
                                         <thead>
                                           <tr className="text-gray-700 border-b">
-                                            <th className="pb-2">Ref</th>
-                                            <th className="pb-2">Technician</th>
-                                            <th className="pb-2">Date</th>
-                                            <th className="pb-2">Technicians Remarks</th>
+                                            <th className="pb-2">{t("work_order_list_table_page_remarks_ref")}</th>
+                                            <th className="pb-2">{t("work_order_list_table_page_remarks_technician")}</th>
+                                            <th className="pb-2">{t("work_order_list_table_page_remarks_date")}</th>
+                                            <th className="pb-2">{t("work_order_list_table_page_remarks_technicians_remarks")}</th>
                                           </tr>
                                         </thead>
                                         <tbody>

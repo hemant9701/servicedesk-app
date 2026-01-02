@@ -3,7 +3,7 @@
   "navbar_collapse_arrow": "Inklappen",
   "navbar_create_ticket_link": "Ticket maken",
   "navbar_documents_list_link": "Documenten",
-  "navbar_equipments_list_link": "Installatie",
+  "navbar_equipments_list_link": "Installaties",
   "navbar_home_page_link": "Start",
   "navbar_lang_en": "Engels",
   "navbar_lang_fr": "Français",
@@ -13,5 +13,5 @@
   "navbar_support_page_link": "Ondersteuning",
   "navbar_tickets_list_link": "Tickets",
   "navbar_users_list_link": "Gebruikers",
-  "navbar_work_order_list_link": "WerkOrder (WO)"
+  "navbar_work_order_list_link": "Werkorders (WO)"
 }

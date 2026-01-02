@@ -11,7 +11,7 @@
   "equipments_list_page_filter_models": "Select by Models",
   "equipments_list_page_filter_reset": "Reset Filters",
   "equipments_list_page_filter_confirm": "Search",
-  "equipments_list_page_helping_text": "Click the row to view ticket details.",
+  "equipments_list_page_helping_text": "Click the row to view equipment details.",
   "equipments_list_table_heading_name_text": "Name",
   "equipments_list_table_heading_address_text": "Address",
   "equipments_list_table_heading_type_text": "Type",

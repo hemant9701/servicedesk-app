@@ -9,7 +9,7 @@
   "calendar_page_filter_location_placeholder": "Voer drie letters in om het zoeken te starten",
   "calendar_page_filter_reset": "Filters resetten",
   "calendar_page_filter_apply": "Bevestigen van filters",
-  "calendar_page_table_helping_text": "Klik op de rij om de ticketdetails te bekijken.",
+  "calendar_page_table_helping_text": "Klik op de rij om de details van de werkorder te bekijken.",
   "calendar_page_go_back": "Ga terug",
   "calendar_page_title": "Kalender",
   "calendar_table_heading_address_text": "Adres",
@@ -20,5 +20,9 @@
   "calendar_table_no_records_text": "Geen gegevens!!!",
   "calendar_table_pagination_of": "van",
   "calendar_table_pagination_page": "Pagina",
-  "calendar_table_pagination_show": "Toon"
+  "calendar_table_pagination_show": "Toon",
+  "calendar_table_work_order_list_remarks_ref": "Ref",
+  "calendar_table_work_order_list_remarks_technician": "Technicus", 
+  "calendar_table_work_order_list_remarks_date": "Datum",
+  "calendar_table_work_order_list_remarks_technicians_remarks": "Opmerkingen van de technicus"
 }

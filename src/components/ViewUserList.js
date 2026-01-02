@@ -102,7 +102,7 @@ const ViewUserList = () => {
 
 
       <nav className="mb-6 text-right">
-        <Link to="/update-password" className="inline-flex text-base font-medium no-underline bg-primary text-primary-foreground border border-2 border-primary px-6 py-3 rounded-lg hover:bg-primary-foreground hover:text-primary">
+        <Link to="/update-password" className="inline-flex text-base font-medium no-underline bg-primary text-primary-foreground border border-2 border-primary px-6 py-3 rounded-lg hover:bg-primary/20 hover:text-primary">
           <Lock className="mr-2 w-5 h-5" /> {t('user_list_password_update_text')}
         </Link>
       </nav>

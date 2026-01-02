@@ -209,13 +209,13 @@ const PasswordUpdate = () => {
 
           <button
             type="submit"
-            className="w-full bg-primary text-primary-foreground py-2 px-4 rounded-md font-semibold border border-primary hover:text-primary hover:bg-primary-foreground transition duration-200"
+            className="w-full bg-primary text-primary-foreground py-2 px-4 rounded-md font-semibold border border-2 border-primary hover:bg-primary/20 hover:text-primary transition duration-200"
           >
             {!isLoading && t("update_password_page_update_button")}
             {isLoading && (
-              <div role="status" aria-live="polite" className="flex items-center">
+              <div role="status" aria-live="polite" className="flex items-center justify-center">
                 <Loader className="ml-2 text-zinc-600 animate-spin" />
-                <span className="ml-2">Loading...</span>
+                <span className="ml-2">Updating Password...</span>
               </div>
             )}
           </button>
@@ -246,7 +246,7 @@ const PasswordUpdate = () => {
               <div className="flex">
                 <button
                   onClick={handleOTPSubmit}
-                  className="px-4 py-2 bg-primary w-full text-primary-foreground rounded hover:text-primary hover:bg-primary-foreground"
+                  className="px-4 py-2 bg-primary w-full text-primary-foreground rounded hover:bg-primary/20 hover:text-primary transition duration-200"
                 >
                   {t("update_password_page_otp_popup_button")}
                 </button>
@@ -255,8 +255,8 @@ const PasswordUpdate = () => {
           </div>
         )}
 
-        {successMessage && <p className="mt-4 text-green-600 text-base text-center">{successMessage}</p>}
-        {error && <p className="mt-4 text-red-600 text-base text-center">{error}</p>}
+        {successMessage && <p className="mt-4 text-green-600 text-base">{successMessage}</p>}
+        {error && <p className="mt-4 text-red-600 text-base">{error}</p>}
       </div>
     </div>
   );

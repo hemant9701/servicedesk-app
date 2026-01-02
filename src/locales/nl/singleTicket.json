@@ -15,5 +15,8 @@
   "single_ticket_page_severity": "Ernst",
   "single_ticket_page_ticket_details": "Details ticket",
   "single_ticket_page_type_status": "Type en status",
-  "single_ticket_page_view_document": "Document bekijken"
+  "single_ticket_page_view_document": "Document bekijken",
+  "single_ticket_page_select_to_download": "Selecteer om het document te downloaden",
+  "single_ticket_page_download_button": "Downloaden",
+  "single_ticket_page_download_all_button": "Alles downloaden"
 }

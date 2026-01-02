@@ -28,7 +28,7 @@ const Home = () => {
       <main className="relative mx-8 md:mx-32 mt-8 p-8">
         <div className="grid md:grid-cols-2 gap-6">
           <Link to="/createticket" className="block no-underline">
-            <div className='bg-primary text-primary-foreground outline outline-2 outline-primary p-2 md:p-6 rounded-2xl shadow relative hover:shadow-[4px_4px_20px_0px_rgba(31,39,45,0.40)] active:bg-primary/70'>
+            <div className='bg-primary text-primary-foreground border border-4 border-primary p-2 md:p-6 rounded-2xl shadow transition-colors relative hover:bg-primary/20 hover:text-primary hover:shadow-[4px_4px_20px_0px_rgba(31,39,45,0.40)] active:bg-primary/70'>
               <div className="flex items-center space-x-2">
                 <NotebookPen className="w-12 h-12" />
                 <span className="text-lg md:text-3xl font-bold ps-1 md:ps-6">{t("home_page_create_ticket_button")}</span>
@@ -36,7 +36,7 @@ const Home = () => {
             </div>
           </Link>
           <Link to="/tickets" className="block no-underline">
-            <div className="bg-primary text-primary-foreground outline outline-2 outline-primary p-2 md:p-6 rounded-2xl shadow transition-colors relative hover:shadow-[4px_4px_20px_0px_rgba(31,39,45,0.40)] active:bg-primary/70">
+            <div className="bg-primary text-primary-foreground border border-4 border-primary p-2 md:p-6 rounded-2xl shadow transition-colors relative hover:bg-primary/20 hover:text-primary hover:shadow-[4px_4px_20px_0px_rgba(31,39,45,0.40)] active:bg-primary/70">
               <div className="flex items-center space-x-2">
                 <Ticket className="w-12 h-12" />
                 <span className="text-lg md:text-3xl font-bold ps-1 md:ps-6">{t("home_page_view_ticket_button")}</span>
@@ -47,7 +47,7 @@ const Home = () => {
             </div>
           </Link> 
           <Link to="/calendar" className="block no-underline">
-            <div className="bg-primary text-primary-foreground outline outline-2 outline-primary p-2 md:p-6 rounded-2xl shadow transition-colors relative hover:shadow-[4px_4px_20px_0px_rgba(31,39,45,0.40)] active:bg-primary/70">
+            <div className="bg-primary text-primary-foreground border border-4 border-primary p-2 md:p-6 rounded-2xl shadow transition-colors relative hover:bg-primary/20 hover:text-primary hover:shadow-[4px_4px_20px_0px_rgba(31,39,45,0.40)] active:bg-primary/70">
               <div className="flex items-center space-x-2">
                 <CalendarDays className="w-12 h-12" />
                 <span className="text-lg md:text-3xl font-bold ps-1 md:ps-6">{t("home_page_calendar_button")}</span>
@@ -55,7 +55,7 @@ const Home = () => {
             </div>
           </Link>
           <Link to="/workorders" className="block no-underline">
-            <div className="bg-primary text-primary-foreground outline outline-2 outline-primary p-2 md:p-6 rounded-2xl shadow transition-colors relative hover:shadow-[4px_4px_20px_0px_rgba(31,39,45,0.40)] active:bg-primary/70">
+            <div className="bg-primary text-primary-foreground border border-4 border-primary p-2 md:p-6 rounded-2xl shadow transition-colors relative hover:bg-primary/20 hover:text-primary hover:shadow-[4px_4px_20px_0px_rgba(31,39,45,0.40)] active:bg-primary/70">
               <div className="flex items-center space-x-2">
                 <FileText className="w-12 h-12" />
                 <span className="text-lg md:text-3xl font-bold ps-1 md:ps-6">{t("home_page_work_order_button")}</span>

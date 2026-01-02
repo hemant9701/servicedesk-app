@@ -3,7 +3,7 @@ import { useTable, useSortBy, usePagination } from 'react-table';
 import { fetchDocuments } from '../services/apiServiceDocuments.js';
 import { downloadFiles } from "../services/apiServiceDownloads";
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   File, Eye, Download, BadgeInfo, ArrowUp, ArrowDown, ArrowLeft, ArrowLeftToLine, ArrowRight, ArrowRightToLine,
   LayoutGrid, Table, Type, MapPin, Milestone, Building, Calendar, FileText, Wrench, Image, Loader
@@ -431,31 +431,61 @@ const ViewDocuments = () => {
       Header: t('documents_table_heading_object_name_text'), accessor: 'object_name',
       Cell: ({ row }) =>
         row.original.object_name ? (
-          <button
-            className="text-left"
-            onClick={() => {
-              let path;
-              switch (row.original.object_type) {
-                case 'Work Orders':
-                  path = `/workorder/${row.original.object_id}`;
-                  break;
-                case 'Task':
-                  path = `/ticket/${row.original.object_id}`;
-                  break;
-                case 'Uploaded By You':
-                  path = `/ticket//${row.original.object_id}`;
-                  break;
-                case 'Equipment':
-                  path = `/equipment/${row.original.object_id}`;
-                  break;
-                default:
-                  path = ' ';
-              }
-              navigate(`${path}`)
-            }}
-          >
-            {row.original.object_name}
-          </button>
+          // <button
+          //   className="text-left"
+          //   onClick={() => {
+          //     let path;
+          //     switch (row.original.object_type) {
+          //       case 'Work Orders':
+          //         path = `/workorder/${row.original.object_id}`;
+          //         break;
+          //       case 'Task':
+          //         path = `/ticket/${row.original.object_id}`;
+          //         break;
+          //       case 'Uploaded By You':
+          //         path = `/ticket//${row.original.object_id}`;
+          //         break;
+          //       case 'Equipment':
+          //         path = `/equipment/${row.original.object_id}`;
+          //         break;
+          //       default:
+          //         path = ' ';
+          //     }
+          //     navigate(`${path}`)
+          //   }}
+          // >
+          //   {row.original.object_name}
+          // </button>
+          <Link
+        to={
+          (() => {
+            let path;
+            switch (row.original.object_type) {
+              case 'Work Orders':
+                path = `/workorder/${row.original.object_id}`;
+                break;
+              case 'Task':
+                path = `/ticket/${row.original.object_id}`;
+                break;
+              case 'Uploaded By You':
+                path = `/ticket/${row.original.object_id}`;
+                break;
+              case 'Equipment':
+                path = `/equipment/${row.original.object_id}`;
+                break;
+              default:
+                path = '#';
+            }
+            // prepend origin so new tab loads correctly
+            return `${window.location.origin}/service-desk${path}`;
+          })()
+        }
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-left"
+      >
+        {row.original.object_name}
+      </Link>
         ) : null
     },
     {
@@ -491,7 +521,7 @@ const ViewDocuments = () => {
           })
           : null
     },
-  ], [selectedFiles, navigate, openDocumentInNewTab, t]);
+  ], [selectedFiles, openDocumentInNewTab, t]);
 
   const toggleFileSelection = (file) => {
     setSelectedFiles((prev) =>
@@ -850,17 +880,22 @@ const ViewDocuments = () => {
           </div>
         </div>
         <div className="flex items-end gap-x-2">
-          <button onClick={handleReset} className="w-[50%] md:min-w-48 px-5 py-3 border border-primary rounded-md text-base text-primary hover:bg-primary hover:text-primary-foreground">
+          <button onClick={handleReset} className="w-[50%] md:min-w-40 px-5 py-2 border border-2 border-primary rounded-md text-base text-primary hover:bg-primary/20 hover:text-primary">
             {t("documents_table_filter_reset_button")}
           </button>
-          <button onClick={handleSearch} className="w-[50%] md:min-w-48 px-5 py-3 border border-primary rounded-md text-base text-primary-foreground bg-primary hover:text-primary hover:bg-primary-foreground">
+          <button onClick={handleSearch} className="w-[50%] md:min-w-40 px-5 py-2 border border-2 border-primary rounded-md text-base text-primary-foreground bg-primary hover:bg-primary/20 hover:text-primary hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
             {t("documents_table_filter_apply_button")}
           </button>
         </div>
       </div>
 
       <div className="shadow-md rounded-lg mb-4">
-        <div className="flex items-end justify-end gap-x-2 py-2 pr-2">
+        <div className="flex items-center justify-end gap-x-2 py-2 px-4">
+          {viewMode === 'grid' && (
+            <h2 className="text-2xl text-primary font-semibold mr-auto">
+              {t("documents_table_view_download_text")}
+            </h2>
+          )}
           <button
             className="text-primary px-2 py-1"
             onClick={() => setViewMode(viewMode === 'table' ? 'grid' : 'table')}
@@ -871,7 +906,7 @@ const ViewDocuments = () => {
             selectedFiles.length !== 0 && (
               <button
                 onClick={handleDownloadSelected}
-                className="md:min-w-48 px-2 md:px-5 py-2 border border-2 border-primary bg-primary rounded-lg flex items-center justify-center text-primary-foreground text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]"
+                className="md:min-w-40 px-2 md:px-5 py-2 border border-2 border-primary bg-primary rounded-lg flex items-center justify-center text-primary-foreground text-base font-medium leading-normal hover:bg-primary/20 hover:text-primary hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]"
               >
                 <Download className="mr-2 w-6 h-5" /> {t("documents_table_download_button")}
               </button>
@@ -879,7 +914,7 @@ const ViewDocuments = () => {
           )}
           <button
             onClick={handleDownloadAll}
-            className="md:min-w-48 px-2 md:px-5 py-2 border border-2 border-primary bg-primary-foreground rounded-lg flex items-center justify-center text-primary text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]"
+            className="md:min-w-40 px-2 md:px-5 py-2 border border-2 border-primary bg-primary-foreground rounded-lg flex items-center justify-center text-primary text-base font-medium leading-normal hover:bg-primary/20 hover:text-primary hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]"
           >
             <Download className="mr-2 w-6 h-5" /> {t("documents_table_downloadall_button")}
           </button>
@@ -1008,7 +1043,7 @@ const ViewDocuments = () => {
                         <img
                           src={fileThumbnails[item.id]}
                           alt={item.name}
-                          className="w-full h-40 md:h-48 object-fill rounded-md mx-auto opacity-0 transition-opacity duration-500 ease-in-out"
+                          className="w-full h-40 md:h-48 object-cover rounded-md mx-auto opacity-0.5 transition-opacity duration-500 ease-in-out"
                           onLoad={(e) => e.currentTarget.classList.remove("opacity-0")}
                         />
                       ) : thumbnailLoading[item.id] ? (
@@ -1057,8 +1092,7 @@ const ViewDocuments = () => {
                       <button
                         target="_blank"
                         rel="noreferrer"
-                        className={`flex items-center no-underline mt-2 text-base ${fileThumbnails[item.id] ? "hover:underline" : "cursor-not-allowed pointer-events-none"
-                          }`}
+                        className="flex items-center no-underline mt-2 text-base hover:underline"
                         onClick={() => openDocumentInNewTab(item.id)}
                       >
                         <Eye className="w-6 h-6 mr-2 text-gray-600" />

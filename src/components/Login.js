@@ -150,7 +150,7 @@ const Login = () => {
                 type="email"
                 autoComplete="email"
                 required
-                className="mt-1 p-2 w-full border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                className="p-2 w-full border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder={t('login_form_email')}
@@ -164,7 +164,7 @@ const Login = () => {
                 type={visible ? "text" : "password"}
                 autoComplete="current-password"
                 required
-                className="mt-1 p-2 w-full border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                className="p-2 w-full border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder={t('login_form_password')}
@@ -203,7 +203,7 @@ const Login = () => {
             <div>
               <button
                 type="submit"
-                className="bg-primary text-primary-foreground w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-base font-medium hover:bg-primary/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                className="bg-primary text-primary-foreground w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-base font-medium hover:bg-primary/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
               >
                 {t("login_form_button")} <LogIn className='w-4 h-4 ms-1' />
               </button>

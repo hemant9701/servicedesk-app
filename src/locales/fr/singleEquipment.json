@@ -8,7 +8,7 @@
   "single_equipment_page_contract_contract_type": "Type de contrat",
   "single_equipment_page_contract_corrective_contract_info": "Informations sur le contrat correctif",
   "single_equipment_page_contract_end_date": "Date de fin",
-  "single_equipment_page_contract_entitlements": "Droits contractuels",
+  "single_equipment_page_contract_entitlements": "Couverture contractuelle",
   "single_equipment_page_contract_next_expected_intervention": "Prochaine intervention attendue",
   "single_equipment_page_contract_parts_warranty_date": "Date de fin de garantie des pièces",
   "single_equipment_page_contract_preventive_contract_info": "Informations sur les contrats préventifs",
@@ -57,7 +57,7 @@
   "single_equipment_page_work_order_table_reference_text": "Référence",
   "single_equipment_page_work_order_table_status_text": "Statut",
   "single_equipment_page_work_order_table_type_text": "Type",
-  "single_equipment_page_work_orders": "Ordres de travail",
+  "single_equipment_page_work_orders": "Interventions",
   "single_equipment_page_work_order_table_scheduled_technician_text": "Technicien prévu",
   "single_equipment_page_work_order_table_close_date_text": "Date de clôture"
 }

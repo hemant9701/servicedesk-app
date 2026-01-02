@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext.js';
 import {
   CornerDownRight, ChevronDown, ChevronUp, ArrowUp, ArrowDown, ArrowLeft, BadgeInfo, Circle, Filter,
-  MapPin, Text, Bold, BarChart, Hash, Loader,
+  MapPin, Text, Bold, BarChart, Hash, Loader, X
 } from 'lucide-react';
 import { useTranslation } from "react-i18next";
 import { setPrimaryTheme } from "../utils/setTheme";
@@ -359,13 +359,14 @@ const ViewInstallations = () => {
     {
       id: 'expander',
       Header: '',
+      disableSortBy: true,
       Cell: ({ row }) => (
         row.original.has_child ? (
           <button
             onClick={() => toggleExpand(row.original.id)}
             className="pr-1"
           >
-            {expanded[row.original.id] ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
+            {expanded[row.original.id] ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
           </button>
         ) : null
       )
@@ -439,14 +440,88 @@ const ViewInstallations = () => {
     });
   }, [contacts, filters]);
 
+  // Flatten parent + child rows so filters can apply to all rows
+  const flattenedContacts = useMemo(() => {
+    const flat = [];
+    const addRows = (rows, depth = 0, parentId = null) => {
+      rows.forEach(r => {
+        flat.push({ ...r, depth, parentId });
+        if (subRowsMap[r.id] && subRowsMap[r.id].length > 0) {
+          addRows(subRowsMap[r.id], depth + 1, r.id);
+        }
+      });
+    };
+    addRows(contacts);
+    return flat;
+  }, [contacts, subRowsMap]);
+
+  const filtersActive = useMemo(() => {
+    return (
+      filters.location !== clearedFilters.location ||
+      filters.keyword !== clearedFilters.keyword ||
+      filters.brand !== clearedFilters.brand ||
+      filters.model !== clearedFilters.model ||
+      filters.status !== clearedFilters.status ||
+      filters.includeArchived !== clearedFilters.includeArchived
+    );
+  }, [filters]);
+
+  const flatFilteredContacts = useMemo(() => {
+    if (!filtersActive) return [];
+
+    return flattenedContacts.filter(contact => {
+      const matchesLocation = filters.location
+        ? (contact?.id === filters.location || contact?.parentId === filters.location)
+        : true;
+
+      const matchesKeyword = filters.keyword
+        ? Object.values(contact || {})
+          .filter(val => typeof val === 'string') // only check string fields
+          .some(val => val.toLowerCase().includes(filters.keyword.toLowerCase()))
+        : true;
+
+      const matchesBrand =
+        filters.brand !== EmptyGuid
+          ? contact.equipment_brand_id === filters.brand
+          : true;
+
+      const matchesModel =
+        filters.model !== EmptyGuid
+          ? contact.equipment_model_id === filters.model
+          : true;
+
+      const matchesStatus =
+        filters.status !== EmptyGuid
+          ? contact.project_status_id === filters.status
+          : true;
+
+      const matchesArchived = filters.includeArchived
+        ? true
+        : contact.project_status_is_closed !== true;
+
+      return (
+        matchesLocation &&
+        matchesKeyword &&
+        matchesBrand &&
+        matchesModel &&
+        matchesStatus &&
+        matchesArchived
+      );
+    });
+  }, [flattenedContacts, filters, filtersActive]);
+
+  // Choose the data the table will use (flat when filters are active)
+  const displayedData = filtersActive ? flatFilteredContacts : filteredContacts;
+
   // Create table instance with pagination
   const {
     getTableProps,
     headerGroups,
+    rows,
   } = useTable(
     {
       columns,
-      data: filteredContacts
+      data: displayedData
     },
     useSortBy,
     useExpanded
@@ -462,11 +537,49 @@ const ViewInstallations = () => {
 
 
   const renderRows = (data, depth = 0) => {
+    if (!data || data.length === 0) return null;
+
+    const isFlatList = data[0] && typeof data[0].depth === 'number';
+
+    if (isFlatList) {
+      // Render flattened rows (no expansion)
+      return data.map(row => (
+        <tr
+          key={row.id}
+          className="cursor-pointer hover:bg-primary/50 hover:text-primary-foreground transition-colors duration-200 ease-in-out"
+          onClick={() => window.open(`${window.location.origin}/service-desk/equipment/${row.id}`, "_blank")}
+        >
+          {columns.map((column, index) => {
+            const isSecondColumn = index === 1; // Skip click for second column
+            const cellContent = column.Cell
+              ? column.Cell({ row: { original: row } })
+              : row[column.accessor];
+
+            return (
+              <td
+                key={column.id || column.accessor}
+                className={`px-2 py-4 whitespace-nowrap text-base font-normal ${index === 0 ? 'flex' : ''}`}
+                style={index === 0 ? { paddingLeft: `${(row.depth || 0) * 2 + 1}em` } : {}}
+                onClick={isSecondColumn ? (e) => e.stopPropagation() : undefined}
+              >
+                {index === 0 && row.depth > 0 && (
+                  <CornerDownRight className="mr-1" size={20} />
+                )}
+                {cellContent}
+              </td>
+            );
+          })}
+        </tr>
+      ));
+    }
+
+    // Fallback: hierarchical rendering with expansion
     return data.map(row => (
       <React.Fragment key={row.id}>
         <tr
           className="cursor-pointer hover:bg-primary/50 hover:text-primary-foreground transition-colors duration-200 ease-in-out"
-          onClick={() => navigate(`/equipment/${row.id}`)}
+          onClick={() => window.open(`${window.location.origin}/service-desk/equipment/${row.id}`, "_blank")}
+          {...getTableProps()}
         >
           {columns.map((column, index) => {
             const isSecondColumn = index === 1; // Skip click for second column
@@ -489,18 +602,14 @@ const ViewInstallations = () => {
             );
           })}
         </tr>
-        {/* {expanded[row.id] && subRowsMap[row.id] && renderRows(subRowsMap[row.id], depth + 1)} */}
         {
           expanded[row.id] && subRowsMap[row.id] && (
             <>
               {renderRows(subRowsMap[row.id], depth + 1)}
-              {renderedSubRows[row.id] !== true && setRenderedSubRows(prev => ({ ...prev, [row.id]: true }))}
+              {/* renderedSubRows is updated in useEffect when expanded rows are available */}
             </>
           )
         }
-        {expanded[row.id] && !renderedSubRows[row.id] && (
-          <Loader className="ml-2 text-blue-600 animate-spin" />
-        )}
       </React.Fragment>
     ));
   };
@@ -534,24 +643,22 @@ const ViewInstallations = () => {
           type="checkbox"
           checked={includeArchived}
           onChange={() => setIncludeArchived(!includeArchived)}
-          className="mr-2"
+          className="mr-2 w-4 h-4 cursor-pointer border border-primary rounded-md accent-primary"
         />
         <label className="text-zinc-800 text-base font-medium">{t('equipments_list_page_checkbox_label')}</label>
       </div>
 
-      <button onClick={() => setIsModalOpen(true)} className="flex justify-center items-center bg-primary-foreground text-primary text-base font-medium leading-normal border border-zinc-800 w-48 px-5 py-3 rounded-md mb-4">
+      <button onClick={() => setIsModalOpen(true)} className="flex justify-center items-center bg-primary-foreground text-primary text-base font-medium leading-normal border border-2 border-primary w-40 px-5 py-2 rounded-md mb-4 hover:bg-primary hover:text-primary-foreground">
         {t('equipments_list_page_filter_button')} <Filter size={24} className="ml-4" />
       </button>
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="relative w-100 p-4 bg-white rounded-lg shadow-md border space-y-4">
-            <button onClick={() => { setIsModalOpen(false); setTempFilters(clearedFilters) }} className="absolute -top-1 -right-1 bg-primary-foreground text-primary text-base font-medium leading-normal border border-zinc-800 px-2 rounded-full">
-              x
-            </button>
+            <X onClick={() => { setIsModalOpen(false); setTempFilters(clearedFilters) }} className="absolute -top-1 -right-1 bg-primary-foreground text-primary border border-2 border-primary px-2 rounded-full h-9 w-9 flex items-center justify-center hover:bg-primary hover:text-primary-foreground" />
             {/* Header */}
             <div className="flex items-center justify-between border-b pb-2">
-              <div className="flex justify-center items-center bg-primary-foreground text-primary text-base font-medium leading-normal border w-48 px-4 py-2 rounded-md mb-2">
+              <div className="flex justify-center items-center bg-primary-foreground text-primary text-base font-medium leading-normal border border-2 border-primary w-48 px-4 py-2 rounded-md mb-2 hover:bg-primary hover:text-primary-foreground">
                 {t('equipments_list_page_filter_label')}
                 <Filter size={24} className="ml-4" />
               </div>
@@ -736,10 +843,10 @@ const ViewInstallations = () => {
 
             {/* Footer buttons */}
             <div className="grid grid-cols-2 gap-4 justify-between pt-2">
-              <button onClick={handleReset} disabled={isLoading} className="px-5 py-3 border rounded-md text-base bg-primary-foreground text-primary hover:bg-primary hover:text-primary-foreground">
+              <button onClick={handleReset} disabled={isLoading} className="px-5 py-2 border border-2 border-primary rounded-md text-base bg-primary-foreground text-primary hover:bg-primary hover:text-primary-foreground">
                 {t('equipments_list_page_filter_reset')}
               </button>
-              <button onClick={applyFilters} disabled={isLoading} className="px-5 py-3 border bg-primary text-primary-foreground rounded-md text-base hover:bg-primary-foreground hover:text-primary">
+              <button onClick={applyFilters} disabled={isLoading} className="px-5 py-2 border border-2 border-primary bg-primary text-primary-foreground rounded-md text-base hover:bg-primary-foreground hover:text-primary">
                 {t('equipments_list_page_filter_confirm')}
               </button>
             </div>
@@ -759,7 +866,7 @@ const ViewInstallations = () => {
               {headerGroups.map((headerGroup, headerIndex) => (
                 <tr key={(headerGroup.getHeaderGroupProps() || {}).key || headerIndex} {...(function () { const { key, ...r } = headerGroup.getHeaderGroupProps(); return r; })()} className="bg-white">
                   {headerGroup.headers.map((column, index) => {
-                    const sortProps = column.getSortByToggleProps();
+                    const sortProps = column.canSort ? column.getSortByToggleProps() : {};
                     const headerProps = column.getHeaderProps(sortProps);
                     const { key, ...restHeaderProps } = headerProps;
 
@@ -767,24 +874,27 @@ const ViewInstallations = () => {
                       <th
                         key={column.id || column.accessor}
                         {...restHeaderProps}
-                        className={`px-2 py-3 text-left whitespace-nowrap text-slate-500 text-base font-medium leading-none ${index !== 0 ? 'border-r border-gray-300' : ''}`}
+                        className={`px-2 py-3 text-left whitespace-nowrap text-slate-500 text-base font-medium leading-none ${index !== 0 ? 'border-r border-gray-300' : ''} ${column.canSort ? 'cursor-pointer select-none' : ''}`}
+                        aria-sort={column.isSorted ? (column.isSortedDesc ? 'descending' : 'ascending') : 'none'}
                       >
-                        {column.render('Header')}
-                        {column.isSorted ? (
-                          column.isSortedDesc ? (
-                            <ArrowUp className="inline w-4 h-4 ml-1" />
-                          ) : (
-                            <ArrowDown className="inline w-4 h-4 ml-1" />
-                          )
-                        ) : null}
+                        <div className="flex items-center">
+                          {column.render('Header')}
+                          {column.isSorted ? (
+                            column.isSortedDesc ? (
+                              <ArrowUp className="inline w-4 h-4 ml-1" />
+                            ) : (
+                              <ArrowDown className="inline w-4 h-4 ml-1" />
+                            )
+                          ) : null}
+                        </div>
                       </th>
                     );
-                  })}
+                  })} 
                 </tr>
               ))}
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {!isLoading && renderRows(filteredContacts)}
+              {!isLoading && renderRows(rows.map(r => r.original))}
             </tbody>
           </table>
         </div>

@@ -292,10 +292,8 @@ const CreateTicket = () => {
   }), []);
 
   const severityType = useMemo(() => ({
-    "Not critical": "text-blue-800 ",
-    "Medium high": "text-orange-800 ",
-    "Critical": "text-red-800 ",
-    "Low": "text-green-800 ",
+    "Not urgent": "text-blue-800 ",
+    "Urgent": "text-red-800 ",
   }), []);
 
   const syncTicketFiles = (updatedFiles) => {
@@ -461,10 +459,10 @@ const CreateTicket = () => {
   //   }
   // }, [ticketTypes, ticketDetails]);
 
-  const ticketTypeOptions = ticketTypes.map((type) => ({
+  const ticketTypeOptions = useMemo(() => ticketTypes.map((type) => ({
     value: type.name,
     label: type.name,
-  }));
+  })), [ticketTypes]);
 
 
   // Set the first severity when severities array changes
@@ -477,10 +475,10 @@ const CreateTicket = () => {
   //   }
   // }, [severities, ticketDetails]);
 
-  const severityOptions = severities.map((severity) => ({
+  const severityOptions = useMemo(() => severities.map((severity) => ({
     value: severity.name,
     label: severity.name,
-  }));
+  })), [severities]);
 
 
   const handleInputChange = (key, value) => {
@@ -543,13 +541,14 @@ const CreateTicket = () => {
     {
       id: 'expander',
       Header: '',
+      disableSortBy: true,
       Cell: ({ row }) => (
         row.original.has_child ? (
           <button
             onClick={() => toggleExpand(row.original.id)}
             className="pr-1"
           >
-            {expanded[row.original.id] ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
+            {expanded[row.original.id] ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
           </button>
         ) : null
       )
@@ -626,6 +625,7 @@ const CreateTicket = () => {
   const {
     getTableProps,
     headerGroups,
+    rows,
   } = useTable(
     {
       columns,
@@ -674,12 +674,12 @@ const CreateTicket = () => {
         {expanded[row.id] && subRowsMap[row.id] && (
           <>
             {renderRows(subRowsMap[row.id], depth + 1)}
-            {renderedSubRows[row.id] !== true && setRenderedSubRows(prev => ({ ...prev, [row.id]: true }))}
+            {/* renderedSubRows is updated in useEffect when expanded rows are available */}
           </>
         )}
-        {expanded[row.id] && !renderedSubRows[row.id] && (
+        {/* {expanded[row.id] && !renderedSubRows[row.id] && (
           <Loader className="ml-2 text-blue-600 animate-spin" />
-        )}
+        )} */}
       </React.Fragment>
     ));
   };
@@ -911,25 +911,23 @@ const CreateTicket = () => {
               type="checkbox"
               checked={includeArchived}
               onChange={() => setIncludeArchived(!includeArchived)}
-              className="w-5 h-5 mr-2 outline outline-1 outline-offset-[-1px] outline-slate-300"
+              className="mr-2 w-4 h-4 cursor-pointer border border-primary rounded-md accent-primary"
             />
             <label className="text-zinc-800 text-base font-medium">{t('create_ticket_page_checkbox_label')}</label>
           </div>
           {/* Search Filter UI */}
           <div className="mb-6">
-            <button onClick={() => setIsModalOpen(true)} className="flex justify-center items-center bg-white text-primary text-base font-medium leading-normal border border-primary w-48 px-5 py-3 rounded-md my-8">
+            <button onClick={() => setIsModalOpen(true)} className="flex justify-center items-center bg-primary-foreground text-primary text-base font-medium leading-normal border border-2 border-primary w-40 px-5 py-2 rounded-md mb-4 hover:bg-primary hover:text-primary-foreground">
               {t('create_ticket_page_filter_button')} <Filter size={24} className="ml-4" />
             </button>
 
             {isModalOpen && (
               <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
                 <div className="relative w-100 p-4 bg-white rounded-lg shadow-md border space-y-4">
-                  <button onClick={() => { setIsModalOpen(false); setTempFilters(clearedFilters) }} className="absolute -top-1 -right-1 bg-white text-zinc-800 text-base font-medium leading-normal border border-zinc-800 px-2 rounded-full">
-                    x
-                  </button>
+                  <X onClick={() => { setIsModalOpen(false); setTempFilters(clearedFilters) }} className="absolute -top-1 -right-1 bg-primary-foreground text-primary border border-2 border-primary px-2 rounded-full h-9 w-9 flex items-center justify-center hover:bg-primary hover:text-primary-foreground" />
                   {/* Header */}
                   <div className="flex items-center justify-between border-b pb-2">
-                    <div className="flex justify-center items-center bg-white text-primary text-base font-medium leading-normal border border-primary w-48 px-4 py-2 rounded-md mb-2">
+                    <div className="flex justify-center items-center bg-primary-foreground text-primary text-base font-medium leading-normal border border-2 border-primary w-48 px-4 py-2 rounded-md mb-2 hover:bg-primary hover:text-primary-foreground">
                       {t('create_ticket_page_filter_label')}
                       <Filter size={24} className="ml-4" />
                     </div>
@@ -1114,10 +1112,10 @@ const CreateTicket = () => {
 
                   {/* Footer buttons */}
                   <div className="grid grid-cols-2 gap-4 justify-between pt-2">
-                    <button onClick={handleReset} disabled={isLoading} className="px-5 py-3 border border-primary rounded-md text-base text-primary hover:bg-primary hover:text-primary-foreground">
+                    <button onClick={handleReset} disabled={isLoading} className="px-5 py-2 border border-2 border-primary rounded-md text-base text-primary hover:bg-primary/20 hover:text-primary">
                       {t('create_ticket_page_filter_reset')}
                     </button>
-                    <button onClick={applyFilters} disabled={isLoading} className="px-5 py-3 bg-primary text-primary-foreground rounded-md text-base hover:bg-white hover:text-primary hover:border hover:border-primary">
+                    <button onClick={applyFilters} disabled={isLoading} className="px-5 py-2 border border-2 border-primary bg-primary text-primary-foreground rounded-md text-base hover:bg-primary/20 hover:text-primary">
                       {t('create_ticket_page_filter_confirm')}
                     </button>
                   </div>
@@ -1140,7 +1138,7 @@ const CreateTicket = () => {
                   {headerGroups.map((headerGroup, headerIndex) => (
                     <tr key={(headerGroup.getHeaderGroupProps() || {}).key || headerIndex} {...(function () { const { key, ...r } = headerGroup.getHeaderGroupProps(); return r; })()} className="bg-white">
                       {headerGroup.headers.map((column, index) => {
-                        const sortProps = column.getSortByToggleProps();
+                        const sortProps = column.canSort ? column.getSortByToggleProps() : {};
                         const headerProps = column.getHeaderProps(sortProps);
                         const { key, ...restHeaderProps } = headerProps;
 
@@ -1148,16 +1146,19 @@ const CreateTicket = () => {
                           <th
                             key={column.id || column.accessor}
                             {...restHeaderProps}
-                            className={`px-2 py-3 text-left whitespace-nowrap text-slate-500 text-base font-medium leading-none ${index !== 0 ? 'border-r border-gray-300' : ''}`}
+                            className={`px-2 py-3 text-left whitespace-nowrap text-slate-500 text-base font-medium leading-none ${index !== 0 ? 'border-r border-gray-300' : ''} ${column.canSort ? 'cursor-pointer select-none' : ''}`}
+                            aria-sort={column.isSorted ? (column.isSortedDesc ? 'descending' : 'ascending') : 'none'}
                           >
-                            {column.render('Header')}
-                            {column.isSorted ? (
-                              column.isSortedDesc ? (
-                                <ArrowUp className="inline w-4 h-4 ml-1" />
-                              ) : (
-                                <ArrowDown className="inline w-4 h-4 ml-1" />
-                              )
-                            ) : null}
+                            <div className="flex items-center">
+                              {column.render('Header')}
+                              {column.isSorted ? (
+                                column.isSortedDesc ? (
+                                  <ArrowUp className="inline w-4 h-4 ml-1" />
+                                ) : (
+                                  <ArrowDown className="inline w-4 h-4 ml-1" />
+                                )
+                              ) : null}
+                            </div>
                           </th>
                         );
                       })}
@@ -1165,7 +1166,7 @@ const CreateTicket = () => {
                   ))}
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {!isLoading && renderRows(filteredContacts)}
+                  {!isLoading && renderRows(rows.map(r => r.original))}
                 </tbody>
               </table>
             </div>
@@ -1183,8 +1184,14 @@ const CreateTicket = () => {
               <h4 className="text-zinc-900 text-base font-semibold leading-normal">{t("create_ticket_step-2_address")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
               <ul className="list-none list-inside text-slate-500 text-base font-medium">
-                <li className='flex items-center'><MapPin className='w-4 h-4 mr-2' />{selectedRow.db_address_street}</li>
-                <li className='ml-6 pb-1'>{selectedRow.db_address} {selectedRow.db_address_zip}</li>
+
+                <li className='flex items-center'>
+                  <span className="w-8 flex">
+                    <MapPin className='w-4 h-4' />
+                  </span>
+                  <span className="flex-1">{selectedRow.db_address_street}</span>
+                </li>
+                <li className='ml-8 pb-1'>{selectedRow.db_address} {selectedRow.db_address_zip}</li>
               </ul>
             </div>
 
@@ -1192,10 +1199,15 @@ const CreateTicket = () => {
               <h4 className="text-zinc-900 text-base font-semibold leading-normal">{t("create_ticket_step-2_equipment")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
               <ul className="list-none list-inside text-slate-500 text-base font-medium">
-                <li className='flex items-center'><Wrench className='w-4 h-4 mr-2' />{selectedRow.name}</li>
-                <li className='ml-6 pb-1'>{selectedRow.equipment_family_name}</li>
-                <li className='ml-6 pb-1'>{selectedRow.equipment_brand_name}</li>
-                <li className='ml-6 pb-1'>{selectedRow.equipment_model_name}</li>
+                <li className="flex items-center">
+                  <span className="w-8 flex">
+                    <Wrench className="w-4 h-4" />
+                  </span>
+                  <span className="flex-1">{selectedRow.name}</span>
+                </li>
+                <li className='ml-8 pb-1'>{selectedRow.equipment_family_name}</li>
+                <li className='ml-8 pb-1'>{selectedRow.equipment_brand_name}</li>
+                <li className='ml-8 pb-1'>{selectedRow.equipment_model_name}</li>
               </ul>
             </div>
 
@@ -1203,10 +1215,10 @@ const CreateTicket = () => {
               <h4 className="text-zinc-900 text-base font-semibold leading-normal">{t("create_ticket_step-2_properties")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
               <ul className="list-none list-inside text-slate-500 text-base font-medium">
-                <li className='grid grid-cols-2 gap-2 items-end'>{t("create_ticket_step-2_barcode")}: <span className='font-semibold'>{selectedRow.barcode || 'NA'}</span></li>
-                <li className='grid grid-cols-2 gap-2 items-end'>{t("create_ticket_step-2_serial_number")}: <span className='font-semibold'>{selectedRow.serial_number || 'NA'}</span></li>
-                <li className='grid grid-cols-2 gap-2 items-end'>{t("create_ticket_step-2_our_ref")}: <span className='font-semibold'>{selectedRow.customer_reference || 'NA'}</span></li>
-                <li className='grid grid-cols-2 gap-2 items-end'>{t("create_ticket_step-2_supplier_ref")}: <span className='font-semibold'>{selectedRow.id2 || 'NA'}</span></li>
+                <li className='grid grid-cols-2 gap-2 items-start'>{t("create_ticket_step-2_barcode")}: <span className='font-semibold break-words'>{selectedRow.barcode || 'NA'}</span></li>
+                <li className='grid grid-cols-2 gap-2 items-end'>{t("create_ticket_step-2_serial_number")}: <span className='font-semibold break-all'>{selectedRow.serial_number || 'NA'}</span></li>
+                <li className='grid grid-cols-2 gap-2 items-start'>{t("create_ticket_step-2_our_ref")}: <span className='font-semibold break-all'>{selectedRow.customer_reference || 'NA'}</span></li>
+                <li className='grid grid-cols-2 gap-2 items-start'>{t("create_ticket_step-2_supplier_ref")}: <span className='font-semibold break-all'>{selectedRow.id2 || 'NA'}</span></li>
               </ul>
             </div>
           </div>
@@ -1231,6 +1243,8 @@ const CreateTicket = () => {
                 <div className="relative basis-1/2">
                   <TicketX className="absolute left-3 top-3 w-5 h-5 text-gray-500" />
                   <Select
+                    required
+                    isSearchable={false}
                     closeMenuOnSelect={true}
                     components={animatedComponents}
                     options={ticketTypeOptions}
@@ -1252,8 +1266,8 @@ const CreateTicket = () => {
                     styles={{
                       control: (base) => ({
                         ...base,
-                        border: 'none',
-                        boxShadow: 'none', // also remove focus ring
+                        border: 'rgb(var(--color-primary) / 1)',
+                        boxShadow: 'rgb(var(--color-primary) / 1)',
                       }),
                       option: (base, state) => ({
                         ...base,
@@ -1283,6 +1297,8 @@ const CreateTicket = () => {
                 <div className="relative basis-1/2">
                   <Thermometer className="absolute left-3 top-3 w-5 h-5 text-gray-500" />
                   <Select
+                    required
+                    isSearchable={false}
                     closeMenuOnSelect={true}
                     components={animatedComponents}
                     options={severityOptions}
@@ -1301,8 +1317,8 @@ const CreateTicket = () => {
                     styles={{
                       control: (base) => ({
                         ...base,
-                        border: 'none',
-                        boxShadow: 'none', // also remove focus ring
+                        border: 'rgb(var(--color-primary) / 1)',
+                        boxShadow: 'rgb(var(--color-primary) / 1)',
                       }),
                       option: (base, state) => ({
                         ...base,
@@ -1341,7 +1357,7 @@ const CreateTicket = () => {
                 onChange={handleNameChange}
                 required
                 placeholder={t('create_ticket_step-2_issue_inputbox_placeholder')}
-                className="mt-1 p-2 text-gray-800 font-normal leading-normal text-base w-full border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="mt-1 p-2 text-gray-800 font-normal leading-normal text-base w-full border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary"
               />
               <p className="text-red-500 text-base font-normal leading-normal mt-1 text-end">
                 {50 - ticketName.length} {t("create_ticket_step-2_characters_remaining_text")}
@@ -1356,7 +1372,7 @@ const CreateTicket = () => {
                 required
                 onChange={(e) => handleInputChange('problemDescription', e.target.value)}
                 placeholder={t('create_ticket_step-2_description_textbox_placeholder')}
-                className="mt-1 p-2 h-32 text-gray-800 font-normal leading-normal text-base w-full border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="mt-1 p-2 h-32 text-gray-800 font-normal leading-normal text-base w-full border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary"
               />
               <p className="text-red-500 text-base font-normal leading-normal mt-1 text-end">
                 {255 - textarea.length} {t("create_ticket_step-2_characters_remaining_text")}
@@ -1368,7 +1384,7 @@ const CreateTicket = () => {
               <label
                 htmlFor="file-upload"
                 tabIndex={0}
-                className={`flex flex-col items-center justify-center w-full h-28 px-4 transition bg-white border border-gray-300 rounded-md cursor-pointer ${isDragActive ? "bg-blue-50 border-blue-400" : ""
+                className={`flex flex-col items-center justify-center w-full px-4 pt-1 transition bg-white border border-gray-300 rounded-md cursor-pointer ${isDragActive ? "bg-primary/10 border-primary" : ""
                   }`}
                 onDrop={handleDrop}
                 onDragOver={handleDragOver}
@@ -1403,21 +1419,21 @@ const CreateTicket = () => {
             <div className="mb-4">
               {/* File Thumbnails Grid */}
               {files.length > 0 && (
-                <div className="mt-2 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                <div className="mt-2 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 border border-gray-300 rounded-md p-4 mt-4">
                   {files.map((file, index) => {
                     const fileURL = URL.createObjectURL(file);
                     const isImage = file.type.startsWith("image/");
                     const isPDF = file.type === "application/pdf";
 
                     return (
-                      <div key={index} className="relative group w-32 h-auto">
+                      <div key={index} className="relative group h-auto">
                         {/* Thumbnail */}
                         {isImage ? (
                           <div>
                             <img
                               src={fileURL}
                               alt="Preview"
-                              className="w-32 h-32 object-cover rounded-md overflow-hidden"
+                              className="w-36 h-36 object-cover rounded-md overflow-hidden"
                               onLoad={() => URL.revokeObjectURL(fileURL)} // ✅ revoke after load
                             />
                             <p className="mt-2 text-base break-words whitespace-normal text-gray-800">{file.name}</p>
@@ -1425,9 +1441,9 @@ const CreateTicket = () => {
                         ) : (
                           <div>
                             {isPDF ? (
-                              <FileText className="w-32 h-32 text-gray-600" />
+                              <FileText className="w-36 h-36 text-gray-600" />
                             ) : (
-                              <File className="w-32 h-32 text-gray-600" />
+                              <File className="w-36 h-36 text-gray-600" />
                             )}
                             <p className="mt-2 text-base break-words whitespace-normal text-gray-800">{file.name}</p>
                           </div>
@@ -1437,7 +1453,7 @@ const CreateTicket = () => {
                         <button
                           type='button'
                           onClick={() => removeFile(file)}
-                          className="absolute top-1 right-1 bg-white p-1 rounded-full opacity-80 hover:opacity-100 transition-opacity shadow-md"
+                          className="absolute top-1 right-1 bg-primary-foreground rounded-full opacity-80 hover:opacity-100 transition-opacity shadow-md"
                         >
                           <XCircle className="w-5 h-5 text-red-600" />
                         </button>
@@ -1449,10 +1465,10 @@ const CreateTicket = () => {
             </div>
 
             <div className="mt-4 flex justify-end">
-              <button type='button' onClick={() => setStep(0)} className="w-48 px-5 py-3 border border-2 border-primary bg-white rounded-lg flex items-center justify-center text-primary text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
+              <button type='button' onClick={() => setStep(0)} className="w-40 px-5 py-2 border border-2 border-primary bg-primary-foreground rounded-lg flex items-center justify-center text-primary text-base font-medium leading-normal hover:bg-primary/20 hover:text-primary hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
                 {t('create_ticket_popup_button_back')}
               </button>
-              <button type="submit" className="w-48 px-5 py-3 ml-2 bg-primary text-primary-foreground rounded-lg flex items-center justify-center text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
+              <button type="submit" className="w-40 px-5 py-2 ml-2 border border-2 border-primary bg-primary text-primary-foreground rounded-lg flex items-center justify-center text-base font-medium leading-normal hover:bg-primary/20 hover:text-primary hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
                 {t('create_ticket_popup_button_next')}
               </button>
             </div>
@@ -1505,7 +1521,7 @@ const CreateTicket = () => {
                     <Clock className="w-4 h-4 text-gray-500" />
                     {selectedTime || t('create_ticket_page_step-3_time_select')}
                   </span>
-                  <ChevronDown className="w-4 h-4 ml-2 text-gray-500" />
+                  {isOpen ? <ChevronDown className="w-4 h-4 ml-2 text-gray-500" /> : <ChevronUp className="w-4 h-4 ml-2 text-gray-500" />}
                 </div>
 
                 {/* Dropdown Menu */}
@@ -1555,10 +1571,10 @@ const CreateTicket = () => {
 
             {/* Navigation Buttons */}
             <div className="mt-4 flex justify-end">
-              <button type='button' onClick={() => setStep(1)} className="w-48 px-5 py-3 border border-2 border-primary bg-white rounded-lg flex items-center justify-center text-primary text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
+              <button type='button' onClick={() => setStep(1)} className="w-40 px-5 py-2 border border-2 border-primary bg-primary-foreground rounded-lg flex items-center justify-center text-primary text-base font-medium leading-normal hover:bg-primary/20 hover:text-primary hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
                 {t('create_ticket_popup_button_back')}
               </button>
-              <button type="submit" className="w-48 px-5 py-3 ml-2 bg-primary text-primary-foreground rounded-lg flex items-center justify-center text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
+              <button type="submit" className="w-40 px-5 py-2 ml-2 border border-2 border-primary bg-primary text-primary-foreground rounded-lg flex items-center justify-center text-base font-medium leading-normal hover:bg-primary/20 hover:text-primary hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
                 {t('create_ticket_popup_button_next')}
               </button>
             </div>
@@ -1584,10 +1600,10 @@ const CreateTicket = () => {
                 <p className='px-2'>{t("create_ticket_popup_text")}</p>
                 {/* Footer buttons */}
                 <div className="flex justify-between pt-2">
-                  <button type='button' onClick={() => navigate(`/`)} className="px-4 py-2 border border-2 border-primary bg-white rounded-lg flex items-center justify-center text-primary text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)] hover:bg-primary hover:text-primary-foreground">
+                  <button type='button' onClick={() => navigate(`/`)} className="px-4 py-2 border border-2 border-primary bg-primary-foreground rounded-lg flex items-center justify-center text-primary text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)] hover:bg-primary/20 hover:text-primary">
                     {t('create_ticket_popup_button_back_home')}
                   </button>
-                  <button type='button' onClick={() => navigate(`/ticket/${responseId}`)} className="px-4 py-2 ml-2 bg-primary text-primary-foreground rounded-lg flex items-center justify-center text-pink-50 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)] hover:bg-primary-foreground hover:text-primary">
+                  <button type='button' onClick={() => navigate(`/ticket/${responseId}`)} className="px-4 py-2 ml-2 bg-primary text-primary-foreground rounded-lg flex items-center justify-center text-pink-50 text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)] hover:bg-primary/20 hover:text-primary">
                     {t('create_ticket_popup_button_view_ticket')}
                   </button>
                 </div>
@@ -1607,8 +1623,13 @@ const CreateTicket = () => {
               <h4 className="text-zinc-900 text-base font-semibold leading-normal">{t("create_ticket_step-4_address")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
               <ul className="list-none list-inside text-slate-500 text-base font-medium">
-                <li className='flex items-center'><MapPin className='w-4 h-4 mr-2' />{selectedRow?.db_address_street}</li>
-                <li className='ml-6 pb-1'>{selectedRow?.db_address} {selectedRow?.db_address_zip}</li>
+                <li className='flex items-center'>
+                  <span className="w-8 flex">
+                    <MapPin className='w-4 h-4 mr-2' />
+                  </span>
+                  <span className="flex-1">{selectedRow?.db_address_street}</span>
+                </li>
+                <li className='ml-8 pb-1'>{selectedRow?.db_address} {selectedRow?.db_address_zip}</li>
               </ul>
             </div>
 
@@ -1616,10 +1637,15 @@ const CreateTicket = () => {
               <h4 className="text-zinc-900 text-base font-semibold leading-normal">{t("create_ticket_step-4_equipment")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
               <ul className="list-none list-inside text-slate-500 text-base font-medium">
-                <li className='flex items-center'><Wrench className='w-4 h-4 mr-2' />{selectedRow?.name}</li>
-                <li className='ml-6 pb-1'>{selectedRow?.equipment_family_name}</li>
-                <li className='ml-6 pb-1'>{selectedRow?.equipment_brand_name}</li>
-                <li className='ml-6 pb-1'>{selectedRow?.equipment_model_name}</li>
+                <li className='flex items-center'>
+                  <span className="w-8 flex">
+                    <Wrench className="w-4 h-4" />
+                  </span>
+                  <span className="flex-1">{selectedRow?.name}</span>
+                </li>
+                <li className='ml-8 pb-1'>{selectedRow?.equipment_family_name}</li>
+                <li className='ml-8 pb-1'>{selectedRow?.equipment_brand_name}</li>
+                <li className='ml-8 pb-1'>{selectedRow?.equipment_model_name}</li>
               </ul>
             </div>
 
@@ -1627,10 +1653,10 @@ const CreateTicket = () => {
               <h4 className="text-zinc-900 text-base font-semibold leading-normal">{t("create_ticket_step-4_properties")}</h4>
               <hr className='my-2 w-32 border-gray-300' />
               <ul className="list-none list-inside text-slate-500 text-base font-medium">
-                <li className='grid grid-cols-2 gap-4 items-end'>{t("create_ticket_step-4_barcode")}: <span className='font-semibold'>{selectedRow?.barcode || 'NA'}</span></li>
-                <li className='grid grid-cols-2 gap-4 items-end'>{t("create_ticket_step-4_serial_number")}: <span className='font-semibold'>{selectedRow?.serial_number || 'NA'}</span></li>
-                <li className='grid grid-cols-2 gap-4 items-end'>{t("create_ticket_step-4_our_ref")}: <span className='font-semibold'>{selectedRow?.customer_reference || 'NA'}</span></li>
-                <li className='grid grid-cols-2 gap-4 items-end'>{t("create_ticket_step-4_supplier_ref")}: <span className='font-semibold'>{selectedRow?.id2 || 'NA'}</span></li>
+                <li className='grid grid-cols-2 gap-4 items-start'>{t("create_ticket_step-4_barcode")}: <span className='font-semibold break-all'>{selectedRow?.barcode || 'NA'}</span></li>
+                <li className='grid grid-cols-2 gap-4 items-end'>{t("create_ticket_step-4_serial_number")}: <span className='font-semibold break-all'>{selectedRow?.serial_number || 'NA'}</span></li>
+                <li className='grid grid-cols-2 gap-4 items-start'>{t("create_ticket_step-4_our_ref")}: <span className='font-semibold break-all'>{selectedRow?.customer_reference || 'NA'}</span></li>
+                <li className='grid grid-cols-2 gap-4 items-start'>{t("create_ticket_step-4_supplier_ref")}: <span className='font-semibold break-all'>{selectedRow?.id2 || 'NA'}</span></li>
               </ul>
             </div>
 
@@ -1646,7 +1672,7 @@ const CreateTicket = () => {
               <hr className='my-2 w-32 border-gray-300' />
               <ul className="list-none list-inside text-slate-500 text-base font-medium">
                 <li>
-                  <span className={`font-medium me-2 ${severityType[ticketDetails.severity] || "text-gray-300"}`}>
+                  <span className={`font-medium me-2 ${severityType[ticketDetails.severity] || "text-gray-500"}`}>
                     {ticketDetails.severity}
                   </span>
                 </li>
@@ -1701,11 +1727,11 @@ const CreateTicket = () => {
           </div>
           <div className="mt-4 flex justify-end">
             <button type='button' onClick={() => setStep(2)} disabled={submitLoading}
-              className="w-48 px-5 py-3 border border-2 border-primary bg-white rounded-lg flex items-center justify-center text-primary text-base font-medium leading-normal hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
+              className="w-40 px-5 py-2 border border-2 border-primary bg-primary-foreground rounded-lg flex items-center justify-center text-primary text-base font-medium leading-normal hover:bg-primary/20 hover:text-primary hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
               {t('create_ticket_popup_button_back')}
             </button>
             <button onClick={handleSubmitTicket} disabled={submitLoading}
-              className={`w-48 px-5 py-3 ml-2 bg-primary text-primary-foreground rounded-lg flex items-center justify-center text-base font-medium leading-normal ${submitLoading ? 'bg-primary text-primary-foreground cursor-not-allowed' : 'bg-primary hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]'}`}>
+              className={`w-40 px-5 py-2 ml-2 border border-2 border-primary bg-primary text-primary-foreground rounded-lg flex items-center justify-center text-base font-medium leading-normal text-primary-foreground ${submitLoading ? 'cursor-not-allowed' : 'hover:bg-primary/20 hover:text-primary hover:shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]'}`}>
               {t('create_ticket_popup_button_confirm')}
             </button>
           </div>

@@ -598,10 +598,10 @@ const ViewCalendars = () => {
               </label>
             </div> */}
             <div className="flex gap-2">
-              <button type="button" onClick={handleReset} className="w-full border border-primary text-primary px-4 py-2 rounded-md hover:bg-primary hover:text-primary-foreground transition">
+              <button type="button" onClick={handleReset} className="w-full border border-2 border-primary text-primary px-4 py-2 rounded-md hover:bg-primary/20 hover:text-primary transition">
                 {t('calendar_page_filter_reset')}
               </button>
-              <button type="submit" className="w-full bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary-foreground hover:text-primary border border-primary transition">
+              <button type="submit" className="w-full border border-2 border-primary bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/20 hover:text-primary border border-primary transition">
                 {t('calendar_page_filter_apply')}
               </button>
             </div>
@@ -726,7 +726,7 @@ const ViewCalendars = () => {
                                   className={`self-stretch px-1 py-2 text-base font-normal ${index === 0 ? 'text-center' : 'cursor-pointer'
                                     }`}
                                   onClick={
-                                    index === 0 ? undefined : () => navigate(`/workorder/${row.original.jobs_id}`)
+                                    index === 0 ? undefined : () =>  window.open(`${window.location.origin}/service-desk/workorder/${row.original.jobs_id}`, "_blank")
                                   }
                                 >
                                   {cell.render('Cell')}
@@ -753,10 +753,10 @@ const ViewCalendars = () => {
                                           <table className="table-auto w-full text-base font-normal text-left border-collapse">
                                             <thead>
                                               <tr className="text-gray-700 border-b">
-                                                <th className="pb-2">Ref</th>
-                                                <th className="pb-2">Technician</th>
-                                                <th className="pb-2">Date</th>
-                                                <th className="pb-2">Technicians Remarks</th>
+                                                <th className="pb-2">{t("calendar_table_work_order_list_remarks_ref")}</th>
+                                                <th className="pb-2">{t("calendar_table_work_order_list_remarks_technician")}</th>
+                                                <th className="pb-2">{t("calendar_table_work_order_list_remarks_date")}</th>
+                                                <th className="pb-2">{t("calendar_table_work_order_list_remarks_technicians_remarks")}</th>
                                               </tr>
                                             </thead>
                                             <tbody>

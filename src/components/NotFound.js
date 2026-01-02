@@ -21,7 +21,7 @@ const NotFound = () => {
       </div>
       <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8">
         <Link to="/"
-          className="mb-6 bg-primary text-primary-foreground border border-primary px-4 py-1 rounded-md hover:bg-primary-foreground hover:text-primary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition"
+          className="mb-6 bg-primary text-primary-foreground border border-primary px-4 py-1 rounded-md hover:bg-primary/20 hover:text-primary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition"
         >
           {t("not_found_page_go_home")}
         </Link>
