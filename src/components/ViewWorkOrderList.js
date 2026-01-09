@@ -12,6 +12,8 @@ const ViewWorkOrderList = () => {
   const { auth } = useAuth();
   setPrimaryTheme(auth?.colorPrimary);
   const [jobs, setJobs] = useState([]);
+  const [jobsStatus, setJobsStatus] = useState([]);
+  const [jobsType, setJobsType] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -27,30 +29,173 @@ const ViewWorkOrderList = () => {
 
   const [loadingMap, setLoadingMap] = useState({});
 
-  const { t } = useTranslation('workOrderList');
+  const { t, i18n } = useTranslation('workOrderList');
 
-  const statusColors = useMemo(() => ({
-    "In Progress": "bg-yellow-100 text-yellow-600",
-    "Planned": "bg-blue-100 text-blue-600",
-    "Dispatched": "bg-violet-100 text-violet-600",
-    "To be Planned": "bg-purple-100 text-purple-700",
-    "In progress (W)": "bg-orange-100 text-orange-600",
-    "Open": "bg-green-100 text-green-600",
-    "Ready for Review": "bg-indigo-100 text-indigo-600",
-    "Cancelled": "bg-red-100 text-red-600",
-    "Completed": "bg-pink-100 text-pink-600",
-  }), []);
+  useEffect(() => {
+    const fetchStatusTranslations = async () => {
+      const response = await fetchDocuments(`/api/JobStatusView/Translations`, 'GET', auth.authKey);
+      //console.log('Work Order Status Translations:', response);
+      setJobsStatus(response);
+    };
+    const fetchTypeTranslations = async () => {
+      const response = await fetchDocuments(`/api/JobTypeView/Translations`, 'GET', auth.authKey);
+      //console.log('Work Order Type Translations:', response);
+      setJobsType(response);
+    };
+    fetchStatusTranslations();
+    fetchTypeTranslations();
+  }, [auth]);
 
-  const statusDotColors = useMemo(() => ({
-    "In Progress": "bg-yellow-600 text-yellow-600",
-    "Planned": "bg-blue-600 text-blue-600",
-    "Dispatched": "bg-violet-600 text-violet-600",
-    "To be Planned": "bg-purple-600 text-purple-600",
-    "In progress (W)": "bg-orange-600 text-orange-600",
-    "Open": "bg-green-600 text-green-600",
-    "Ready for Review": "bg-indigo-600 text-indigo-600",
-    "Cancelled": "bg-red-600 text-red-600",
-    "Completed": "bg-pink-600 text-pink-600",
+  const statusJob = useMemo(() => ({
+    "9ac4bd6d-f6e8-df11-97cf-0030488c6c36": {
+      "name": "Attivato",
+      "statusColors": "bg-violet-100 text-violet-600",
+      "statusDotColors": "bg-violet-600 text-violet-600",
+    },
+    "8adbc894-d612-de11-bd84-0030488c6c36":
+    {
+      "name": "Pooling",
+      "statusColors": "bg-purple-100 text-purple-600",
+      "statusDotColors": "bg-purple-600 text-purple-600",
+    },
+    "69268600-d3e0-4222-859f-06e47cf4041e":
+    {
+      "name": "En attente",
+      "statusColors": "bg-purple-100 text-purple-600",
+      "statusDotColors": "bg-purple-600 text-purple-600",
+    },
+    "9080edc8-18c1-457a-909b-30c40685e6bb":
+    {
+      "name": "FA time out",
+      "statusColors": "bg-purple-100 text-purple-600",
+      "statusDotColors": "bg-purple-600 text-purple-600",
+    },
+    "ff20244f-07c6-4c9d-9ed0-3564bd252560": {
+      "name": "Verplaatst",
+      "statusColors": "bg-purple-100 text-purple-600",
+      "statusDotColors": "bg-purple-600 text-purple-600",
+    },
+    "2ff8949f-6689-4864-aab3-49256914c195": {
+      "name": "Verlaat",
+      "statusColors": "bg-purple-100 text-purple-600",
+      "statusDotColors": "bg-purple-600 text-purple-600",
+    },
+    "f79e58ee-ee04-4590-bcb1-49e8bd551659": {
+      "name": "In Progress",
+      "statusColors": "bg-yellow-100 text-yellow-600",
+      "statusDotColors": "bg-yellow-600 text-yellow-600",
+    },
+    "143cf9cd-c3c1-406a-a19a-58d766d9dda9": {
+      "name": "Suggested",
+      "statusColors": "bg-purple-100 text-purple-600",
+      "statusDotColors": "bg-purple-600 text-purple-600",
+    },
+    "fc28469f-c276-4ff5-abb7-b99f5aee4c7d":
+    {
+      "name": "In progress (W)",
+      "statusColors": "bg-purple-100 text-purple-600",
+      "statusDotColors": "bg-purple-600 text-purple-600",
+    },
+    "0add3d6d-62ce-4b60-b31c-591425946f28": {
+      "name": "En train de finir",
+      "statusColors": "bg-purple-100 text-purple-600",
+      "statusDotColors": "bg-purple-600 text-purple-600",
+    },
+    "6557b9dc-6106-4327-8e26-6f24d0329c33": {
+      "name": "Completed",
+      "statusColors": "bg-pink-100 text-pink-600",
+      "statusDotColors": "bg-pink-600 text-pink-600",
+    },
+    "22b150a0-6633-48cd-89c4-81aebeb895f3": {
+      "name": "Accettato",
+      "statusColors": "bg-green-100 text-green-600",
+      "statusDotColors": "bg-green-600 text-green-600",
+    },
+    "09444873-6d8e-4793-a069-8955a760e4c1": {
+      "name": "FA Rejected",
+      "statusColors": "bg-red-100 text-red-600",
+      "statusDotColors": "bg-red-600 text-red-600",
+    },
+    "8ba9da71-ef32-423a-bb50-ae767315f55c": {
+      "name": "Open",
+      "statusColors": "bg-green-100 text-green-600",
+      "statusDotColors": "bg-green-600 text-green-600",
+    },
+    "1a908c70-10b1-44e8-a8c2-c5bcb9e35acc": {
+      "name": "FA Pending",
+      "statusColors": "bg-purple-100 text-purple-600",
+      "statusDotColors": "bg-purple-600 text-purple-600",
+    },
+    "06ea451c-5863-4c97-9592-cc928dfdf869": {
+      "name": "Canceled",
+      "statusColors": "bg-red-100 text-red-600",
+      "statusDotColors": "bg-red-600 text-red-600",
+    },
+    "497acff2-9ff6-4c94-85dd-daa0689553e2": {
+      "name": "To be planned",
+      "statusColors": "bg-blue-100 text-blue-600",
+      "statusDotColors": "bg-blue-600 text-blue-600",
+    },
+    "136e1585-dff6-4990-bfc6-dba958b71f30": {
+      "name": "Waiting Further Actions",
+      "statusColors": "bg-orange-100 text-orange-600",
+      "statusDotColors": "bg-orange-600 text-orange-600",
+    },
+    "10f456d2-000e-48ea-93d7-e016107b7a98": {
+      "name": "Gepland",
+      "statusColors": "bg-yellow-100 text-yellow-600",
+      "statusDotColors": "bg-yellow-600 text-yellow-600",
+    },
+    "a60bc691-ab2f-42f5-8a5b-998a29a27537": {
+      "name": "DispatchedNL",
+      "statusColors": "bg-blue-100 text-blue-600",
+      "statusDotColors": "bg-blue-600 text-blue-600",
+    },
+    "eb014da9-5850-4e16-b1e9-527162f1a9e0": {
+      "name": "Dispatched - geweigerd",
+      "statusColors": "bg-blue-100 text-blue-600",
+      "statusDotColors": "bg-blue-600 text-blue-600",
+    },
+    "8d0b7286-36b8-4949-949c-2f3a3f3d82f6": {
+      "name": "In wacht - Account geblokkeerd",
+      "statusColors": "bg-purple-100 text-purple-600",
+      "statusDotColors": "bg-purple-600 text-purple-600",
+    },
+    "fad3eb19-ed15-4d4c-b4a9-a1fd17f81847": {
+      "name": "On hold - Credit blocked",
+      "statusColors": "bg-purple-100 text-purple-600",
+      "statusDotColors": "bg-purple-600 text-purple-600",
+    },
+    "46b11d59-3de5-47d5-826d-72462e138aae": {
+      "name": "On hold - Credit released",
+      "statusColors": "bg-purple-100 text-purple-600",
+      "statusDotColors": "bg-purple-600 text-purple-600",
+    },
+    "1c6f7a61-3723-450b-8158-19a90d60cbd9": {
+      "name": "Workshop - Waiting further action",
+      "statusColors": "bg-orange-100 text-orange-600",
+      "statusDotColors": "bg-orange-600 text-orange-600",
+    },
+    "ce5f26ed-5fe0-47a3-94a7-1bf4402e32d0": {
+      "name": "Workshop - Completed",
+      "statusColors": "bg-pink-100 text-pink-600",
+      "statusDotColors": "bg-pink-600 text-pink-600",
+    },
+    "bea7aa41-fa53-4f2c-b766-2933579f1212": {
+      "name": "Klaar voor Review",
+      "statusColors": "bg-purple-100 text-purple-600",
+      "statusDotColors": "bg-purple-600 text-purple-600",
+    },
+    "e2bc66af-bd10-4035-8aa1-7ad88cb35723": {
+      "name": "Workshop",
+      "statusColors": "bg-violet-100 text-violet-600",
+      "statusDotColors": "bg-violet-600 text-violet-600",
+    },
+    "41a3718f-eaa1-4ef4-9a82-2ccf3fa92bcc": {
+      "name": "Wachtrij werkplaats",
+      "statusColors": "bg-violet-100 text-violet-600",
+      "statusDotColors": "bg-violet-600 text-violet-600",
+    }
   }), []);
 
   useEffect(() => {
@@ -136,6 +281,32 @@ const ViewWorkOrderList = () => {
   }, [expandedRowId, activeSection, remarksDataMap]);
 
 
+  // const getTranslatedValue = (entity, lang, fallback = '') => {
+  //   if (!entity) return fallback || '';
+  //   if (entity.translation && typeof entity.translation === 'string') return entity.translation;
+  //   if (typeof entity.value === 'string') return entity.value;
+  //   const translations = entity.translations;
+  //   if (translations) {
+  //     if (typeof translations === 'string') return translations;
+  //     if (Array.isArray(translations)) {
+  //       const exact = translations.find(tr => tr.language?.toLowerCase() === lang?.toLowerCase());
+  //       if (exact) return exact.value || exact.translation || exact.text || '';
+  //       const prefix = translations.find(tr => tr.language && lang && tr.language.toLowerCase().startsWith(lang.split('-')[0]));
+  //       if (prefix) return prefix.value || prefix.translation || prefix.text || '';
+  //     } else if (typeof translations === 'object') {
+  //       if (translations[lang]) return typeof translations[lang] === 'string' ? translations[lang] : translations[lang].value || '';
+  //       if (translations.value) return translations.value;
+  //       const key = Object.keys(translations).find(k => k.toLowerCase().startsWith(lang.split('-')[0]));
+  //       if (key) {
+  //         const v = translations[key];
+  //         return typeof v === 'string' ? v : v.value || '';
+  //       }
+  //     }
+  //   }
+  //   if (entity.name) return entity.name;
+  //   return fallback || '';
+  // };
+
   const columns = useMemo(
     () => [
       {
@@ -206,22 +377,32 @@ const ViewWorkOrderList = () => {
       {
         Header: t('work_order_list_table_heading_type_text'), accessor: 'job_type_name',
         Cell: ({ row }) => (
-          <span>
-            {row.original.job_type_name}
+          <span className={`text-base`}>
+            {
+              jobsType.find(type => String(type.id) === String(row.original.job_type_id))?.translations
+                ?.find(t => t.language_code === i18n.language.split("-")[0].toUpperCase())?.value
+              ?? jobsType.find(type => String(type.id) === String(row.original.job_type_id))?.name
+              ?? row.original.job_type_name
+            }
           </span>
         ),
       },
       {
         Header: t('work_order_list_table_heading_status_text'), accessor: 'job_status_name',
         Cell: ({ row }) => (
-          <span className={`text-base min-w-max inline-flex items-center font-medium pe-3 px-2 pb-1 pt-1 rounded-full ${statusColors[row.original.job_status_name] || "bg-gray-200 text-gray-800"}`}>
-            <Circle className={`inline w-2 h-2 mr-1 rounded-full ${statusDotColors[row.original.job_status_name] || "bg-gray-800 text-gray-800"}`} /> {row.original.project_status_name}
-            {row.original.job_status_name}
+          <span className={`text-base min-w-max inline-flex items-center font-medium pe-3 px-2 pb-1 pt-1 rounded-full ${statusJob[row.original.job_status_id]?.statusColors || "bg-gray-200 text-gray-800"}`}>
+            <Circle className={`inline w-2 h-2 mr-1 rounded-full ${statusJob[row.original.job_status_id]?.statusDotColors || "bg-gray-800 text-gray-800"}`} /> {row.original.project_status_name}
+            {
+              jobsStatus.find(status => String(status.id) === String(row.original.job_status_id))?.translations
+                ?.find(t => t.language_code === i18n.language.split("-")[0].toUpperCase())?.value
+              ?? jobsStatus.find(status => String(status.id) === String(row.original.job_status_id))?.name
+              ?? row.original.job_status_name
+            }
           </span>
         ),
       },
     ],
-    [statusColors, statusDotColors, isCompleted, handleCalendarClick, handleRemarksClick, t]
+    [jobsType, jobsStatus, statusJob, isCompleted, handleCalendarClick, handleRemarksClick, t, i18n.language]
   );
 
 

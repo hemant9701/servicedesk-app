@@ -138,10 +138,7 @@ a {
 }
 
 .react-calendar__tile--now {
-  background-color: rgb(var(--color-primary)/0.5); 
-  font-weight: bold;
-  border-radius: 50%;
-  color: rgb(var(--color-primary-foreground)); 
+  background-color: transparent; 
 }
 
 .react-calendar__tile--active {

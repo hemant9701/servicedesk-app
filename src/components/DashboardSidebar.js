@@ -19,7 +19,7 @@ export default function DashboardSidebar() {
     const [logo, setLogo] = useState('https://fsm.wello.net/wp-content/uploads/2024/01/WELLO_LOGO_Purple.png');
     const [logo_2, setLogo_2] = useState('https://fsm.wello.net/wp-content/uploads/2023/12/cropped-WN54.png');
     const { i18n } = useTranslation();
-    const userLangShort = auth?.userLang?.split('-')[0] || 'en';
+    const userLangShort = auth?.userLang?.split('-')[0];
     const { t } = useTranslation('dashboard');
 
     useEffect(() => {
@@ -57,7 +57,7 @@ export default function DashboardSidebar() {
 
     useEffect(() => {
         const savedLang = localStorage.getItem('i18nextLng');
-        const preferredLang = userLangShort || 'en';
+        const preferredLang = userLangShort;
 
         if (!savedLang || savedLang !== preferredLang) {
             i18n.changeLanguage(preferredLang);
@@ -347,8 +347,8 @@ export default function DashboardSidebar() {
                         <div className="flex justify-between items-center rounded-lg gap-1 px-1 py-2">
                             {!isCollapsed && (
                                 <div className="flex items-center gap-1 font-semibold">
-                                    <span className="flex justify-center px-1.5 py-2 w-8 h-8 text-xs rounded-full bg-primary text-primary-foreground">{getFirstLetters(auth.userName)}</span>
-                                    <span className="text-primary">{auth.userName}</span>
+                                    <span className="flex justify-center px-2 py-2 w-8 h-8 text-xs rounded-full bg-primary text-primary-foreground">{getFirstLetters(auth.userName)}</span>
+                                    <span className="text-primary leading-none">{auth.userName}</span>
                                 </div>
                             )}
                             <div className="flex flex-col text-base cursor-pointer">

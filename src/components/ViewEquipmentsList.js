@@ -464,7 +464,7 @@ const ViewInstallations = () => {
       filters.status !== clearedFilters.status ||
       filters.includeArchived !== clearedFilters.includeArchived
     );
-  }, [filters]);
+  }, [filters, clearedFilters.brand, clearedFilters.includeArchived, clearedFilters.keyword, clearedFilters.location, clearedFilters.model, clearedFilters.status]);
 
   const flatFilteredContacts = useMemo(() => {
     if (!filtersActive) return [];
@@ -606,10 +606,15 @@ const ViewInstallations = () => {
           expanded[row.id] && subRowsMap[row.id] && (
             <>
               {renderRows(subRowsMap[row.id], depth + 1)}
-              {/* renderedSubRows is updated in useEffect when expanded rows are available */}
             </>
           )
         }
+        {expanded[row.id] && !renderedSubRows[row.id] && (
+          <div className="ml-2 space-y-2 p-2">
+            <div className="h-6 bg-gray-200 rounded animate-pulse w-64"></div>
+            <div className="h-6 bg-gray-200 rounded animate-pulse w-40"></div>
+          </div>
+        )}
       </React.Fragment>
     ));
   };
@@ -889,7 +894,7 @@ const ViewInstallations = () => {
                         </div>
                       </th>
                     );
-                  })} 
+                  })}
                 </tr>
               ))}
             </thead>

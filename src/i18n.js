@@ -81,7 +81,7 @@ import documents_en from './locales/en/documents.json';
 import documents_fr from './locales/fr/documents.json';
 import documents_nl from './locales/nl/documents.json';
 
-const dynamicLang = (window?.welloServiceDesk?.language);
+const dynamicLang = localStorage.getItem('i18nextLng');
 
 i18n
   .use(initReactI18next)

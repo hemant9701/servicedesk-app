@@ -17,7 +17,7 @@
   "single_work_order_page_planned_by": "Technician",
   "single_work_order_page_planned_duration": "Planned Duration",
   "single_work_order_page_view_document": "View Document",
-  "single_work_order_page_no_record": "No record available.",
+  "single_work_order_page_no_record": "No scheduling date available yet.",
   "single_work_order_page_description": "Description",
   "single_work_order_page_no_description": "No description has been provided.",
   "single_work_order_page_no_document": "No document available.",

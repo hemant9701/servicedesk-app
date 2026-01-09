@@ -374,19 +374,19 @@ const CreateTicket = () => {
     setExpanded(prev => ({ ...prev, [id]: !prev[id] }));
   }, [expanded, handleFetchChildren]);
 
-  // const flattenData = (contacts, subRowsMap) => {
-  //   const flat = [];
-  //   const addRows = rows => {
-  //     rows.forEach(row => {
-  //       flat.push(row);
-  //       if (subRowsMap[row.id] && subRowsMap[row.id].length > 0) {
-  //         addRows(subRowsMap[row.id]);
-  //       }
-  //     });
-  //   };
-  //   addRows(contacts);
-  //   return flat;
-  // };
+  const flattenData = (contacts, subRowsMap) => {
+    const flat = [];
+    const addRows = rows => {
+      rows.forEach(row => {
+        flat.push(row);
+        if (subRowsMap[row.id] && subRowsMap[row.id].length > 0) {
+          addRows(subRowsMap[row.id]);
+        }
+      });
+    };
+    addRows(contacts);
+    return flat;
+  };
 
   const clearedFilters = {
     location: "",
@@ -398,40 +398,9 @@ const CreateTicket = () => {
   };
 
   // Apply filters when Confirm is clicked
-  // const applyFilters = async () => {
-  //   const { brand, status, model, location, keyword } = tempFilters;
-
-  //   const isValid =
-  //     brand !== clearedFilters.brand ||
-  //     status !== clearedFilters.status ||
-  //     model !== clearedFilters.model ||
-  //     location.trim() !== "" ||
-  //     keyword.trim() !== "";
-
-  //   if (!isValid) return;
-
-  //   setIsLoading(true);
-
-  //   try {
-  //     flattenData(contacts, subRowsMap); // Ensure it's awaited if async
-  //     setFilters(tempFilters); // Sync UI state
-
-  //     await fetchProjects({
-  //       parentOnly: false,
-  //       brand,
-  //       status,
-  //       model,
-  //     });
-  //   } catch (error) {
-  //     console.error("Failed to apply filters:", error);
-  //     // Optionally show a toast
-  //   } finally {
-  //     setIsModalOpen(false);
-  //     setIsLoading(false);
-  //   }
-  // };
   const applyFilters = async () => {
     const { brand, status, model, location, keyword } = tempFilters;
+
     const isValid =
       brand !== clearedFilters.brand ||
       status !== clearedFilters.status ||
@@ -442,37 +411,20 @@ const CreateTicket = () => {
     if (!isValid) return;
 
     setIsLoading(true);
+
     try {
-      setFilters(tempFilters);
+      flattenData(contacts, subRowsMap); // Ensure it's awaited if async
+      setFilters(tempFilters); // Sync UI state
 
-      // 1️⃣ Fetch parent-only rows for tree structure
-      const parentData = await fetchProjects({ parentOnly: true });
-
-      // 2️⃣ Fetch filtered rows with parentOnly: false to include children
-      const filteredData = await fetchProjects({ parentOnly: false, filters: tempFilters });
-
-      // 3️⃣ Merge parent + filtered children
-      // Keep parents as the base, and for any filtered child, ensure they appear under correct parent
-      const mergedSubRowsMap = { ...subRowsMap };
-      filteredData.forEach(row => {
-        if (row.parentId) {
-          if (!mergedSubRowsMap[row.parentId]) mergedSubRowsMap[row.parentId] = [];
-          // Avoid duplicates
-          if (!mergedSubRowsMap[row.parentId].some(r => r.id === row.id)) {
-            mergedSubRowsMap[row.parentId].push(row);
-          }
-        } else {
-          // If a parent matches filters, make sure it's in parentData
-          if (!parentData.some(r => r.id === row.id)) {
-            parentData.push(row);
-          }
-        }
+      await fetchProjects({
+        parentOnly: false,
+        brand,
+        status,
+        model,
       });
-
-      setContacts(parentData);
-      setSubRowsMap(mergedSubRowsMap);
-    } catch (err) {
-      console.error('Failed to apply filters:', err);
+    } catch (error) {
+      console.error("Failed to apply filters:", error);
+      // Optionally show a toast
     } finally {
       setIsModalOpen(false);
       setIsLoading(false);
@@ -669,80 +621,6 @@ const CreateTicket = () => {
     });
   }, [contacts, filters]);
 
-  // Flatten parent + child rows so filters can apply to all rows
-  const flattenedContacts = useMemo(() => {
-    const flat = [];
-    const addRows = (rows, depth = 0, parentId = null) => {
-      rows.forEach(r => {
-        flat.push({ ...r, depth, parentId });
-        if (subRowsMap[r.id] && subRowsMap[r.id].length > 0) {
-          addRows(subRowsMap[r.id], depth + 1, r.id);
-        }
-      });
-    };
-    addRows(contacts);
-    return flat;
-  }, [contacts, subRowsMap]);
-
-  const filtersActive = useMemo(() => {
-    return (
-      filters.location !== clearedFilters.location ||
-      filters.keyword !== clearedFilters.keyword ||
-      filters.brand !== clearedFilters.brand ||
-      filters.model !== clearedFilters.model ||
-      filters.status !== clearedFilters.status ||
-      filters.includeArchived !== clearedFilters.includeArchived
-    );
-  }, [filters, clearedFilters.location, clearedFilters.keyword, clearedFilters.brand, clearedFilters.model, clearedFilters.status, clearedFilters.includeArchived]);
-
-  const flatFilteredContacts = useMemo(() => {
-    if (!filtersActive) return [];
-
-    return flattenedContacts.filter(contact => {
-      const matchesLocation = filters.location
-        ? (contact?.id === filters.location || contact?.parentId === filters.location)
-        : true;
-
-      const matchesKeyword = filters.keyword
-        ? Object.values(contact || {})
-          .filter(val => typeof val === 'string') // only check string fields
-          .some(val => val.toLowerCase().includes(filters.keyword.toLowerCase()))
-        : true;
-
-      const matchesBrand =
-        filters.brand !== EmptyGuid
-          ? contact.equipment_brand_id === filters.brand
-          : true;
-
-      const matchesModel =
-        filters.model !== EmptyGuid
-          ? contact.equipment_model_id === filters.model
-          : true;
-
-      const matchesStatus =
-        filters.status !== EmptyGuid
-          ? contact.project_status_id === filters.status
-          : true;
-
-      const matchesArchived = filters.includeArchived
-        ? true
-        : contact.project_status_is_closed !== true;
-
-      return (
-        matchesLocation &&
-        matchesKeyword &&
-        matchesBrand &&
-        matchesModel &&
-        matchesStatus &&
-        matchesArchived
-      );
-    });
-  }, [flattenedContacts, filters, filtersActive]);
-
-  // Choose the data the table will use (flat when filters are active)
-  const displayedData = filtersActive ? flatFilteredContacts : filteredContacts;
-
-
   // Create table instance with pagination
   const {
     getTableProps,
@@ -751,7 +629,7 @@ const CreateTicket = () => {
   } = useTable(
     {
       columns,
-      data: displayedData
+      data: filteredContacts
     },
     useSortBy,
     useExpanded
@@ -799,12 +677,9 @@ const CreateTicket = () => {
             {/* renderedSubRows is updated in useEffect when expanded rows are available */}
           </>
         )}
-        {expanded[row.id] && !renderedSubRows[row.id] && (
-          <div className="ml-2 space-y-2 p-2">
-            <div className="h-6 bg-gray-200 rounded animate-pulse w-64"></div>
-            <div className="h-6 bg-gray-200 rounded animate-pulse w-40"></div>
-          </div>
-        )}
+        {/* {expanded[row.id] && !renderedSubRows[row.id] && (
+          <Loader className="ml-2 text-blue-600 animate-spin" />
+        )} */}
       </React.Fragment>
     ));
   };
@@ -1013,7 +888,7 @@ const CreateTicket = () => {
                     ? <Check className='w-6 h-6' />
                     : <Circle className='w-4 h-4 bg-white rounded-full text-white' />
                   }
-                  <p className='text-base md:text-md mt-2 text-slate-700 font-medium absolute top-12 md:w-max'>
+                  <p className='text-base md:text-md mt-2 text-slate-700 text-base font-medium absolute top-12 md:w-max'>
                     {item.label}
                   </p>
                 </div>

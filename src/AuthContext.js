@@ -1,7 +1,7 @@
 import axios from "axios";
 import { createContext, useState, useContext, useEffect } from "react";
 
-const baseUrl = process.env.REACT_APP_API_URL || 'https://servicedeskapi.odysseemobile.com';
+const baseUrl = process.env.REACT_APP_API_URL || 'https://servicedeskapi.wello.solutions';
 
 const AuthContext = createContext();
 

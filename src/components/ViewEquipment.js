@@ -19,7 +19,11 @@ const SingleInstallation = () => {
   const [rootParentDetails, setRootParentDetails] = useState(null);
   const [contractDetails, setContractDetails] = useState(null);
   const [doc, setDoc] = useState([]);
+  const [contractStatus, setContractStatus] = useState({});
+  const [contractType, setContractType] = useState({});
   const [wordOrder, setWordOrder] = useState([]);
+  const [jobsStatus, setJobsStatus] = useState([]);
+  const [jobsType, setJobsType] = useState([]);
   //const [file, setFile] = useState('');
   const [loading, setLoading] = useState(true);
   const [isURLLoading, setIsURLLoading] = useState(false);
@@ -40,9 +44,189 @@ const SingleInstallation = () => {
 
   const STORAGE_KEY = `SingleInstallationState_${InstallationId || 'global'}`;
 
-  const { t } = useTranslation('singleEquipment');
+  const { t, i18n } = useTranslation('singleEquipment');
 
   const url = process.env.REACT_APP_API_URL || 'https://servicedeskapi.wello.solutions/';
+
+  useEffect(() => {
+    const fetchStatusTranslations = async () => {
+      const response = await fetchDocuments('/api/ContractStatus/Translations', 'GET', auth.authKey);
+      setContractStatus(response);
+      // console.log('Contract Status Translations:', response);
+    };
+    const fetchTypeTranslations = async () => {
+      const response = await fetchDocuments('/api/ContractType/Translations', 'GET', auth.authKey);
+      setContractType(response);
+      // console.log('Contract Type Translations:', response);
+    };
+
+    const fetchJobStatusTranslations = async () => {
+      const response = await fetchDocuments(`/api/JobStatusView/Translations`, 'GET', auth.authKey);
+      //console.log('Work Order Status Translations:', response);
+      setJobsStatus(response);
+    };
+    const fetchJobTypeTranslations = async () => {
+      const response = await fetchDocuments(`/api/JobTypeView/Translations`, 'GET', auth.authKey);
+      //console.log('Work Order Type Translations:', response);
+      setJobsType(response);
+    };
+    fetchJobStatusTranslations();
+    fetchJobTypeTranslations();
+    fetchStatusTranslations();
+    fetchTypeTranslations();
+  }, [auth]);
+
+  const statusJob = useMemo(() => ({
+    "9ac4bd6d-f6e8-df11-97cf-0030488c6c36": {
+      "name": "Attivato",
+      "statusColors": "bg-violet-100 text-violet-600",
+      "statusDotColors": "bg-violet-600 text-violet-600",
+    },
+    "8adbc894-d612-de11-bd84-0030488c6c36":
+    {
+      "name": "Pooling",
+      "statusColors": "bg-purple-100 text-purple-600",
+      "statusDotColors": "bg-purple-600 text-purple-600",
+    },
+    "69268600-d3e0-4222-859f-06e47cf4041e":
+    {
+      "name": "En attente",
+      "statusColors": "bg-purple-100 text-purple-600",
+      "statusDotColors": "bg-purple-600 text-purple-600",
+    },
+    "9080edc8-18c1-457a-909b-30c40685e6bb":
+    {
+      "name": "FA time out",
+      "statusColors": "bg-purple-100 text-purple-600",
+      "statusDotColors": "bg-purple-600 text-purple-600",
+    },
+    "ff20244f-07c6-4c9d-9ed0-3564bd252560": {
+      "name": "Verplaatst",
+      "statusColors": "bg-purple-100 text-purple-600",
+      "statusDotColors": "bg-purple-600 text-purple-600",
+    },
+    "2ff8949f-6689-4864-aab3-49256914c195": {
+      "name": "Verlaat",
+      "statusColors": "bg-purple-100 text-purple-600",
+      "statusDotColors": "bg-purple-600 text-purple-600",
+    },
+    "f79e58ee-ee04-4590-bcb1-49e8bd551659": {
+      "name": "In Progress",
+      "statusColors": "bg-yellow-100 text-yellow-600",
+      "statusDotColors": "bg-yellow-600 text-yellow-600",
+    },
+    "143cf9cd-c3c1-406a-a19a-58d766d9dda9": {
+      "name": "Suggested",
+      "statusColors": "bg-purple-100 text-purple-600",
+      "statusDotColors": "bg-purple-600 text-purple-600",
+    },
+    "fc28469f-c276-4ff5-abb7-b99f5aee4c7d":
+    {
+      "name": "In progress (W)",
+      "statusColors": "bg-purple-100 text-purple-600",
+      "statusDotColors": "bg-purple-600 text-purple-600",
+    },
+    "0add3d6d-62ce-4b60-b31c-591425946f28": {
+      "name": "En train de finir",
+      "statusColors": "bg-purple-100 text-purple-600",
+      "statusDotColors": "bg-purple-600 text-purple-600",
+    },
+    "6557b9dc-6106-4327-8e26-6f24d0329c33": {
+      "name": "Completed",
+      "statusColors": "bg-pink-100 text-pink-600",
+      "statusDotColors": "bg-pink-600 text-pink-600",
+    },
+    "22b150a0-6633-48cd-89c4-81aebeb895f3": {
+      "name": "Accettato",
+      "statusColors": "bg-green-100 text-green-600",
+      "statusDotColors": "bg-green-600 text-green-600",
+    },
+    "09444873-6d8e-4793-a069-8955a760e4c1": {
+      "name": "FA Rejected",
+      "statusColors": "bg-red-100 text-red-600",
+      "statusDotColors": "bg-red-600 text-red-600",
+    },
+    "8ba9da71-ef32-423a-bb50-ae767315f55c": {
+      "name": "Open",
+      "statusColors": "bg-green-100 text-green-600",
+      "statusDotColors": "bg-green-600 text-green-600",
+    },
+    "1a908c70-10b1-44e8-a8c2-c5bcb9e35acc": {
+      "name": "FA Pending",
+      "statusColors": "bg-purple-100 text-purple-600",
+      "statusDotColors": "bg-purple-600 text-purple-600",
+    },
+    "06ea451c-5863-4c97-9592-cc928dfdf869": {
+      "name": "Canceled",
+      "statusColors": "bg-red-100 text-red-600",
+      "statusDotColors": "bg-red-600 text-red-600",
+    },
+    "497acff2-9ff6-4c94-85dd-daa0689553e2": {
+      "name": "To be planned",
+      "statusColors": "bg-blue-100 text-blue-600",
+      "statusDotColors": "bg-blue-600 text-blue-600",
+    },
+    "136e1585-dff6-4990-bfc6-dba958b71f30": {
+      "name": "Waiting Further Actions",
+      "statusColors": "bg-orange-100 text-orange-600",
+      "statusDotColors": "bg-orange-600 text-orange-600",
+    },
+    "10f456d2-000e-48ea-93d7-e016107b7a98": {
+      "name": "Gepland",
+      "statusColors": "bg-yellow-100 text-yellow-600",
+      "statusDotColors": "bg-yellow-600 text-yellow-600",
+    },
+    "a60bc691-ab2f-42f5-8a5b-998a29a27537": {
+      "name": "DispatchedNL",
+      "statusColors": "bg-blue-100 text-blue-600",
+      "statusDotColors": "bg-blue-600 text-blue-600",
+    },
+    "eb014da9-5850-4e16-b1e9-527162f1a9e0": {
+      "name": "Dispatched - geweigerd",
+      "statusColors": "bg-blue-100 text-blue-600",
+      "statusDotColors": "bg-blue-600 text-blue-600",
+    },
+    "8d0b7286-36b8-4949-949c-2f3a3f3d82f6": {
+      "name": "In wacht - Account geblokkeerd",
+      "statusColors": "bg-purple-100 text-purple-600",
+      "statusDotColors": "bg-purple-600 text-purple-600",
+    },
+    "fad3eb19-ed15-4d4c-b4a9-a1fd17f81847": {
+      "name": "On hold - Credit blocked",
+      "statusColors": "bg-purple-100 text-purple-600",
+      "statusDotColors": "bg-purple-600 text-purple-600",
+    },
+    "46b11d59-3de5-47d5-826d-72462e138aae": {
+      "name": "On hold - Credit released",
+      "statusColors": "bg-purple-100 text-purple-600",
+      "statusDotColors": "bg-purple-600 text-purple-600",
+    },
+    "1c6f7a61-3723-450b-8158-19a90d60cbd9": {
+      "name": "Workshop - Waiting further action",
+      "statusColors": "bg-orange-100 text-orange-600",
+      "statusDotColors": "bg-orange-600 text-orange-600",
+    },
+    "ce5f26ed-5fe0-47a3-94a7-1bf4402e32d0": {
+      "name": "Workshop - Completed",
+      "statusColors": "bg-pink-100 text-pink-600",
+      "statusDotColors": "bg-pink-600 text-pink-600",
+    },
+    "bea7aa41-fa53-4f2c-b766-2933579f1212": {
+      "name": "Klaar voor Review",
+      "statusColors": "bg-purple-100 text-purple-600",
+      "statusDotColors": "bg-purple-600 text-purple-600",
+    },
+    "e2bc66af-bd10-4035-8aa1-7ad88cb35723": {
+      "name": "Workshop",
+      "statusColors": "bg-violet-100 text-violet-600",
+      "statusDotColors": "bg-violet-600 text-violet-600",
+    },
+    "41a3718f-eaa1-4ef4-9a82-2ccf3fa92bcc": {
+      "name": "Wachtrij werkplaats",
+      "statusColors": "bg-violet-100 text-violet-600",
+      "statusDotColors": "bg-violet-600 text-violet-600",
+    }
+  }), []);
 
   const statusColors = useMemo(() => ({
     "In progress": "bg-yellow-100 text-yellow-600",
@@ -287,22 +471,32 @@ const SingleInstallation = () => {
       {
         Header: t('single_equipment_page_work_order_table_type_text'), accessor: 'job_type_name',
         Cell: ({ row }) => (
-          <span className={`text-base font-medium`}>
-            {row.original.job_type_name}
+          <span className={`text-base`}>
+            {
+              jobsType.find(type => String(type.id) === String(row.original.job_type_id))?.translations
+                ?.find(t => t.language_code === i18n.language.split("-")[0].toUpperCase())?.value
+              ?? jobsType.find(type => String(type.id) === String(row.original.job_type_id))?.name
+              ?? row.original.job_type_name
+            }
           </span>
         ),
       },
       {
         Header: t('single_equipment_page_work_order_table_status_text'), accessor: 'job_status_name',
         Cell: ({ row }) => (
-          <span className={`text-base min-w-max inline-flex items-center font-medium pe-3 px-2 pb-1 pt-0.5 rounded-full ${statusColors[row.original.job_status_name] || "bg-gray-200 text-gray-800"}`}>
-            <Circle className={`inline w-2 h-2 mr-1 rounded-full ${statusDotColors[row.original.job_status_name] || "bg-gray-800 text-gray-800"}`} />
-            {row.original.job_status_name}
+          <span className={`text-base min-w-max inline-flex items-center font-medium pe-3 px-2 pb-1 pt-1 rounded-full ${statusJob[row.original.job_status_id]?.statusColors || "bg-gray-200 text-gray-800"}`}>
+            <Circle className={`inline w-2 h-2 mr-1 rounded-full ${statusJob[row.original.job_status_id]?.statusDotColors || "bg-gray-800 text-gray-800"}`} /> {row.original.project_status_name}
+            {
+              jobsStatus.find(status => String(status.id) === String(row.original.job_status_id))?.translations
+                ?.find(t => t.language_code === i18n.language.split("-")[0].toUpperCase())?.value
+              ?? jobsStatus.find(status => String(status.id) === String(row.original.job_status_id))?.name
+              ?? row.original.job_status_name
+            }
           </span>
         ),
       },
     ],
-    [statusColors, statusDotColors, handleCalendarClick, handleRemarksClick, t]
+    [jobsType, jobsStatus, statusJob, handleCalendarClick, handleRemarksClick, t, i18n]
   );
 
   // Create table instance with pagination
@@ -626,8 +820,11 @@ const SingleInstallation = () => {
                 <hr className='my-2 w-32 border-gray-300' />
                 <ul className="list-none list-inside text-slate-500 text-base font-medium">
                   <li className='flex items-center'>
-                    <MapPin className='w-4 h-4 mr-2' />
-                    {rootParentDetails?.name || installation?.name}
+                    <span className="w-8 flex">
+                      <MapPin className='w-4 h-4 mr-2' /></span>
+                    <span className="flex-1">
+                      {rootParentDetails?.name || installation?.name}
+                    </span>
                   </li>
                   <li className='ml-8 pb-1'>
                     {rootParentDetails?.db_address_street || installation?.db_address_street}
@@ -1054,252 +1251,274 @@ const SingleInstallation = () => {
               </ul>
             </div>
 
-            {Array.isArray(contractDetails.Corrective) && contractDetails.Corrective.length > 0 && (
-              <div className='md:col-span-3 shadow-sm border rounded-lg p-4'>
-                <h4 className="block text-zinc-900 text-base font-semibold leading-normal">
-                  {t("single_equipment_page_contract_corrective_contract_info")}
-                </h4>
-                <hr className='mt-2 mb-4 w-32 border-gray-300' />
-                <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-                  {(isCorrectiveExpanded
-                    ? contractDetails.Corrective
-                    : contractDetails.Corrective.slice(0, 2)
-                  ).map((contract, index) => (
-                    <React.Fragment key={index}>
-                      <div className='shadow-sm border rounded-lg p-4'>
-                        <h4 className="block text-zinc-900 text-base font-semibold leading-normal">
-                          {contract.contract_name}
-                        </h4>
-                        <hr className='my-2 w-32 border-gray-300' />
-                        <ul className="list-none list-inside text-slate-500 text-base font-medium">
-                          <li className='grid grid-cols-3 gap-1'>
-                            {t("single_equipment_page_contract_start_date")}: <span className='font-semibold'>
-                              {contract.date_start && new Date(contract.date_start).getFullYear() !== 1980
-                                ? new Date(contract.date_start).toLocaleDateString(undefined, {
-                                  day: "2-digit",
-                                  month: "2-digit",
-                                  year: "numeric",
-                                })
-                                : "N/A"}
-                            </span>
-                          </li>
-                          <li className='grid grid-cols-3 gap-1'>
-                            {t("single_equipment_page_contract_end_date")}: <span className='font-semibold'>
-                              {contract.date_end && new Date(contract.date_end).getFullYear() !== 1980
-                                ? new Date(contract.date_end).toLocaleDateString(undefined, {
-                                  day: "2-digit",
-                                  month: "2-digit",
-                                  year: "numeric",
-                                })
-                                : "N/A"}
-                            </span>
-                          </li>
-                          <li className='grid grid-cols-3 gap-1'>
-                            {t("single_equipment_page_contract_status")}: <span className='font-semibold'>
-                              {contract.contract_status_name}
-                            </span>
-                          </li>
-                        </ul>
-                      </div>
-
-                      <div className='shadow-sm border rounded-lg p-4'>
-                        <h4 className="block text-zinc-900 text-base font-semibold leading-normal">
-                          {t("single_equipment_page_contract_SLA_info")}
-                        </h4>
-                        <hr className='my-2 w-32 border-gray-300' />
-                        <ul className="list-none list-inside text-slate-500 text-base font-medium">
-                          <li>{contract.sla_name}</li>
-                          <li>{contract.sla_coverage_type}</li>
-                        </ul>
-                      </div>
-
-                      <div className='shadow-sm border rounded-lg p-4'>
-                        <h4 className="block text-zinc-900 text-base font-semibold leading-normal">
-                          {t("single_equipment_page_contract_SLA_deadlines")}
-                        </h4>
-                        <hr className='my-2 w-32 border-gray-300' />
-                        <ul className="list-none list-inside text-slate-500 text-base font-medium">
-                          <li className='grid grid-cols-2 gap-4'>
-                            {t("single_equipment_page_contract_response_time")}: <span className='font-semibold'>{contract.sla_respone_time}</span>
-                          </li>
-                          <li className='grid grid-cols-2 gap-4'>
-                            {t("single_equipment_page_contract_arrival_time")}: <span className='font-semibold'>{contract.sla_arrival_time}</span>
-                          </li>
-                          <li className='grid grid-cols-2 gap-4'>
-                            {t("single_equipment_page_contract_resolution_time")}: <span className='font-semibold'>{contract.sla_resolution_time}</span>
-                          </li>
-                        </ul>
-                      </div>
-                    </React.Fragment>
-                  ))}
-                </div>
-                {contractDetails.Corrective.length > 2 && (
-                  <div className='flex items-center justify-end mt-4 font-semibold text-gray-800'>
-                    <button
-                      onClick={toggleCorrectiveExpand}
-                      className='flex items-center justify-end underline'
-                    >
-                      {isCorrectiveExpanded
-                        ? t("single_equipment_page_contract_view_less_button")
-                        : t("single_equipment_page_contract_view_more_button")}
-                      {isCorrectiveExpanded ? (
-                        <ArrowDownLeft className="ml-1 w-5 h-5" />
-                      ) : (
-                        <ArrowUpRight className="ml-1 w-5 h-5" />
-                      )}
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-
-
-            {Array.isArray(contractDetails?.Preventive) && contractDetails.Preventive.length > 0 && (
-              <div className='md:col-span-3 shadow-sm border rounded-lg p-4 '>
-                <h4 className="block text-zinc-900 text-base font-semibold leading-normal">{t("single_equipment_page_contract_preventive_contract_info")}</h4>
-                <hr className='mt-2 mb-4 w-32 border-gray-300' />
-
-                {contractDetails.Preventive.map((preventive, index) => {
-                  const isExpanded = expandedPreventives[index] || false;
-                  const serviceModelsToShow = isExpanded
-                    ? preventive.service_models
-                    : preventive.service_models?.slice(0, 2);
-
-                  return (
-                    <div key={index}>
-                      {index !== 0 && <hr className='my-8 border-gray-300' />}
-
-                      <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-                        <div className='shadow-sm border border-primary rounded-lg p-4 '>
-                          <h4 className="block text-primary text-base font-semibold leading-normal">
-                            {preventive.contract_type_name}
+            {contractDetails?.Corrective && (
+              Array.isArray(contractDetails.Corrective) && contractDetails.Corrective.length > 0 && (
+                <div className='md:col-span-3 shadow-sm border rounded-lg p-4'>
+                  <h4 className="block text-zinc-900 text-base font-semibold leading-normal">
+                    {t("single_equipment_page_contract_corrective_contract_info")}
+                  </h4>
+                  <hr className='mt-2 mb-4 w-32 border-gray-300' />
+                  <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+                    {(isCorrectiveExpanded
+                      ? contractDetails.Corrective
+                      : contractDetails.Corrective.slice(0, 2)
+                    ).map((contract, index) => (
+                      <React.Fragment key={index}>
+                        <div className='shadow-sm border rounded-lg p-4'>
+                          <h4 className="block text-zinc-900 text-base font-semibold leading-normal">
+                            {contract.contract_name}
                           </h4>
                           <hr className='my-2 w-32 border-gray-300' />
                           <ul className="list-none list-inside text-slate-500 text-base font-medium">
-                            <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_start_date")} <span className='font-semibold'>
-                              {preventive.date_start &&
-                                new Date(preventive.date_start).getFullYear() !== 1980
-                                ? new Date(preventive.date_start).toLocaleString(undefined, {
-
-                                  day: "2-digit",
-                                  month: "2-digit",
-                                  year: "numeric",
-                                })
-                                : "N/A"}
-                            </span></li>
-                            <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_end_date")} <span className='font-semibold'>
-                              {preventive.date_end &&
-                                new Date(preventive.date_end).getFullYear() !== 1980
-                                ? new Date(preventive.date_end).toLocaleString(undefined, {
-
-                                  day: "2-digit",
-                                  month: "2-digit",
-                                  year: "numeric",
-                                })
-                                : "N/A"}
-                            </span></li>
-                            <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_status")} <span className='font-semibold'>{preventive.contract_status_name}</span></li>
+                            <li className='grid grid-cols-3 gap-1'>
+                              {t("single_equipment_page_contract_start_date")}: <span className='font-semibold'>
+                                {contract.date_start && new Date(contract.date_start).getFullYear() !== 1980
+                                  ? new Date(contract.date_start).toLocaleDateString(undefined, {
+                                    day: "2-digit",
+                                    month: "2-digit",
+                                    year: "numeric",
+                                  })
+                                  : "N/A"}
+                              </span>
+                            </li>
+                            <li className='grid grid-cols-3 gap-1'>
+                              {t("single_equipment_page_contract_end_date")}: <span className='font-semibold'>
+                                {contract.date_end && new Date(contract.date_end).getFullYear() !== 1980
+                                  ? new Date(contract.date_end).toLocaleDateString(undefined, {
+                                    day: "2-digit",
+                                    month: "2-digit",
+                                    year: "numeric",
+                                  })
+                                  : "N/A"}
+                              </span>
+                            </li>
+                            <li className='grid grid-cols-3 gap-1'>
+                              {t("single_equipment_page_contract_status")}: <span className='font-semibold'>
+                                {/* {contract.contract_status_name} */}
+                                {
+                                  contractStatus.find(type => String(type.name) === String(contract.contract_status_name))?.translations
+                                    ?.find(t => t.language_code === i18n.language.split("-")[0].toUpperCase())?.value
+                                  ?? contractStatus.find(type => String(type.name) === String(contract.contract_status_name))?.name
+                                  ?? contract.contract_status_name
+                                }
+                              </span>
+                            </li>
                           </ul>
-                          <hr className='my-2 border-gray-300' />
+                        </div>
+
+                        <div className='shadow-sm border rounded-lg p-4'>
+                          <h4 className="block text-zinc-900 text-base font-semibold leading-normal">
+                            {t("single_equipment_page_contract_SLA_info")}
+                          </h4>
+                          <hr className='my-2 w-32 border-gray-300' />
                           <ul className="list-none list-inside text-slate-500 text-base font-medium">
-                            <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_contract_ref")} <span className='font-semibold'>{preventive.id2}</span></li>
-                            <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_contract_type")} <span className='font-semibold'>{preventive.contract_type_name}</span></li>
+                            <li>{contract.sla_name}</li>
+                            <li>{contract.sla_coverage_type}</li>
                           </ul>
                         </div>
 
-                        {/* Service Models */}
-                        {Array.isArray(serviceModelsToShow) &&
-                          serviceModelsToShow.map((model, modelIndex) => (
-                            <div key={modelIndex} className='shadow-sm border rounded-lg p-4 '>
-                              <h4 className="block text-zinc-900 text-base font-semibold leading-normal">{model?.service_model_name} - {model?.id2}</h4>
-                              <hr className='my-2 w-32 border-gray-300' />
-                              <ul className="list-none list-inside text-slate-500 text-base font-medium">
-                                <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_start_date")} <span className='font-semibold'>
-                                  {model?.date_start &&
-                                    new Date(model?.date_start).getFullYear() !== 1980
-                                    ? new Date(model?.date_start).toLocaleString(undefined, {
-                                      day: "2-digit",
-                                      month: "2-digit",
-                                      year: "numeric",
-                                    })
-                                    : "N/A"}
-                                </span></li>
-                                <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_end_date")} <span className='font-semibold'>
-                                  {model?.date_end &&
-                                    new Date(model?.date_end).getFullYear() !== 1980
-                                    ? new Date(model?.date_end).toLocaleString(undefined, {
-                                      day: "2-digit",
-                                      month: "2-digit",
-                                      year: "numeric",
-                                    })
-                                    : "N/A"}
-                                </span></li>
-                                <li className='grid grid-cols-2 gap-1'>
-                                  <span>{t("single_equipment_page_contract_WO_type")}</span>
-                                  <span>
-                                    {model?.job_type_name && (
-                                      <>
-                                        <Circle
-                                          className={`inline-block w-2 h-2 mr-1 rounded-full border`}
-                                          style={
-                                            model?.job_type_color
-                                              ? {
-                                                backgroundColor: `#${model.job_type_color}`,
-                                                borderColor: `#${model.job_type_color}`,
-                                              }
-                                              : {
-                                                backgroundColor: `#999999`,
-                                                borderColor: `#999999`,
-                                              }
-                                          }
-                                        />
-                                        <span className="font-semibold">{model?.job_type_name}</span>
-                                      </>
-                                    )}
-                                  </span>
-                                </li>
-                                <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_next_expected_intervention")} <span className='font-semibold'>
-                                  {model?.next_expected_job_date &&
-                                    new Date(model?.next_expected_job_date).getFullYear() !== 1980
-                                    ? new Date(model?.next_expected_job_date).toLocaleString(undefined, {
-                                      day: "2-digit",
-                                      month: "2-digit",
-                                      year: "numeric",
-                                    })
-                                    : "N/A"}
-                                </span></li>
-                              </ul>
-                            </div>
-                          ))}
-                      </div>
-
-                      {/* View More / View Less Link */}
-                      {Array.isArray(preventive.service_models) && preventive.service_models.length > 2 && (
-                        <div className='flex items-center justify-end my-4 font-semibold text-gray-800'>
-                          {!isExpanded ? (
-                            <button
-                              onClick={() => toggleExpand(index)}
-                              className='flex items-center justify-end underline'
-                            >
-                              {t("single_equipment_page_contract_view_more_button")}
-                              <ArrowUpRight className="ml-1 w-5 h-5" />
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => toggleExpand(index)}
-                              className='flex items-center justify-end underline'
-                            >
-                              {t("single_equipment_page_contract_view_less_button")}
-                              <ArrowDownLeft className="ml-1 w-5 h-5" />
-                            </button>
-                          )}
+                        <div className='shadow-sm border rounded-lg p-4'>
+                          <h4 className="block text-zinc-900 text-base font-semibold leading-normal">
+                            {t("single_equipment_page_contract_SLA_deadlines")}
+                          </h4>
+                          <hr className='my-2 w-32 border-gray-300' />
+                          <ul className="list-none list-inside text-slate-500 text-base font-medium">
+                            <li className='grid grid-cols-2 gap-4'>
+                              {t("single_equipment_page_contract_response_time")}: <span className='font-semibold'>{contract.sla_respone_time}</span>
+                            </li>
+                            <li className='grid grid-cols-2 gap-4'>
+                              {t("single_equipment_page_contract_arrival_time")}: <span className='font-semibold'>{contract.sla_arrival_time}</span>
+                            </li>
+                            <li className='grid grid-cols-2 gap-4'>
+                              {t("single_equipment_page_contract_resolution_time")}: <span className='font-semibold'>{contract.sla_resolution_time}</span>
+                            </li>
+                          </ul>
                         </div>
-                      )}
+                      </React.Fragment>
+                    ))}
+                  </div>
+                  {contractDetails.Corrective.length > 2 && (
+                    <div className='flex items-center justify-end mt-4 font-semibold text-gray-800'>
+                      <button
+                        onClick={toggleCorrectiveExpand}
+                        className='flex items-center justify-end underline'
+                      >
+                        {isCorrectiveExpanded
+                          ? t("single_equipment_page_contract_view_less_button")
+                          : t("single_equipment_page_contract_view_more_button")}
+                        {isCorrectiveExpanded ? (
+                          <ArrowDownLeft className="ml-1 w-5 h-5" />
+                        ) : (
+                          <ArrowUpRight className="ml-1 w-5 h-5" />
+                        )}
+                      </button>
                     </div>
-                  );
-                })}
-              </div>
-            )}
+                  )}
+                </div>
+              ))}
+
+
+            {contractDetails?.Preventive && (
+              Array.isArray(contractDetails?.Preventive) && contractDetails.Preventive.length > 0 && (
+                <div className='md:col-span-3 shadow-sm border rounded-lg p-4 '>
+                  <h4 className="block text-zinc-900 text-base font-semibold leading-normal">{t("single_equipment_page_contract_preventive_contract_info")}</h4>
+                  <hr className='mt-2 mb-4 w-32 border-gray-300' />
+
+                  {contractDetails.Preventive.map((preventive, index) => {
+                    const isExpanded = expandedPreventives[index] || false;
+                    const serviceModelsToShow = isExpanded
+                      ? preventive.service_models
+                      : preventive.service_models?.slice(0, 2);
+
+                    return (
+                      <div key={index}>
+                        {index !== 0 && <hr className='my-8 border-gray-300' />}
+
+                        <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+                          <div className='shadow-sm border border-primary rounded-lg p-4 '>
+                            <h4 className="block text-primary text-base font-semibold leading-normal">
+                              {preventive.contract_name}
+                            </h4>
+                            <hr className='my-2 w-32 border-gray-300' />
+                            <ul className="list-none list-inside text-slate-500 text-base font-medium">
+                              <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_start_date")} <span className='font-semibold'>
+                                {preventive.date_start &&
+                                  new Date(preventive.date_start).getFullYear() !== 1980
+                                  ? new Date(preventive.date_start).toLocaleString(undefined, {
+                                    day: "2-digit",
+                                    month: "2-digit",
+                                    year: "numeric",
+                                  })
+                                  : "N/A"}
+                              </span></li>
+                              <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_end_date")} <span className='font-semibold'>
+                                {preventive.date_end &&
+                                  new Date(preventive.date_end).getFullYear() !== 1980
+                                  ? new Date(preventive.date_end).toLocaleString(undefined, {
+                                    day: "2-digit",
+                                    month: "2-digit",
+                                    year: "numeric",
+                                  })
+                                  : "N/A"}
+                              </span></li>
+                              <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_status")} <span className='font-semibold'>
+                                {/* {preventive.contract_status_name} */}
+                                {
+                                  contractStatus.find(type => String(type.name) === String(preventive.contract_status_name))?.translations
+                                    ?.find(t => t.language_code === i18n.language.split("-")[0].toUpperCase())?.value
+                                  ?? contractStatus.find(type => String(type.name) === String(preventive.contract_status_name))?.name
+                                  ?? preventive.contract_status_name
+                                }
+                              </span></li>
+                            </ul>
+                            <hr className='my-2 border-gray-300' />
+                            <ul className="list-none list-inside text-slate-500 text-base font-medium">
+                              <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_contract_ref")} <span className='font-semibold'>{preventive.id2}</span></li>
+                              <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_contract_type")} <span className='font-semibold'>
+                                {/* {preventive.contract_type_name} */}
+                                {
+                                  contractType.find(type => String(type.id) === String(preventive.contract_type_id))?.translations
+                                    ?.find(t => t.language_code === i18n.language.split("-")[0].toUpperCase())?.value
+                                  ?? contractType.find(type => String(type.id) === String(preventive.contract_type_id))?.name
+                                  ?? preventive.contract_type_name
+                                }
+                              </span></li>
+                            </ul>
+                          </div>
+
+                          {/* Service Models */}
+                          {Array.isArray(serviceModelsToShow) &&
+                            serviceModelsToShow.map((model, modelIndex) => (
+                              <div key={modelIndex} className='shadow-sm border rounded-lg p-4 '>
+                                <h4 className="block text-zinc-900 text-base font-semibold leading-normal">{model?.service_model_name} - {model?.id2}</h4>
+                                <hr className='my-2 w-32 border-gray-300' />
+                                <ul className="list-none list-inside text-slate-500 text-base font-medium">
+                                  <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_start_date")} <span className='font-semibold'>
+                                    {model?.date_start &&
+                                      new Date(model?.date_start).getFullYear() !== 1980
+                                      ? new Date(model?.date_start).toLocaleString(undefined, {
+                                        day: "2-digit",
+                                        month: "2-digit",
+                                        year: "numeric",
+                                      })
+                                      : "N/A"}
+                                  </span></li>
+                                  <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_end_date")} <span className='font-semibold'>
+                                    {model?.date_end &&
+                                      new Date(model?.date_end).getFullYear() !== 1980
+                                      ? new Date(model?.date_end).toLocaleString(undefined, {
+                                        day: "2-digit",
+                                        month: "2-digit",
+                                        year: "numeric",
+                                      })
+                                      : "N/A"}
+                                  </span></li>
+                                  <li className='grid grid-cols-2 gap-1'>
+                                    <span>{t("single_equipment_page_contract_WO_type")}</span>
+                                    <span>
+                                      {model?.job_type_name && (
+                                        <>
+                                          <Circle
+                                            className={`inline-block w-2 h-2 mr-1 rounded-full border`}
+                                            style={
+                                              model?.job_type_color
+                                                ? {
+                                                  backgroundColor: `#${model.job_type_color}`,
+                                                  borderColor: `#${model.job_type_color}`,
+                                                }
+                                                : {
+                                                  backgroundColor: `#999999`,
+                                                  borderColor: `#999999`,
+                                                }
+                                            }
+                                          />
+                                          <span className="font-semibold">{model?.job_type_name}</span>
+                                        </>
+                                      )}
+                                    </span>
+                                  </li>
+                                  <li className='grid grid-cols-2 gap-1'>{t("single_equipment_page_contract_next_expected_intervention")} <span className='font-semibold'>
+                                    {model?.next_expected_job_date &&
+                                      new Date(model?.next_expected_job_date).getFullYear() !== 1980
+                                      ? new Date(model?.next_expected_job_date).toLocaleString(undefined, {
+                                        day: "2-digit",
+                                        month: "2-digit",
+                                        year: "numeric",
+                                      })
+                                      : "N/A"}
+                                  </span></li>
+                                </ul>
+                              </div>
+                            ))}
+                        </div>
+
+                        {/* View More / View Less Link */}
+                        {Array.isArray(preventive.service_models) && preventive.service_models.length > 2 && (
+                          <div className='flex items-center justify-end my-4 font-semibold text-gray-800'>
+                            {!isExpanded ? (
+                              <button
+                                onClick={() => toggleExpand(index)}
+                                className='flex items-center justify-end underline'
+                              >
+                                {t("single_equipment_page_contract_view_more_button")}
+                                <ArrowUpRight className="ml-1 w-5 h-5" />
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => toggleExpand(index)}
+                                className='flex items-center justify-end underline'
+                              >
+                                {t("single_equipment_page_contract_view_less_button")}
+                                <ArrowDownLeft className="ml-1 w-5 h-5" />
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
           </div>
         )}
       </div>

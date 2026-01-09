@@ -13,35 +13,86 @@ const ViewTicketList = () => {
   const { auth } = useAuth();
   setPrimaryTheme(auth?.colorPrimary);
   const [tickets, setTickets] = useState([]);
+  const [ticketsStatus, setTicketsStatus] = useState([]);
+  const [ticketsType, setTicketsType] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [isArchived, setIsArchived] = useState(false);
   const [error, setError] = useState(null);
   const [selectedTab, setSelectedTab] = useState('open');
-  const { t } = useTranslation('ticketList');
+  const { t, i18n } = useTranslation('ticketList');
 
-  const statusColors = useMemo(() => ({
-    "In progress": "bg-yellow-100 text-yellow-600",
-    "Planned": "bg-blue-100 text-blue-600",
-    "To be Planned": "bg-purple-100 text-purple-600",
-    "Escalated to WO": "bg-orange-100 text-orange-600",
-    "Open": "bg-green-100 text-green-600",
-    "Ready for Review": "bg-indigo-100 text-indigo-600",
-    "Waiting for Parts": "bg-indigo-100 text-indigo-600",
-    "Cancelled": "bg-red-100 text-red-600",
-    "Completed": "bg-pink-100 text-pink-600",
-  }), []);
+  useEffect(() => {
+    const fetchStatusTranslations = async () => {
+      const response = await fetchDocuments('api/TaskStatus/Translations', 'GET', auth.authKey);
+      setTicketsStatus(response);
+      //console.log('Task Status Translations:', response);
+    };
+    const fetchTypeTranslations = async () => {
+      const response = await fetchDocuments('api/TaskType/Translations', 'GET', auth.authKey);
+      setTicketsType(response);
+      //console.log('Task Type Translations:', response);
+    };
+    fetchStatusTranslations();
+    fetchTypeTranslations();
+  }, [auth]);
 
-  const statusDotColors = useMemo(() => ({
-    "In progress": "bg-yellow-600 text-yellow-600",
-    "Planned": "bg-blue-600 text-blue-600",
-    "To be Planned": "bg-purple-600 text-purple-600",
-    "Escalated to WO": "bg-orange-600 text-orange-600",
-    "Open": "bg-green-600 text-green-600",
-    "Ready for Review": "bg-indigo-600 text-indigo-600",
-    "Waiting for Parts": "bg-indigo-600 text-indigo-600",
-    "Cancelled": "bg-red-600 text-red-600",
-    "Completed": "bg-pink-600 text-pink-600",
+  const statusTicket = useMemo(() => ({
+    "bb68d95e-1706-486b-b282-2ba7bede3ea6": {
+      "name": "Credit Blocked",
+      "statusColors": "bg-purple-100 text-purple-600",
+      "statusDotColors": "bg-purple-600 text-purple-600",
+    },
+    "b6eccbf1-26c3-4f95-9b20-f2ebabd6bd00": {
+      "name": "Credit Released",
+      "statusColors": "bg-purple-100 text-purple-600",
+      "statusDotColors": "bg-purple-600 text-purple-600",
+    },
+    "4c1a28dc-e213-429d-bbd0-2595814ca9fc": {
+      "name": "In progress",
+      "statusColors": "bg-yellow-100 text-yellow-600",
+      "statusDotColors": "bg-yellow-600 text-yellow-600",
+    },
+    "0d738f35-d5e2-4065-8639-a41202531c96": {
+      "name": "Pre-diagnose",
+      "statusColors": "bg-blue-100 text-blue-600",
+      "statusDotColors": "bg-blue-600 text-blue-600",
+    },
+    "8b9d1c19-bb96-4e1c-8b32-4b433d0d1a62": {
+      "name": "Quote/Order",
+      "statusColors": "bg-green-100 text-green-600",
+      "statusDotColors": "bg-green-600 text-green-600",
+    },
+    "d106c501-9b89-4a2a-886b-f0bee640045a": {
+      "name": "Waiting for Parts",
+      "statusColors": "bg-indigo-100 text-indigo-600",
+      "statusDotColors": "bg-indigo-600 text-indigo-600",
+    },
+    "df41bd97-ea7e-412f-bdfe-8f97f783e08d": {
+      "name": "Waiting for Customer",
+      "statusColors": "bg-indigo-100 text-indigo-600",
+      "statusDotColors": "bg-indigo-600 text-indigo-600",
+    },
+    "6bfec05d-f2c3-47c5-bea1-5d264503f337": {
+      "name": "Canceled",
+      "statusColors": "bg-red-100 text-red-600",
+      "statusDotColors": "bg-red-600 text-red-600",
+    },
+    "461748f9-1c99-47b9-9456-880054ec4ce2": {
+      "name": "Completed",
+      "statusColors": "bg-pink-100 text-pink-600",
+      "statusDotColors": "bg-pink-600 text-pink-600",
+    },
+    "9a33634d-eb69-42fc-aaee-96f3296f4f40": {
+      "name": "Escalated to WO",
+      "statusColors": "bg-orange-100 text-orange-600",
+      "statusDotColors": "bg-orange-600 text-orange-600",
+    },
+    "e06515b5-b8c0-4529-befa-84dc7f23c25a": {
+      "name": "Verzending transport",
+      "statusColors": "bg-green-100 text-green-600",
+      "statusDotColors": "bg-green-600 text-green-600",
+    },
   }), []);
 
   useEffect(() => {
@@ -96,7 +147,11 @@ const ViewTicketList = () => {
       },
       {
         Header: t('tickets_list_table_heading_name_text'), accessor: 'subject',
-        Cell: ({ value }) => value.length > 30 ? value.slice(0, 30) + '...' : value
+        Cell: ({ value }) => (
+          <span>
+          {value.length > 30 ? value.slice(0, 50) + '...' : value}
+          </span>
+        ),
       },
       {
         Header: t('tickets_list_table_heading_assigned_name_text'), accessor: 'assigned_to_user_fullname',
@@ -108,24 +163,33 @@ const ViewTicketList = () => {
         Header: t('tickets_list_table_heading_type_text'), accessor: 'task_type_name',
         Cell: ({ row }) => (
           <span className={`text-base font-medium`}>
-            {row.original.task_type_name}
+            {
+              ticketsType.find(t => t.id === row.original.task_type_id)?.translations
+                ?.find(t => t.language_code === i18n.language.split("-")[0].toUpperCase())?.value
+              ?? ticketsType.find(t => t.id === row.original.task_type_id)?.name
+              ?? row.original.task_type_name
+            }
           </span>
         ),
       },
       {
         Header: t('tickets_list_table_heading_status_text'), accessor: 'task_status_name',
         Cell: ({ row }) => (
-          <span className={`text-base min-w-max inline-flex items-center font-medium pe-3 px-2 pb-1 pt-1 rounded-full ${statusColors[row.original.task_status_name] || "bg-gray-200 text-gray-800"}`}>
-            <Circle className={`inline w-2 h-2 mr-1 rounded-full ${statusDotColors[row.original.task_status_name] || "bg-gray-800 text-gray-800"}`} /> {row.original.project_status_name}
-            {row.original.task_status_name}
+          <span className={`text-base min-w-max inline-flex items-center font-medium pe-3 px-2 pb-1 pt-1 rounded-full ${statusTicket[row.original.task_status_id]?.statusColors || "bg-gray-200 text-gray-800"}`}>
+            <Circle className={`inline w-2 h-2 mr-1 rounded-full ${statusTicket[row.original.task_status_id]?.statusDotColors || "bg-gray-800 text-gray-800"}`} /> {row.original.project_status_name}
+            {
+              ticketsStatus.find(t => t.id === row.original.task_status_id)?.translations
+                ?.find(t => t.language_code === i18n.language.split("-")[0].toUpperCase())?.value
+              ?? ticketsStatus.find(t => t.id === row.original.task_status_id)?.name
+              ?? row.original.task_status_name
+            }
           </span>
         ),
       },
     ],
-    [statusColors, statusDotColors, t]
+    [ticketsType, ticketsStatus, statusTicket, t, i18n]
   );
 
- 
   const {
     getTableProps,
     getTableBodyProps,
@@ -230,9 +294,9 @@ const ViewTicketList = () => {
                   const rowProps = row.getRowProps();
                   const { key: rowKey, ...restRowProps } = rowProps;
                   return (
-                    <tr key={rowKey || row.original.id || rowIdx} {...restRowProps} 
-                    className="cursor-pointer hover:bg-primary/50 hover:text-primary-foreground transition-colors duration-200 ease-in-out" 
-                    onClick={() =>  window.open(`${window.location.origin}/service-desk/ticket/${row.original.id}`, "_blank")}>
+                    <tr key={rowKey || row.original.id || rowIdx} {...restRowProps}
+                      className="cursor-pointer hover:bg-primary/50 hover:text-primary-foreground transition-colors duration-200 ease-in-out"
+                      onClick={() => window.open(`${window.location.origin}/service-desk/ticket/${row.original.id}`, "_blank")}>
                       {row.cells.map((cell, cellIdx) => {
                         const cellProps = cell.getCellProps();
                         const { key: cellKey, ...restCellProps } = cellProps;
