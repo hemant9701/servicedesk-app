@@ -7,7 +7,7 @@ import { useAuth } from '../AuthContext';
 import { useNavigate } from 'react-router-dom';
 import {
   XCircle, X, CornerDownRight, CircleCheckBig, Filter, FileText, Clock, File, Circle, Wrench, ArrowUp, ArrowDown,
-  MapPin, Text, Bold, BarChart, Hash, Loader, UploadCloud, ChevronDown, ChevronUp, Check, BadgeInfo, TicketX, Thermometer
+  MapPin, Text, Bold, BarChart, Hash, UploadCloud, ChevronDown, ChevronUp, Check, BadgeInfo, TicketX, Thermometer
 } from 'lucide-react';
 import { ToastContainer, toast } from 'react-toastify';
 import { useTranslation } from "react-i18next";
@@ -1295,7 +1295,12 @@ const CreateTicket = () => {
                 </tbody>
               </table>
             </div>
-            {isLoading && <Loader className="ml-2 text-blue-600 animate-spin" />}
+            {isLoading && (
+              <div className="ml-2 space-y-2 p-2">
+                <div className="h-6 bg-gray-200 rounded animate-pulse w-64"></div>
+                <div className="h-6 bg-gray-200 rounded animate-pulse w-40"></div>
+              </div>
+            )}
           </div>
         </>
       )}

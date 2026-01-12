@@ -4,7 +4,7 @@ import { useTable, useSortBy, usePagination } from 'react-table';
 import { fetchDocuments } from '../services/apiServiceDocuments.js';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
-import { Loader, BadgeInfo, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, ArrowLeftToLine, ArrowRightToLine, Circle } from 'lucide-react';
+import { BadgeInfo, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, ArrowLeftToLine, ArrowRightToLine, Circle } from 'lucide-react';
 import { useTranslation } from "react-i18next";
 import { setPrimaryTheme } from "../utils/setTheme";
 
@@ -313,7 +313,12 @@ const ViewTicketList = () => {
           </table>
         </div>
 
-        {isLoading && <Loader size='36' className="m-2 text-blue-600 animate-spin" />}
+        {isLoading && (
+          <div className="ml-2 space-y-2 p-2">
+            <div className="h-6 bg-gray-200 rounded animate-pulse w-64"></div>
+            <div className="h-6 bg-gray-200 rounded animate-pulse w-40"></div>
+          </div>
+        )}
 
         {/* Pagination Controls - Only show if filteredTickets exceed pageSize (10) */}
         {!isLoading && tickets.length > 12 && (

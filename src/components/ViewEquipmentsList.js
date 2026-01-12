@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext.js';
 import {
   CornerDownRight, ChevronDown, ChevronUp, ArrowUp, ArrowDown, ArrowLeft, BadgeInfo, Circle, Filter,
-  MapPin, Text, Bold, BarChart, Hash, Loader, X
+  MapPin, Text, Bold, BarChart, Hash, X
 } from 'lucide-react';
 import { useTranslation } from "react-i18next";
 import { setPrimaryTheme } from "../utils/setTheme";
@@ -903,7 +903,12 @@ const ViewInstallations = () => {
             </tbody>
           </table>
         </div>
-        {isLoading && <Loader className="ml-2 text-blue-600 animate-spin" />}
+        {isLoading && (
+          <div className="ml-2 space-y-2 p-2">
+            <div className="h-6 bg-gray-200 rounded animate-pulse w-64"></div>
+            <div className="h-6 bg-gray-200 rounded animate-pulse w-40"></div>
+          </div>
+        )}
       </div>
     </div>
   );

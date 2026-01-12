@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { useTable, useSortBy, useExpanded, usePagination } from 'react-table';
 import { fetchDocuments } from '../services/apiServiceDocuments';
 import { useNavigate } from 'react-router-dom';
-import { Loader, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, ArrowLeftToLine, ArrowRightToLine, BadgeInfo, Circle, CalendarClock, FileText } from 'lucide-react';
+import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight, ArrowLeftToLine, ArrowRightToLine, BadgeInfo, Circle, CalendarClock, FileText } from 'lucide-react';
 import { useAuth } from '../AuthContext';
 import { useTranslation } from "react-i18next";
 import { setPrimaryTheme } from "../utils/setTheme";
@@ -281,32 +281,6 @@ const ViewWorkOrderList = () => {
   }, [expandedRowId, activeSection, remarksDataMap]);
 
 
-  // const getTranslatedValue = (entity, lang, fallback = '') => {
-  //   if (!entity) return fallback || '';
-  //   if (entity.translation && typeof entity.translation === 'string') return entity.translation;
-  //   if (typeof entity.value === 'string') return entity.value;
-  //   const translations = entity.translations;
-  //   if (translations) {
-  //     if (typeof translations === 'string') return translations;
-  //     if (Array.isArray(translations)) {
-  //       const exact = translations.find(tr => tr.language?.toLowerCase() === lang?.toLowerCase());
-  //       if (exact) return exact.value || exact.translation || exact.text || '';
-  //       const prefix = translations.find(tr => tr.language && lang && tr.language.toLowerCase().startsWith(lang.split('-')[0]));
-  //       if (prefix) return prefix.value || prefix.translation || prefix.text || '';
-  //     } else if (typeof translations === 'object') {
-  //       if (translations[lang]) return typeof translations[lang] === 'string' ? translations[lang] : translations[lang].value || '';
-  //       if (translations.value) return translations.value;
-  //       const key = Object.keys(translations).find(k => k.toLowerCase().startsWith(lang.split('-')[0]));
-  //       if (key) {
-  //         const v = translations[key];
-  //         return typeof v === 'string' ? v : v.value || '';
-  //       }
-  //     }
-  //   }
-  //   if (entity.name) return entity.name;
-  //   return fallback || '';
-  // };
-
   const columns = useMemo(
     () => [
       {
@@ -555,7 +529,10 @@ const ViewWorkOrderList = () => {
                               {loadingMap[row.original.id] ? (
                                 <tr>
                                   <td colSpan={row.cells.length} className="bg-gray-50 p-4 text-center">
-                                    <Loader size="36" className="m-2 text-blue-600 animate-spin inline-block" />
+                                    <div className="ml-2 space-y-2 p-2">
+                                      <div className="h-6 bg-gray-200 rounded animate-pulse w-64"></div>
+                                      <div className="h-6 bg-gray-200 rounded animate-pulse w-40"></div>
+                                    </div>
                                   </td>
                                 </tr>
                               ) : popupDataMap[row.original.id]?.length > 0 && (
@@ -615,7 +592,10 @@ const ViewWorkOrderList = () => {
                               {loadingMap[row.original.id] ? (
                                 <tr>
                                   <td colSpan={row.cells.length} className="bg-gray-50 p-4 text-center">
-                                    <Loader size="36" className="m-2 text-blue-600 animate-spin inline-block" />
+                                    <div className="ml-2 space-y-2 p-2">
+                                      <div className="h-6 bg-gray-200 rounded animate-pulse w-64"></div>
+                                      <div className="h-6 bg-gray-200 rounded animate-pulse w-40"></div>
+                                    </div>
                                   </td>
                                 </tr>
                               ) : remarksDataMap[row.original.id]?.length > 0 && (
@@ -666,7 +646,12 @@ const ViewWorkOrderList = () => {
           </table>
         </div>
 
-        {isLoading && <Loader size='36' className="m-2 text-blue-600 animate-spin" />}
+        {isLoading && (
+          <div className="ml-2 space-y-2 p-2">
+            <div className="h-6 bg-gray-200 rounded animate-pulse w-64"></div>
+            <div className="h-6 bg-gray-200 rounded animate-pulse w-40"></div>
+          </div>
+        )}
 
         {/* Pagination Controls - Only show if filteredWorkOrder exceed pageSize (10) */}
         {!isLoading && jobs.length > 12 && (

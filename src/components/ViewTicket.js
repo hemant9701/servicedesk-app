@@ -81,7 +81,7 @@ const SingleTicket = () => {
         // Fetch Work Order if available
         if (ticketData?.to_id_in_table) {
           const workOrderId = ticketData.to_id_in_table;
-          const workOrderEndpoint = `api/JobsView(${workOrderId})`;
+          const workOrderEndpoint = `api/JobsView/GetAllJobsLinkToProject?project_id=${workOrderId}`;
           const workOrderData = await fetchDocuments(workOrderEndpoint, 'GET', auth.authKey);
           setTicketWorkOrder(workOrderData);
         }
@@ -318,18 +318,14 @@ const SingleTicket = () => {
                     </li>) : ''}
                   {ticket?.project_name && (
                     <li
-                      className={`flex items-center ${ticketWorkOrder?.project_id !== '00000000-0000-0000-0000-000000000000' ? 'cursor-pointer' : ''}`}
-                      onClick={() => {
-                        if (ticketWorkOrder?.project_id !== '00000000-0000-0000-0000-000000000000') {
-                          navigate(`/enqipment/${ticketWorkOrder?.project_id}`);
-                        }
-                      }}
+                      className={`flex items-center ${ticket?.to_id_in_table !== '00000000-0000-0000-0000-000000000000' ? 'cursor-pointer' : ''}`}
                     >
                       <span className="w-8 flex"><Wrench className='w-4 h-4 mr-2' /></span>
-                      <span className="flex-1">{ticket.project_name}
-                      {ticketWorkOrder?.project_id !== '00000000-0000-0000-0000-000000000000' && (
-                        <ExternalLink className="ml-2 w-5 h-5" />
-                      )}</span>
+                      <span className="flex justify-between flex-1">{ticket.project_name}
+                        {ticket?.to_id_in_table !== '00000000-0000-0000-0000-000000000000' && (
+                          <a href={`/service-desk/equipment/${ticket?.to_id_in_table}`} className="" rel="noreferrer" target='_blank'><ExternalLink className="ml-2 w-5 h-5" /></a>
+                        )}
+                      </span>
                     </li>
                   )}
                 </ul>
@@ -411,7 +407,9 @@ const SingleTicket = () => {
                   <h4 className="text-zinc-900 text-base font-semibold leading-normal">{t('single_ticket_page_linked_wo')}</h4>
                   <hr className='my-2 w-32 border-gray-300' />
                   <ul className="list-none list-inside text-slate-500 text-base font-medium">
-                    <li className='flex items-center pb-1 cursor-pointer' onClick={() => navigate(`/workorder/${ticketWorkOrder?.id}`)}>{ticketWorkOrder?.id2} <ExternalLink className="ml-2 w-5 h-5" /></li>
+                    <li className='flex justify-between items-center pb-1 cursor-pointer' onClick={() => navigate(`/workorder/${ticketWorkOrder?.id}`)}>
+                      {ticketWorkOrder?.id2} <ExternalLink className="ml-2 w-5 h-5" />
+                    </li>
                     <li className='flex items-center pb-1'>{ticketWorkOrder?.job_type_name}</li>
                     <li className='flex items-center pb-1'>{ticketWorkOrder?.name}</li>
                   </ul>
@@ -504,28 +502,28 @@ const SingleTicket = () => {
                         </label>) : null}
 
                       {/* Show "View Document" only if it's an image */}
-                      { item.mime_type?.startsWith("image/") ? (
-                          <button
-                            target="_blank"
-                            rel={item.mime_type?.startsWith("image/") ? "noopener noreferrer" : "noreferrer"}
-                            className={`flex items-center no-underline mt-2 text-base ${fileThumbnails[item.id] ? "hover:underline" : "cursor-not-allowed pointer-events-none"
-                              }`}
-                            onClick={() => openDocumentInNewTab(item.id)}
-                          >
-                            <Eye className="w-6 h-6 mr-2 text-gray-600" />
-                            {t("single_ticket_page_view_document")}
-                          </button>
-                        ) : (
-                          <button
-                            target="_blank"
-                            rel="noreferrer"
-                            className="flex items-center no-underline mt-2 text-base hover:underline"
-                            onClick={() => openDocumentInNewTab(item.id)}
-                          >
-                            <Eye className="w-6 h-6 mr-2 text-gray-600" />
-                            {t("single_ticket_page_view_document")}
-                          </button>
-                        )}
+                      {item.mime_type?.startsWith("image/") ? (
+                        <button
+                          target="_blank"
+                          rel={item.mime_type?.startsWith("image/") ? "noopener noreferrer" : "noreferrer"}
+                          className={`flex items-center no-underline mt-2 text-base ${fileThumbnails[item.id] ? "hover:underline" : "cursor-not-allowed pointer-events-none"
+                            }`}
+                          onClick={() => openDocumentInNewTab(item.id)}
+                        >
+                          <Eye className="w-6 h-6 mr-2 text-gray-600" />
+                          {t("single_ticket_page_view_document")}
+                        </button>
+                      ) : (
+                        <button
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center no-underline mt-2 text-base hover:underline"
+                          onClick={() => openDocumentInNewTab(item.id)}
+                        >
+                          <Eye className="w-6 h-6 mr-2 text-gray-600" />
+                          {t("single_ticket_page_view_document")}
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}

@@ -458,35 +458,35 @@ const ViewDocuments = () => {
           //   {row.original.object_name}
           // </button>
           <Link
-        to={
-          (() => {
-            let path;
-            switch (row.original.object_type) {
-              case 'Work Orders':
-                path = `/workorder/${row.original.object_id}`;
-                break;
-              case 'Task':
-                path = `/ticket/${row.original.object_id}`;
-                break;
-              case 'Uploaded By You':
-                path = `/ticket/${row.original.object_id}`;
-                break;
-              case 'Equipment':
-                path = `/equipment/${row.original.object_id}`;
-                break;
-              default:
-                path = '#';
+            to={
+              (() => {
+                let path;
+                switch (row.original.object_type) {
+                  case 'Work Orders':
+                    path = `/workorder/${row.original.object_id}`;
+                    break;
+                  case 'Task':
+                    path = `/ticket/${row.original.object_id}`;
+                    break;
+                  case 'Uploaded By You':
+                    path = `/ticket/${row.original.object_id}`;
+                    break;
+                  case 'Equipment':
+                    path = `/equipment/${row.original.object_id}`;
+                    break;
+                  default:
+                    path = '#';
+                }
+                // prepend origin so new tab loads correctly
+                return `${window.location.origin}/service-desk${path}`;
+              })()
             }
-            // prepend origin so new tab loads correctly
-            return `${window.location.origin}/service-desk${path}`;
-          })()
-        }
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-left"
-      >
-        {row.original.object_name}
-      </Link>
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-left"
+          >
+            {row.original.object_name}
+          </Link>
         ) : null
     },
     {
@@ -998,7 +998,12 @@ const ViewDocuments = () => {
                 </tbody>
               </table>
             </div>
-            {isLoading && <Loader className="ml-2 text-blue-600 animate-spin" />}
+            {isLoading && (
+              <div className="ml-2 space-y-2 p-2">
+                <div className="h-6 bg-gray-200 rounded animate-pulse w-64"></div>
+                <div className="h-6 bg-gray-200 rounded animate-pulse w-40"></div>
+              </div>
+            )}
             {/* Pagination Controls */}
             {!isLoading && contacts.length > 12 && (
               <div className="flex items-center justify-between p-2">
@@ -1033,7 +1038,12 @@ const ViewDocuments = () => {
 
         {viewMode === 'grid' && (
           <>
-            {isLoading && <Loader className="ml-2 text-blue-600 animate-spin" />}
+            {isLoading && (
+              <div className="ml-2 space-y-2 p-2">
+                <div className="h-6 bg-gray-200 rounded animate-pulse w-64"></div>
+                <div className="h-6 bg-gray-200 rounded animate-pulse w-40"></div>
+              </div>
+            )}
             <div className='grid grid-cols-1 md:grid-cols-4 gap-4 p-8'>
               {paginatedContacts?.length > 0 ? (
                 paginatedContacts.map(item => (
